@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Android_EZcredit"
+rootProject.name = "Android_EZCredit"
 include(":app")
  
