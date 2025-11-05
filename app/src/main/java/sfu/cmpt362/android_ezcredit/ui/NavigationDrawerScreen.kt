@@ -14,7 +14,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import kotlinx.coroutines.launch
 import sfu.cmpt362.android_ezcredit.R
-import sfu.cmpt362.android_ezcredit.ui.fragments.*
+import sfu.cmpt362.android_ezcredit.ui.screens.*
 
 data class Screen(
     val route: String,
@@ -41,25 +41,46 @@ fun NavigationDrawerScreen() {
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(16.dp)
-                )
-                HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
-                Spacer(Modifier.height(8.dp))
-                screens.forEach { screen ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(vertical = 12.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                        HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
+                        Spacer(Modifier.height(8.dp))
+                        screens.forEach { screen ->
+                            NavigationDrawerItem(
+                                icon = { Icon(screen.icon, contentDescription = null) },
+                                label = { Text(stringResource(screen.title)) },
+                                selected = currentRoute == screen.route,
+                                onClick = {
+                                    navController.navigate(screen.route)
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(horizontal = 12.dp)
+                            )
+                        }
+                    }
+
                     NavigationDrawerItem(
-                        icon = { Icon(screen.icon, contentDescription = null) },
-                        label = { Text(stringResource(screen.title)) },
-                        selected = currentRoute == screen.route,
+                        icon = {Icon(Icons.Default.Settings, contentDescription = null)},
+                        label = {Text(stringResource(R.string.settings))},
+                        selected = currentRoute == "settings",
                         onClick = {
-                            navController.navigate(screen.route)
+                            navController.navigate("settings")
                             scope.launch { drawerState.close() }
                         },
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
                 }
+
             }
         }
     ) {
@@ -90,5 +111,6 @@ fun NavigationHost(navController: NavHostController, modifier: Modifier = Modifi
         composable("invoices") { InvoiceScreen() }
         composable("calendar") { CalendarScreen() }
         composable("analytics") { AnalyticsScreen() }
+        composable("settings") { SettingsScreen()}
     }
 }

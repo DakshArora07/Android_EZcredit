@@ -5,4 +5,5 @@
     <string name="invoices">Invoices</string>
     <string name="calendar">Calendar</string>
     <string name="analytics">Analytics</string>
+    <string name="settings">Settings</string>
 </resources>

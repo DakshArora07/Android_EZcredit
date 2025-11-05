@@ -1,9 +1,11 @@
-package sfu.cmpt362.android_ezcredit.ui.fragments
+package sfu.cmpt362.android_ezcredit.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -20,7 +22,8 @@ import sfu.cmpt362.android_ezcredit.R
 
 @Preview
 @Composable
-fun InvoiceScreen() {
+fun CustomerScreen() {
+
     val context = LocalContext.current
     Box(
         modifier = Modifier.fillMaxSize()
@@ -50,13 +53,13 @@ fun InvoiceScreen() {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Receipt,
-                    contentDescription = stringResource(R.string.invoices),
+                    imageVector = Icons.Default.People,
+                    contentDescription = stringResource(R.string.customers),
                     modifier = Modifier.size(80.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = stringResource(R.string.invoices),
+                    text = stringResource(R.string.customers),
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
