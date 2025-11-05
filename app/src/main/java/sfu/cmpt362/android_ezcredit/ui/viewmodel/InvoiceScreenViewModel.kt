@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import sfu.cmpt362.android_ezcredit.ui.activities.OCRResultActivity
 
-class InvoiceViewModel : ViewModel() {
+class InvoiceScreenViewModel : ViewModel() {
 
     private val _cameraRequest = MutableStateFlow(false)
     val cameraRequest = _cameraRequest.asStateFlow()

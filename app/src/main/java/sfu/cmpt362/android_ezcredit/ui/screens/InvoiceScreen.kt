@@ -20,13 +20,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import sfu.cmpt362.android_ezcredit.R
 import androidx.lifecycle.viewmodel.compose.viewModel
-import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceViewModel
+import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceScreenViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 
 @Preview
 @Composable
-fun InvoiceScreen(viewModel: InvoiceViewModel = viewModel()) {
+fun InvoiceScreen(viewModel: InvoiceScreenViewModel = viewModel()) {
     val context = LocalContext.current
 
     val cameraRequest by viewModel.cameraRequest.collectAsState()
