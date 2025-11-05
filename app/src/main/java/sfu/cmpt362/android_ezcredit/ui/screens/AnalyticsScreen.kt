@@ -1,8 +1,8 @@
-package sfu.cmpt362.android_ezcredit.ui.fragments
+package sfu.cmpt362.android_ezcredit.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,7 +16,7 @@ import sfu.cmpt362.android_ezcredit.R
 
 @Preview
 @Composable
-fun CustomerScreen() {
+fun AnalyticsScreen() {
 
     Box(
         modifier = Modifier
@@ -29,13 +29,13 @@ fun CustomerScreen() {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Icon(
-                imageVector = Icons.Default.People,
-                contentDescription = stringResource(R.string.customers),
+                imageVector = Icons.Default.Analytics,
+                contentDescription = stringResource(R.string.analytics),
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = stringResource(R.string.customers),
+                text = stringResource(R.string.analytics),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.primary
             )

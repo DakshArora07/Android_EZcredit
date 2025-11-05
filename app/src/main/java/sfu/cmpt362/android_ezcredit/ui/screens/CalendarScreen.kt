@@ -1,8 +1,9 @@
-package sfu.cmpt362.android_ezcredit.ui.fragments
+package sfu.cmpt362.android_ezcredit.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,7 +17,7 @@ import sfu.cmpt362.android_ezcredit.R
 
 @Preview
 @Composable
-fun AnalyticsScreen() {
+fun CalendarScreen() {
 
     Box(
         modifier = Modifier
@@ -29,13 +30,13 @@ fun AnalyticsScreen() {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Icon(
-                imageVector = Icons.Default.Analytics,
-                contentDescription = stringResource(R.string.analytics),
+                imageVector = Icons.Default.CalendarMonth,
+                contentDescription = stringResource(R.string.calendar),
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = stringResource(R.string.analytics),
+                text = stringResource(R.string.calendar),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.primary
             )
