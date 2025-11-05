@@ -1,29 +1,39 @@
 package sfu.cmpt362.android_ezcredit.data.entity
 
+import android.icu.util.Calendar
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import java.util.Date
 
-@Entity(tableName = "invoice_list")
+@Entity(
+    tableName = "invoice_list",
+    foreignKeys = [ForeignKey(
+        entity = Customer::class,
+        parentColumns = ["id"],
+        childColumns = ["customer_id"]
+    )]
+)
 data class Invoice (
 
     @PrimaryKey(autoGenerate = true)
-    val id: Long = 0L,
+    var id: Long = 0L,
 
     @ColumnInfo(name = "invoice_number")
-    val invoiceNumber: String = "",
+    var invoiceNumber: String = "",
 
     @ColumnInfo(name = "customer_id")
-    val customerID: Int = 0,
+    var customerID: Long = 0,
+
+    @ColumnInfo(name = "invoice_date")
+    var invDate: Calendar = Calendar.getInstance(),
 
     @ColumnInfo(name = "invoice_due_date")
-    val dueDate: Date = Date(),
+    var dueDate: Calendar = Calendar.getInstance(),
 
     @ColumnInfo(name = "invoice_amount")
-    val amount: Double = 0.0,
+    var amount: Double = 0.0,
 
     @ColumnInfo(name = "invoice_status")
-    val status: String = ""
-
+    var status: String = ""
 )
