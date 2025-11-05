@@ -1,6 +1,8 @@
 package sfu.cmpt362.android_ezcredit.ui.fragments
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -17,17 +19,48 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import sfu.cmpt362.android_ezcredit.R
+import androidx.lifecycle.viewmodel.compose.viewModel
+import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceViewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 
 @Preview
 @Composable
-fun InvoiceScreen() {
+fun InvoiceScreen(viewModel: InvoiceViewModel = viewModel()) {
     val context = LocalContext.current
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+
+    val cameraRequest by viewModel.cameraRequest.collectAsState()
+
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+
+            viewModel.onAddInvoiceClicked()
+        } else {
+            Toast.makeText(context, "Camera permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        bitmap?.let { viewModel.onBitmapCaptured(it, context) }
+        viewModel.onCameraHandled()
+    }
+
+
+    if (cameraRequest) {
+        cameraLauncher.launch(null)
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
         FloatingActionButton(
             onClick = {
-                Toast.makeText(context, "Button Clicked!", Toast.LENGTH_SHORT).show()
+
+                permissionLauncher.launch(android.Manifest.permission.CAMERA)
             },
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -38,6 +71,7 @@ fun InvoiceScreen() {
                 contentDescription = "Add Invoice"
             )
         }
+
 
         Box(
             modifier = Modifier
