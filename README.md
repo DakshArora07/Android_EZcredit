@@ -5,7 +5,7 @@ Android_EZcredit
 
 This project follows the **MVVM (Model-View-ViewModel)** architecture for a clean and maintainable code structure.  
 
-![MVVM Architecture](path/to/mvvm_image.png)  
+![MVVM Architecture](./MVVM.png)  
 
 
 ---
