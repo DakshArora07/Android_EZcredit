@@ -3,14 +3,14 @@ package sfu.cmpt362.android_ezcredit.ui.screens
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,22 +27,19 @@ import androidx.compose.runtime.getValue
 @Preview
 @Composable
 fun InvoiceScreen(viewModel: InvoiceScreenViewModel = viewModel()) {
+
     val context = LocalContext.current
-
     val cameraRequest by viewModel.cameraRequest.collectAsState()
-
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-
             viewModel.onAddInvoiceClicked()
         } else {
             Toast.makeText(context, "Camera permission denied", Toast.LENGTH_SHORT).show()
         }
     }
-
 
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicturePreview()
@@ -51,48 +48,100 @@ fun InvoiceScreen(viewModel: InvoiceScreenViewModel = viewModel()) {
         viewModel.onCameraHandled()
     }
 
-
     if (cameraRequest) {
         cameraLauncher.launch(null)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        FloatingActionButton(
-            onClick = {
+    Box(
+        modifier = Modifier.fillMaxSize()
+            .padding(10.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = stringResource(R.string.invoices),
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
-                permissionLauncher.launch(android.Manifest.permission.CAMERA)
-            },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add Invoice"
+                    Text(
+                        text = stringResource(R.string.invoiceScreenSubHeading),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+                FloatingActionButton(
+                    onClick = {
+                        permissionLauncher.launch(android.Manifest.permission.CAMERA)
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Invoice"
+                    )
+                }
+
+            }
+
+            DemoInvoices()
+        }
+    }
+}
+
+@Composable
+fun DemoInvoices() {
+
+    val demoInvoices = listOf(
+        Triple("ABC Company", "$120", "Nov 05, 2024"),
+        Triple("XYZ Enterprise", "$150.49", "Nov 07, 2024")
+    )
+
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.padding(top = 20.dp)
+    ) {
+        items(demoInvoices) { invoice ->
+            InvoiceCard(
+                title = invoice.first,
+                amount = invoice.second,
+                date = invoice.third,
+                onClick = {
+                }
             )
         }
+    }
+}
 
-
-        Box(
+@Composable
+fun InvoiceCard(title: String, amount: String, date: String, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Row(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(16.dp),
-            contentAlignment = Alignment.Center
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Receipt,
-                    contentDescription = stringResource(R.string.invoices),
-                    modifier = Modifier.size(80.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            Icon(
+                imageVector = Icons.Default.Receipt,
+                contentDescription = "Invoice Icon",
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text(text = title, style = MaterialTheme.typography.titleMedium)
+                Text(text = "Amount: $amount", style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    text = stringResource(R.string.invoices),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    text = "Date: $date",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
