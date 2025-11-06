@@ -13,10 +13,10 @@ This project follows the **MVVM (Model-View-ViewModel)** architecture for a clea
 ## Download APK
 
 You can download the latest APK of the project here:  
-[Download APK](link_to_the_apk.apk)  
+[Download APK](https://1drv.ms/u/c/a2e50b6392b4123e/ESVSOct-CntGnYsJraKw_H0BttE0P8dyy7iV7ycy_cjO4w?e=ZJbyXA)  
 ---
 
-## demonstration of some of the project components
+## Demonstration of some of the project components
 1. **Customers**  
    - Displays a list of customers along with their **credit scores**.  
    - Provides quick access to customer details and their transaction history.
@@ -37,12 +37,14 @@ You can download the latest APK of the project here:
 
 ## Contributors
 
-This project was developed and maintained by:  
+This project is being developed and maintained by:
 
 - **Gurshan Singh Aulakh** – Gemini Integration
-- **Ayush [Last Name]** – Responsibilities / Contributions  
-- **Daksh [Last Name]** – Responsibilities / Contributions  
-- **Hetmay [Last Name]** – Responsibilities / Contributions  
-- **Henry [Last Name]** – Responsibilities / Contributions  
+- **Ayush Arora** – UI & App Navigation 
+- **Daksh Arora** – Room Database
+- **Hetmay Ketan Vora** – UI & App Navigation
+- **Henry Nguyen** – OCR Functionality
+
+(Show and Tell 1 Contributions)
 
 
