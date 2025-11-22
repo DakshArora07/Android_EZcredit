@@ -3,6 +3,7 @@ package sfu.cmpt362.android_ezcredit.data.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import sfu.cmpt362.android_ezcredit.data.entity.Customer
 
@@ -10,6 +11,9 @@ import sfu.cmpt362.android_ezcredit.data.entity.Customer
 interface CustomerDao {
     @Insert
     suspend fun insertCustomer(customer: Customer)
+
+    @Update
+    suspend fun update(customer: Customer)
 
     @Query("SELECT * FROM customer_list")
     fun getCustomers(): Flow<List<Customer>>

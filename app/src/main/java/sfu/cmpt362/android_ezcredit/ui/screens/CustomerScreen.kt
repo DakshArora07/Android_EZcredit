@@ -1,9 +1,5 @@
 package sfu.cmpt362.android_ezcredit.ui.screens
 
-import android.R.attr.icon
-import android.R.attr.onClick
-import android.R.id.icon
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
@@ -11,122 +7,140 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import sfu.cmpt362.android_ezcredit.R
+import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 
-@Preview
+
 @Composable
-fun CustomerScreen() {
+fun CustomerScreen(
+    viewModel: CustomerViewModel,
+    onAddCustomer: () -> Unit
+) {
+    val customers by viewModel.customersLiveData.observeAsState(emptyList())
 
-    val context = LocalContext.current
-
-    Box(
-        modifier = Modifier.fillMaxSize()
-            .padding(10.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
-        Column {
-            Row (modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically)
-            {
-                Column {
-                    Text(
-                        text = stringResource(R.string.customers),
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = stringResource(R.string.customerScreenSubHeading),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+        // Top bar: Title + FAB
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = stringResource(R.string.customers),
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = stringResource(R.string.customerScreenSubHeading),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
 
-                FloatingActionButton(
-                    onClick = {
-                        Toast.makeText(context, "Button Clicked!", Toast.LENGTH_SHORT).show()
-                    }
+            FloatingActionButton(onClick = onAddCustomer) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Customer")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (customers.isEmpty()){
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add Customer"
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No customers yet",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Add your first customer to get started",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            DemoCustomers()
-        }
-    }
-}
-
-@Composable
-fun DemoCustomers(){
-
-    val demoCustomers = listOf(
-        Triple("ABC Company", "abccompany@gmail.com", "85"),
-        Triple("XYZ Enterprise", "xyzenterprice@outlook.com","74")
-    )
-
-    LazyColumn (
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.padding(top = 20.dp)
-    ) {
-        items(demoCustomers){ customers->
-            CustomerCard(
-                name = customers.first,
-                email = customers.second,
-                score = customers.third,
-                onClick = {
-
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(customers) { customer ->
+                    CustomerCard(
+                        name = customer.name,
+                        email = customer.email,
+                        phone = customer.phoneNumber,
+                        creditScore = customer.creditScore,
+                        onClick = { /* Optionally handle click */ }
+                    )
                 }
-            )
+            }
         }
     }
 }
 
 @Composable
-fun CustomerCard(name: String, email: String, score: String, onClick: () -> Unit){
-
+fun CustomerCard( name: String, email: String, phone: String, creditScore: Int, onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         shape = MaterialTheme.shapes.medium
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "Customer Icon",
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Column(modifier = Modifier.padding(start = 12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(text = name, style = MaterialTheme.typography.titleMedium)
+                Text(text = "Credit Score: $creditScore", style = MaterialTheme.typography.bodyMedium)
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(text = email, style = MaterialTheme.typography.bodyMedium)
-                Text(
-                    text = "Credit Score: $score",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }
-
 }

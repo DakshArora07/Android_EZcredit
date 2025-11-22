@@ -18,12 +18,23 @@ class InvoiceScreenViewModel : ViewModel() {
     private val _cameraRequest = MutableStateFlow(false)
     val cameraRequest = _cameraRequest.asStateFlow()
 
-    fun onAddInvoiceClicked() {
+    private val _showDialog = MutableStateFlow(false)
+    val showDialog = _showDialog.asStateFlow()
+
+    fun onScanInvoiceOptionClicked() {
         _cameraRequest.value = true
     }
 
     fun onCameraHandled() {
         _cameraRequest.value = false
+    }
+
+    fun onAddInvoiceButtonClicked() {
+        _showDialog.value = true
+    }
+
+    fun onDialogDismiss() {
+        _showDialog.value = false
     }
 
     fun onBitmapCaptured(bitmap: Bitmap, context: Context) {
