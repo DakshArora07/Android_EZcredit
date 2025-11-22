@@ -38,6 +38,10 @@ class CustomerViewModel(private val repository: CustomerRepository) : ViewModel(
         creditText = ""
     }
 
+    fun update(customer: Customer) {
+        repository.update(customer)
+    }
+
     fun getById(id: Long): Customer {
         return repository.getById(id)
     }

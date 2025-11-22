@@ -16,6 +16,12 @@ class CustomerRepository(private val customerDao: CustomerDao) {
         }
     }
 
+    fun update(customer: Customer) {
+        CoroutineScope(IO).launch {
+            customerDao.update(customer)
+        }
+    }
+
     fun getById(id: Long): Customer{
         return customerDao.getCustomerById(id)
     }

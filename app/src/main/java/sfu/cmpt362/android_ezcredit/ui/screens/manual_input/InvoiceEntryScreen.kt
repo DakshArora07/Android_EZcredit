@@ -294,6 +294,15 @@ fun InvoiceEntryScreen(
                     return@Button
                 }
 
+                if (selectedStatus == "Unpaid" || selectedStatus == "PastDue") {
+                    selectedCustomer?.let { customer ->
+                        val updatedCustomer = customer.copy(
+                            credit = customer.credit + amount
+                        )
+                        customerViewModel.update(updatedCustomer)
+                    }
+                }
+
                 invoiceViewModel.updateAmountText(amountText)
                 invoiceViewModel.updateInvoice(
                     invoiceNumber = invoiceNumber,
@@ -370,3 +379,4 @@ fun InvoiceEntryScreen(
         }
     }
 }
+
