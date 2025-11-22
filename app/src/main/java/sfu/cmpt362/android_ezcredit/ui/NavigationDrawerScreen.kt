@@ -8,13 +8,29 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import kotlinx.coroutines.launch
 import sfu.cmpt362.android_ezcredit.R
-import sfu.cmpt362.android_ezcredit.ui.screens.*
+import sfu.cmpt362.android_ezcredit.data.AppDatabase
+import sfu.cmpt362.android_ezcredit.data.entity.Invoice
+import sfu.cmpt362.android_ezcredit.data.repository.CustomerRepository
+import sfu.cmpt362.android_ezcredit.data.repository.InvoiceRepository
+import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModelFactory
+import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModelFactory
+import sfu.cmpt362.android_ezcredit.ui.screens.CustomerScreen
+import sfu.cmpt362.android_ezcredit.ui.screens.InvoiceScreen
+import sfu.cmpt362.android_ezcredit.ui.screens.CalendarScreen
+import sfu.cmpt362.android_ezcredit.ui.screens.AnalyticsScreen
+import sfu.cmpt362.android_ezcredit.ui.screens.SettingsScreen
+import sfu.cmpt362.android_ezcredit.ui.screens.manual_input.CustomerEntryScreen
+import sfu.cmpt362.android_ezcredit.ui.screens.manual_input.InvoiceEntryScreen
 
 data class Screen(
     val route: String,
@@ -36,6 +52,24 @@ fun NavigationDrawerScreen() {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
+    // --- Database and ViewModel setup --- //
+    val context = LocalContext.current
+    val customerRepository = remember {
+        val database = AppDatabase.getInstance(context)
+        CustomerRepository(database.customerDao)
+    }
+    val customerViewModel: CustomerViewModel = viewModel(
+        factory = CustomerViewModelFactory(customerRepository)
+    )
+
+    val invoiceRepository = remember {
+        val database = AppDatabase.getInstance(context)
+        InvoiceRepository(database.invoiceDao)
+    }
+    val invoiceViewModel: InvoiceViewModel = viewModel(
+        factory = InvoiceViewModelFactory(invoiceRepository)
+    )
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -61,7 +95,15 @@ fun NavigationDrawerScreen() {
                                 label = { Text(stringResource(screen.title)) },
                                 selected = currentRoute == screen.route,
                                 onClick = {
-                                    navController.navigate(screen.route)
+                                    if (currentRoute != screen.route) {
+                                        navController.navigate(screen.route) {
+                                            popUpTo("customers") {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
                                     scope.launch { drawerState.close() }
                                 },
                                 modifier = Modifier.padding(horizontal = 12.dp)
@@ -70,17 +112,24 @@ fun NavigationDrawerScreen() {
                     }
 
                     NavigationDrawerItem(
-                        icon = {Icon(Icons.Default.Settings, contentDescription = null)},
-                        label = {Text(stringResource(R.string.settings))},
+                        icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                        label = { Text(stringResource(R.string.settings)) },
                         selected = currentRoute == "settings",
                         onClick = {
-                            navController.navigate("settings")
+                            if (currentRoute != "settings") {
+                                navController.navigate("settings") {
+                                    popUpTo("customers") {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
                             scope.launch { drawerState.close() }
                         },
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
                 }
-
             }
         }
     ) {
@@ -99,18 +148,55 @@ fun NavigationDrawerScreen() {
                 )
             }
         ) { padding ->
-            NavigationHost(navController, Modifier.padding(padding))
+            NavigationHost(
+                navController = navController,
+                customerViewModel = customerViewModel,
+                invoiceViewModel = invoiceViewModel,
+                modifier = Modifier.padding(padding)
+            )
         }
     }
 }
 
 @Composable
-fun NavigationHost(navController: NavHostController, modifier: Modifier = Modifier) {
-    NavHost(navController, startDestination = "customers", modifier = modifier) {
-        composable("customers") { CustomerScreen() }
-        composable("invoices") { InvoiceScreen() }
+fun NavigationHost(
+    navController: NavHostController,
+    customerViewModel: CustomerViewModel,
+    invoiceViewModel: InvoiceViewModel,
+    modifier: Modifier = Modifier
+) {
+    NavHost(
+        navController = navController,
+        startDestination = "customers",
+        modifier = modifier,
+    ) {
+        composable("customers") {
+            CustomerScreen(
+                viewModel = customerViewModel,
+                onAddCustomer = { navController.navigate("addCustomer") }
+            )
+        }
+        composable("addCustomer") {
+            CustomerEntryScreen(
+                viewModel = customerViewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable("invoices") {
+            InvoiceScreen(
+                invoiceViewModel = invoiceViewModel,
+                onAddInvoice = { navController.navigate("addInvoice") }
+            )
+        }
+        composable("addInvoice") {
+            InvoiceEntryScreen(
+                invoiceViewModel = invoiceViewModel,
+                customerViewModel = customerViewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
         composable("calendar") { CalendarScreen() }
         composable("analytics") { AnalyticsScreen() }
-        composable("settings") { SettingsScreen()}
+        composable("settings") { SettingsScreen() }
     }
 }

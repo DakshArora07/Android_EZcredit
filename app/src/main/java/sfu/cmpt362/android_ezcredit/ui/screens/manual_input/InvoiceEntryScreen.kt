@@ -1,0 +1,373 @@
+package sfu.cmpt362.android_ezcredit.ui.screens.manual_input
+
+import android.icu.text.SimpleDateFormat
+import android.icu.util.Calendar
+import android.os.Build
+import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import sfu.cmpt362.android_ezcredit.data.entity.Customer
+import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.util.Locale
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun InvoiceEntryScreen(
+    invoiceViewModel: InvoiceViewModel,
+    customerViewModel: CustomerViewModel,
+    onBack: () -> Unit
+) {
+    val context = LocalContext.current
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+
+    var invoiceNumber by rememberSaveable { mutableStateOf("") }
+    var amountText by rememberSaveable { mutableStateOf("") }
+
+    var localIssueDate by rememberSaveable { mutableStateOf(invoiceViewModel.invoice.invDate) }
+    var localDueDate by rememberSaveable { mutableStateOf(invoiceViewModel.invoice.dueDate) }
+
+    val status = invoiceViewModel.invoice.status
+
+    val customers by customerViewModel.customersLiveData.observeAsState(emptyList())
+    var customerSearchQuery by remember { mutableStateOf("") }
+    var selectedCustomer by remember { mutableStateOf<Customer?>(null) }
+    var showCustomerDropdown by remember { mutableStateOf(false) }
+
+    val filteredCustomers = remember(customerSearchQuery, customers) {
+        if (customerSearchQuery.isBlank()) emptyList()
+        else customers.filter { it.name.contains(customerSearchQuery, ignoreCase = true) }.take(5)
+    }
+
+    var showIssueDatePicker by rememberSaveable { mutableStateOf(false) }
+    var showDueDatePicker by rememberSaveable { mutableStateOf(false) }
+
+    // Helpers: Calendar <-> LocalDate <-> millis (UTC start of day)
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun Calendar.toLocalDate(): LocalDate =
+        Instant.ofEpochMilli(timeInMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun LocalDate.toLocalMidnightCalendar(): Calendar =
+        Calendar.getInstance().apply {
+            set(Calendar.YEAR, year)
+            set(Calendar.MONTH, monthValue - 1)
+            set(Calendar.DAY_OF_MONTH, dayOfMonth)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun LocalDate.toUtcStartOfDayMillis(): Long =
+        atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun millisUtcToLocalDate(millis: Long): LocalDate =
+        Instant.ofEpochMilli(millis).atZone(ZoneId.of("UTC")).toLocalDate()
+
+    val issueInitialMillis = remember(localIssueDate) {
+        localIssueDate.toLocalDate().toUtcStartOfDayMillis()
+    }
+    val dueInitialMillis = remember(localDueDate) {
+        localDueDate.toLocalDate().toUtcStartOfDayMillis()
+    }
+
+    val issueDatePickerState = rememberDatePickerState(initialSelectedDateMillis = issueInitialMillis)
+    val dueDatePickerState = rememberDatePickerState(initialSelectedDateMillis = dueInitialMillis)
+
+    var expandedStatus by remember { mutableStateOf(false) }
+    val statusOptions = listOf("Paid", "Unpaid", "PastDue")
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "Add New Invoice",
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Text(
+            text = "Fill in the invoice details below",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Invoice number
+        OutlinedTextField(
+            value = invoiceNumber,
+            onValueChange = { invoiceNumber = it },
+            label = { Text("Invoice Number") },
+            leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Customer dropdown
+        ExposedDropdownMenuBox(
+            expanded = showCustomerDropdown && filteredCustomers.isNotEmpty(),
+            onExpandedChange = {}
+        ) {
+            OutlinedTextField(
+                value = selectedCustomer?.name ?: customerSearchQuery,
+                onValueChange = {
+                    customerSearchQuery = it
+                    selectedCustomer = null
+                    showCustomerDropdown = true
+                },
+                label = { Text("Customer Name") },
+                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                trailingIcon = {
+                    if (selectedCustomer != null) {
+                        IconButton(onClick = {
+                            selectedCustomer = null
+                            customerSearchQuery = ""
+                        }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Clear")
+                        }
+                    }
+                },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+
+            ExposedDropdownMenu(
+                expanded = showCustomerDropdown && filteredCustomers.isNotEmpty(),
+                onDismissRequest = { showCustomerDropdown = false }
+            ) {
+                filteredCustomers.forEach { customer ->
+                    DropdownMenuItem(
+                        text = {
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        customer.name,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Text(
+                                        "ID: ${customer.id}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Text(
+                                    customer.email,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        onClick = {
+                            selectedCustomer = customer
+                            customerSearchQuery = customer.name
+                            showCustomerDropdown = false
+                        }
+                    )
+                }
+            }
+        }
+
+        // Issue date
+        OutlinedTextField(
+            value = dateFormat.format(localIssueDate.time),
+            onValueChange = {},
+            label = { Text("Issue Date") },
+            leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+            trailingIcon = {
+                IconButton(onClick = { showIssueDatePicker = true }) {
+                    Icon(Icons.Default.Edit, contentDescription = "Select Date")
+                }
+            },
+            readOnly = true,
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Due date
+        OutlinedTextField(
+            value = dateFormat.format(localDueDate.time),
+            onValueChange = {},
+            label = { Text("Due Date") },
+            leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+            trailingIcon = {
+                IconButton(onClick = { showDueDatePicker = true }) {
+                    Icon(Icons.Default.Edit, contentDescription = "Select Date")
+                }
+            },
+            readOnly = true,
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Amount
+        OutlinedTextField(
+            value = amountText,
+            onValueChange = { amountText = it },
+            label = { Text("Invoice Total") },
+            leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = null) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+
+        // Status dropdown
+        ExposedDropdownMenuBox(
+            expanded = expandedStatus,
+            onExpandedChange = { expandedStatus = it }
+        ) {
+            OutlinedTextField(
+                value = status.ifEmpty { "Select Status" },
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Status") },
+                leadingIcon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
+                trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+            ExposedDropdownMenu(
+                expanded = expandedStatus,
+                onDismissRequest = { expandedStatus = false }
+            ) {
+                statusOptions.forEach { statusOption ->
+                    DropdownMenuItem(
+                        text = { Text(statusOption) },
+                        onClick = {
+                            expandedStatus = false
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Save button
+        Button(
+            onClick = {
+                if (invoiceNumber.isBlank() ||
+                    selectedCustomer == null ||
+                    amountText.isBlank() ||
+                    status.isBlank()
+                ) {
+                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+                val amount = amountText.toDoubleOrNull()
+                if (amount == null) {
+                    Toast.makeText(context, "Amount must be a number", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+                invoiceViewModel.updateAmountText(amountText)
+                invoiceViewModel.updateInvoice(
+                    invoiceNumber = invoiceNumber,
+                    customerId = selectedCustomer?.id ?: 0,
+                    issueDate = localIssueDate,
+                    dueDate = localDueDate,
+                    amount = amount,
+                    status = status
+                )
+
+                invoiceViewModel.insert()
+                Toast.makeText(context, "Invoice added", Toast.LENGTH_SHORT).show()
+                onBack()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text("Save Invoice", style = MaterialTheme.typography.titleMedium)
+        }
+
+        OutlinedButton(
+            onClick = onBack,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text("Cancel", style = MaterialTheme.typography.titleMedium)
+        }
+    }
+
+    // Issue Date Picker Dialog
+    if (showIssueDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showIssueDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    issueDatePickerState.selectedDateMillis?.let { millis ->
+                        val selectedLocalDate = millisUtcToLocalDate(millis)
+                        localIssueDate = selectedLocalDate.toLocalMidnightCalendar()
+                    }
+                    showIssueDatePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showIssueDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = issueDatePickerState)
+        }
+    }
+
+    if (showDueDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDueDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    dueDatePickerState.selectedDateMillis?.let { millis ->
+                        val selectedLocalDate = millisUtcToLocalDate(millis)
+                        localDueDate = selectedLocalDate.toLocalMidnightCalendar()
+                    }
+                    showDueDatePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDueDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = dueDatePickerState)
+        }
+    }
+}
