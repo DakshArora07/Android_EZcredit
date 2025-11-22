@@ -44,7 +44,8 @@ fun InvoiceEntryScreen(
     var localIssueDate by rememberSaveable { mutableStateOf(invoiceViewModel.invoice.invDate) }
     var localDueDate by rememberSaveable { mutableStateOf(invoiceViewModel.invoice.dueDate) }
 
-    val status = invoiceViewModel.invoice.status
+    var expandedStatus by rememberSaveable { mutableStateOf(false) }
+    var selectedStatus by rememberSaveable { mutableStateOf(invoiceViewModel.invoice.status) }
 
     val customers by customerViewModel.customersLiveData.observeAsState(emptyList())
     var customerSearchQuery by remember { mutableStateOf("") }
@@ -94,7 +95,6 @@ fun InvoiceEntryScreen(
     val issueDatePickerState = rememberDatePickerState(initialSelectedDateMillis = issueInitialMillis)
     val dueDatePickerState = rememberDatePickerState(initialSelectedDateMillis = dueInitialMillis)
 
-    var expandedStatus by remember { mutableStateOf(false) }
     val statusOptions = listOf("Paid", "Unpaid", "PastDue")
 
     Column(
@@ -153,9 +153,7 @@ fun InvoiceEntryScreen(
                     }
                 },
                 singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor()
+                modifier = Modifier.fillMaxWidth().menuAnchor()
             )
 
             ExposedDropdownMenu(
@@ -240,21 +238,23 @@ fun InvoiceEntryScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
-        // Status dropdown
+        // Status dropdown - fixed with selectedStatus update and expanded toggle
         ExposedDropdownMenuBox(
             expanded = expandedStatus,
             onExpandedChange = { expandedStatus = it }
         ) {
             OutlinedTextField(
-                value = status.ifEmpty { "Select Status" },
+                value = selectedStatus.ifEmpty { "Select Status" },
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Status") },
                 leadingIcon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
-                trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor()
+                trailingIcon = {
+                    IconButton(onClick = { expandedStatus = !expandedStatus }) {
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().menuAnchor()
             )
             ExposedDropdownMenu(
                 expanded = expandedStatus,
@@ -264,6 +264,7 @@ fun InvoiceEntryScreen(
                     DropdownMenuItem(
                         text = { Text(statusOption) },
                         onClick = {
+                            selectedStatus = statusOption
                             expandedStatus = false
                         }
                     )
@@ -277,11 +278,13 @@ fun InvoiceEntryScreen(
         Button(
             onClick = {
                 if (invoiceNumber.isBlank() ||
-                    selectedCustomer == null ||
                     amountText.isBlank() ||
-                    status.isBlank()
+                    selectedStatus.isBlank()
                 ) {
                     Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                    return@Button
+                } else if (selectedCustomer == null) {
+                    Toast.makeText(context, "Please enter a valid customer name", Toast.LENGTH_SHORT).show()
                     return@Button
                 }
 
@@ -298,25 +301,21 @@ fun InvoiceEntryScreen(
                     issueDate = localIssueDate,
                     dueDate = localDueDate,
                     amount = amount,
-                    status = status
+                    status = selectedStatus
                 )
 
                 invoiceViewModel.insert()
                 Toast.makeText(context, "Invoice added", Toast.LENGTH_SHORT).show()
                 onBack()
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
+            modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
             Text("Save Invoice", style = MaterialTheme.typography.titleMedium)
         }
 
         OutlinedButton(
             onClick = onBack,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
+            modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
             Text("Cancel", style = MaterialTheme.typography.titleMedium)
         }

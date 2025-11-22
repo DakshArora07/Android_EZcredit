@@ -17,7 +17,6 @@ import androidx.navigation.compose.*
 import kotlinx.coroutines.launch
 import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.data.AppDatabase
-import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.repository.CustomerRepository
 import sfu.cmpt362.android_ezcredit.data.repository.InvoiceRepository
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
