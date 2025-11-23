@@ -1,5 +1,6 @@
 package sfu.cmpt362.android_ezcredit.utils
 
+import android.util.Log
 import com.google.ai.client.generativeai.GenerativeModel
 import sfu.cmpt362.android_ezcredit.BuildConfig
 
@@ -11,17 +12,24 @@ object GeminiHelper {
         apiKey = BuildConfig.GEMINI_API_KEY
     )
 
-    suspend fun generateReminderMessage (
-        customerName: String, invoiceNumber: String, amount: Double, dueDate: String, daysOffset: Int)
-    : String{
-
+    suspend fun generateReminderMessage(
+        customerName: String,
+        invoiceNumber: String,
+        amount: Double,
+        dueDate: String,
+        daysOffset: Int
+    ): String {
         try {
             val prompt = buildPrompt(customerName, invoiceNumber, amount, dueDate, daysOffset)
+            Log.d("GeminiHelper", "Generating message with prompt:\n$prompt")
 
             val response = model.generateContent(prompt)
-            return response.text ?: getDefaultMessage(customerName, invoiceNumber, amount, dueDate, daysOffset)
+            val text = response.text ?: getDefaultMessage(customerName, invoiceNumber, amount, dueDate, daysOffset)
+            Log.d("GeminiHelper", "Generated message: $text")
+
+            return if (text.contains(customerName)) text else "Hi $customerName, $text"
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("GeminiHelper", "Failed generating message, using default", e)
             return getDefaultMessage(customerName, invoiceNumber, amount, dueDate, daysOffset)
         }
     }
@@ -53,6 +61,7 @@ object GeminiHelper {
             Requirements:
             - Be professional and courteous
             - Keep it concise (2-3 sentences)
+            - Must start the message by greeting customer by their name exactly as provided
             - Include the invoice number and amount
             - ${if (daysOffset > 0) "Mention that payment is overdue" else ""}
             - ${if (daysOffset <= 0) "Remind them of the upcoming/current due date" else ""}

@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -18,10 +19,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
+import sfu.cmpt362.android_ezcredit.workers.InvoiceReminderWorker
 
 
 @Composable
@@ -30,6 +35,7 @@ fun CustomerScreen(
     onAddCustomer: (id:Long) -> Unit
 ) {
     val customers by viewModel.customersLiveData.observeAsState(emptyList())
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -57,6 +63,18 @@ fun CustomerScreen(
             FloatingActionButton(onClick = {onAddCustomer(-1)}) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add Customer")
             }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+            onClick = {
+                val workRequest = OneTimeWorkRequestBuilder<InvoiceReminderWorker>().build()
+                WorkManager.getInstance(context).enqueue(workRequest)
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Run Invoice Reminder Worker")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -110,6 +128,7 @@ fun CustomerScreen(
         }
     }
 }
+
 
 @Composable
 fun CustomerCard( name: String, email: String, phone: String, creditScore: Int, onClick: () -> Unit

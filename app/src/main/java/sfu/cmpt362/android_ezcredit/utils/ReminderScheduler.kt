@@ -1,8 +1,10 @@
 package sfu.cmpt362.android_ezcredit.utils
 
 import android.content.Context
+import android.util.Log
 import androidx.work.*
 import sfu.cmpt362.android_ezcredit.workers.InvoiceReminderWorker
+import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 object ReminderScheduler {
@@ -12,24 +14,27 @@ object ReminderScheduler {
     /**
      * Schedule daily invoice reminder checks
      */
+
     fun scheduleInvoiceReminders(context: Context) {
+        Log.d("ReminderScheduler", "Scheduling invoice reminders")
+
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
-        // Run daily at 9 AM
-        val currentTime = java.util.Calendar.getInstance()
-        val targetTime = java.util.Calendar.getInstance().apply {
-            set(java.util.Calendar.HOUR_OF_DAY, 9)
-            set(java.util.Calendar.MINUTE, 0)
-            set(java.util.Calendar.SECOND, 0)
+        val currentTime = Calendar.getInstance()
+        val targetTime = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 9)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
         }
 
         if (targetTime.before(currentTime)) {
-            targetTime.add(java.util.Calendar.DAY_OF_MONTH, 1)
+            targetTime.add(Calendar.DAY_OF_MONTH, 1)
         }
 
         val initialDelay = targetTime.timeInMillis - currentTime.timeInMillis
+        Log.d("ReminderScheduler", "Initial delay for reminders: $initialDelay ms")
 
         val reminderWork = PeriodicWorkRequestBuilder<InvoiceReminderWorker>(
             24, TimeUnit.HOURS,
@@ -46,20 +51,18 @@ object ReminderScheduler {
         )
     }
 
+    fun runReminderCheckNow(context: Context) {
+        Log.d("ReminderScheduler", "Running reminder check now (test)")
+
+        val reminderWork = OneTimeWorkRequestBuilder<InvoiceReminderWorker>().build()
+        WorkManager.getInstance(context).enqueue(reminderWork)
+    }
+
+
     /**
      * Cancel all scheduled reminders
      */
     fun cancelInvoiceReminders(context: Context) {
         WorkManager.getInstance(context).cancelUniqueWork(REMINDER_WORK_NAME)
-    }
-
-    /**
-     * Run reminder check immediately (for testing)
-     */
-    fun runReminderCheckNow(context: Context) {
-        val reminderWork = OneTimeWorkRequestBuilder<InvoiceReminderWorker>()
-            .build()
-
-        WorkManager.getInstance(context).enqueue(reminderWork)
     }
 }
