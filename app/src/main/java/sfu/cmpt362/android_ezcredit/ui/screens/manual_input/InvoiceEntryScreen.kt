@@ -46,9 +46,11 @@ fun InvoiceEntryScreen(
     var selectedStatusFromDB by rememberSaveable { mutableStateOf("") }
     var localIssueDateFromDB by rememberSaveable { mutableStateOf(Calendar.getInstance()) }
     var localDueDateFromDB by rememberSaveable { mutableStateOf(Calendar.getInstance()) }
-    var selectedCustomerFromDB by remember { mutableStateOf<Customer?>(null) }
+//    var selectedCustomerFromDB by remember { mutableStateOf<Customer?>(null) }
+    val selectedCustomerFromDB = customerViewModel.customerFromDB
     var selectedCustomerId by rememberSaveable { mutableStateOf<Long?>(null) }
 
+    var customerSearchQuery by rememberSaveable { mutableStateOf("") }
 
     var hasLoadedFromDb by rememberSaveable { mutableStateOf(false) }
     if(IS_EDIT_MODE && !hasLoadedFromDb){
@@ -64,10 +66,12 @@ fun InvoiceEntryScreen(
                     val id:Long = fetchedInvoice.customerID
                     customerViewModel.getCustomerById(id){fetchedCustomer ->
                         customer = fetchedCustomer
-                        selectedCustomerFromDB = fetchedCustomer
+                       customerViewModel.customerFromDB = fetchedCustomer
                         selectedCustomerId = fetchedCustomer.id
+                        customerSearchQuery = fetchedCustomer.name
                     }
                 }
+
                 hasLoadedFromDb=true
 //            }
         }
@@ -85,9 +89,9 @@ fun InvoiceEntryScreen(
     var selectedStatus by rememberSaveable { mutableStateOf(invoiceViewModel.invoice.status) }
 
     val customers by customerViewModel.customersLiveData.observeAsState(emptyList())
-    var selectdCustomer = customers.firstOrNull { it.id == selectedCustomerId }
-    var customerSearchQuery by rememberSaveable { mutableStateOf("") }
-    var selectedCustomer by rememberSaveable { mutableStateOf<Customer?>(null) }
+    var selectedCustomer = customers.firstOrNull { it.id == selectedCustomerId }
+
+//    var selectedCustomer by rememberSaveable { mutableStateOf<Customer?>(null) }
     var showCustomerDropdown by rememberSaveable { mutableStateOf(false) }
 
     val filteredCustomers = remember(customerSearchQuery, customers) {
@@ -177,7 +181,7 @@ fun InvoiceEntryScreen(
                 onValueChange = { newValue->
                     customerSearchQuery = newValue
                     if (IS_EDIT_MODE) {
-                        selectedCustomerFromDB = null
+                        customerViewModel.customerFromDB=null
 //                        showCustomerDropdown = true
                     } else {
                         selectedCustomer = null
@@ -232,7 +236,7 @@ fun InvoiceEntryScreen(
                         onClick = {
                             customerSearchQuery = customer.name
                             if (IS_EDIT_MODE) {
-                                selectedCustomerFromDB = customer
+                                customerViewModel.customerFromDB = customer
                                 selectedCustomerId = customer.id
                             } else {
                                 selectedCustomer = customer
