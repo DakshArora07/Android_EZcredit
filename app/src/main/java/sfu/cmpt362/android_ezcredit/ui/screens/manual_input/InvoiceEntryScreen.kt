@@ -41,6 +41,7 @@ fun InvoiceEntryScreen(
     val IS_EDIT_MODE = invoiceId >= 0
     var invoice by remember { mutableStateOf<Invoice?>(null) }
     var customer by remember { mutableStateOf<Customer?>(null) }
+    var invoiceIDFromDB: Long by rememberSaveable { mutableStateOf(-1) }
     var invoiceNumberFromDB by rememberSaveable { mutableStateOf("") }
     var invoiceTotalFromDB by rememberSaveable { mutableStateOf("") }
     var selectedStatusFromDB by rememberSaveable { mutableStateOf("") }
@@ -58,6 +59,7 @@ fun InvoiceEntryScreen(
 //            if (invoiceId >= 0L) {
                 invoiceViewModel.getInvoiceById(invoiceId) { fetchedInvoice ->
                     invoice = fetchedInvoice
+                    invoiceIDFromDB = fetchedInvoice.id
                     invoiceNumberFromDB = fetchedInvoice.invoiceNumber
                     invoiceTotalFromDB = fetchedInvoice.amount.toString()
                     selectedStatusFromDB = fetchedInvoice.status
@@ -359,8 +361,8 @@ fun InvoiceEntryScreen(
                             customerViewModel.update(updatedCustomer)
                         }
                     }
-
                     invoiceViewModel.updateInvoice(
+                        invoiceIDFromDB,
                         invoiceNumber = invoiceNumberFromDB,
                         customerId = selectedCustomerFromDB?.id ?: 0,
                         issueDate = localIssueDateFromDB,
@@ -401,6 +403,7 @@ fun InvoiceEntryScreen(
 
                     invoiceViewModel.updateAmountText(amountText)
                     invoiceViewModel.updateInvoice(
+                        invoiceId,
                         invoiceNumber = invoiceNumber,
                         customerId = selectedCustomer?.id ?: 0,
                         issueDate = localIssueDate,

@@ -22,6 +22,7 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
     val invoicesLiveData: LiveData<List<Invoice>> = repository.invoices.asLiveData()
 
     fun updateInvoice(
+        invoiceId:Long,
         invoiceNumber: String,
         customerId: Long,
         issueDate: android.icu.util.Calendar,
@@ -29,15 +30,26 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
         amount: Double,
         status: String
     ) {
-        invoice = invoice.copy(
-
-            invoiceNumber = invoiceNumber,
-            customerID = customerId,
-            invDate = issueDate,
-            dueDate = dueDate,
-            amount = amount,
-            status = status
-        )
+        if(invoiceId==-1L){
+            invoice = invoice.copy(
+                invoiceNumber = invoiceNumber,
+                customerID = customerId,
+                invDate = issueDate,
+                dueDate = dueDate,
+                amount = amount,
+                status = status
+            )
+        }else{
+            invoice = invoice.copy(
+                invoiceId,
+                invoiceNumber = invoiceNumber,
+                customerID = customerId,
+                invDate = issueDate,
+                dueDate = dueDate,
+                amount = amount,
+                status = status
+            )
+        }
     }
     fun update(){
         repository.update(invoice)
