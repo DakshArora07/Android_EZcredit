@@ -3,6 +3,7 @@ package sfu.cmpt362.android_ezcredit.data.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 
@@ -10,6 +11,9 @@ import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 interface InvoiceDao {
     @Insert
     suspend fun insertInvoice(invoice: Invoice)
+
+    @Update
+    suspend fun updateInvoice(invoice: Invoice)
 
     @Query("SELECT * FROM invoice_list")
     fun getInvoices(): Flow<List<Invoice>>

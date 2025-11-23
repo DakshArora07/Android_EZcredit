@@ -30,6 +30,7 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
         status: String
     ) {
         invoice = invoice.copy(
+
             invoiceNumber = invoiceNumber,
             customerID = customerId,
             invDate = issueDate,
@@ -37,6 +38,9 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
             amount = amount,
             status = status
         )
+    }
+    fun update(){
+        repository.update(invoice)
     }
 
     fun updateAmountText(text: String) {

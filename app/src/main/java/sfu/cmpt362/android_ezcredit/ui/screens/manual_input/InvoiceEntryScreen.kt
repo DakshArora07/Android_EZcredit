@@ -368,8 +368,8 @@ fun InvoiceEntryScreen(
                         amount = amount,
                         status = selectedStatusFromDB
                     )
-
-                    invoiceViewModel.insert()
+                    invoiceViewModel.update()
+//                    invoiceViewModel.insert()
                     Toast.makeText(context, "Invoice updated", Toast.LENGTH_SHORT).show()
                     onBack()
                 }else{
