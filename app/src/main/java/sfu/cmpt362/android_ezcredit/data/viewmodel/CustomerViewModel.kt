@@ -26,12 +26,11 @@ class CustomerViewModel(private val repository: CustomerRepository) : ViewModel(
 //    }
 
 
-    fun updateCustomer(name: String, email: String, phone: String, credit: Double) {
+    fun updateCustomer(name: String, email: String, phone: String) {
         customer = customer.copy(
             name = name,
             email = email,
-            phoneNumber = phone,
-            credit = credit
+            phoneNumber = phone
         )
     }
 

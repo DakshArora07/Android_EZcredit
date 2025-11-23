@@ -15,6 +15,11 @@ class InvoiceRepository(private val invoiceDao: InvoiceDao) {
             invoiceDao.insertInvoice(invoice)
         }
     }
+    fun update(invoice: Invoice){
+        CoroutineScope(IO).launch{
+            invoiceDao.updateInvoice(invoice)
+        }
+    }
 
     suspend fun getById(id: Long): Invoice{
         return invoiceDao.getInvoiceById(id)
