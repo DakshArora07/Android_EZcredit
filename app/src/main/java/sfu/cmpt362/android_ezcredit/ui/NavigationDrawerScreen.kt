@@ -174,12 +174,26 @@ fun NavigationHost(
         composable("customers") {
             CustomerScreen(
                 viewModel = customerViewModel,
-                onAddCustomer = { navController.navigate("addCustomer") }
+                onAddCustomer = { customerId:Long ->
+                    if(customerId>=0L){
+                        navController.navigate("addCustomer?customerId=$customerId")
+                    }else{
+                        navController.navigate("addCustomer")
+                    }
+                }
             )
         }
-        composable("addCustomer") {
+        composable("addCustomer?customerId={customerId}",
+            arguments=listOf(
+                navArgument("customerId"){
+                    type = NavType.LongType
+                    defaultValue = -1L
+                }
+            )) {
+            val customerId = it.arguments?.getLong("customerId") ?: -1L
             CustomerEntryScreen(
                 viewModel = customerViewModel,
+                customerId = customerId,
                 onBack = { navController.popBackStack() }
             )
         }

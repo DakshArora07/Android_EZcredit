@@ -21,10 +21,11 @@ import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 @Composable
 fun CustomerEntryScreen(
     viewModel: CustomerViewModel,
+    customerId:Long,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-
+    val IS_EDIT_MODE = customerId>=0
     val name = viewModel.customer.name
     val email = viewModel.customer.email
     val phone = viewModel.customer.phoneNumber
@@ -37,13 +38,13 @@ fun CustomerEntryScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
-            text = "Add New Customer",
+            text = if(IS_EDIT_MODE)"Update Customer" else "Add New Customer",
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.primary
         )
 
         Text(
-            text = "Fill in the customer details below",
+            text = if(IS_EDIT_MODE )"Edit the customer details below" else "Fill in the customer details below",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

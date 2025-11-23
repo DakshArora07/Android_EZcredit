@@ -27,7 +27,7 @@ import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 @Composable
 fun CustomerScreen(
     viewModel: CustomerViewModel,
-    onAddCustomer: () -> Unit
+    onAddCustomer: (id:Long) -> Unit
 ) {
     val customers by viewModel.customersLiveData.observeAsState(emptyList())
 
@@ -54,7 +54,7 @@ fun CustomerScreen(
                 )
             }
 
-            FloatingActionButton(onClick = onAddCustomer) {
+            FloatingActionButton(onClick = {onAddCustomer(-1)}) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add Customer")
             }
         }
@@ -101,7 +101,9 @@ fun CustomerScreen(
                         email = customer.email,
                         phone = customer.phoneNumber,
                         creditScore = customer.creditScore,
-                        onClick = { /* Optionally handle click */ }
+                        onClick = {
+                            onAddCustomer(customer.id)
+                        }
                     )
                 }
             }
