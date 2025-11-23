@@ -15,11 +15,16 @@ class CustomerViewModel(private val repository: CustomerRepository) : ViewModel(
 
     var customer by mutableStateOf(Customer())
         private set
-
+    var customerFromDB by mutableStateOf<Customer?>(null)
+        public set
     var creditText by mutableStateOf("")
         private set
 
     val customersLiveData: LiveData<List<Customer>> = repository.customers.asLiveData()
+//    fun setCustomerFromDB(customer: Customer?) {
+//        customerFromDB = customer
+//    }
+
 
     fun updateCustomer(name: String, email: String, phone: String, credit: Double) {
         customer = customer.copy(
