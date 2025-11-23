@@ -225,7 +225,7 @@ fun NavigationHost(
 
             )
         }
-        composable("calendar") { CalendarScreen() }
+        composable("calendar") { CalendarScreen(invoiceViewModel = invoiceViewModel) }
         composable("analytics") { AnalyticsScreen() }
         composable("settings") { SettingsScreen() }
     }
