@@ -33,8 +33,9 @@ import java.util.Locale
 fun InvoiceScreen(
     invoiceViewModel: InvoiceViewModel,
     invoiceScreenViewModel: InvoiceScreenViewModel = viewModel(),
-    onAddInvoice: () -> Unit
+    onAddInvoice: (invoiceId:Long) -> Unit
 ) {
+    val OPEN_IN_EDIT_MODE:Boolean = false
     val context = LocalContext.current
     val cameraRequest by invoiceScreenViewModel.cameraRequest.collectAsState()
     val showDialog by invoiceScreenViewModel.showDialog.collectAsState()
@@ -110,7 +111,7 @@ fun InvoiceScreen(
                         DropdownMenuItem(
                             text = { Text("Add Manually") },
                             onClick = {
-                                onAddInvoice()
+                                onAddInvoice(-1L)
                                 invoiceScreenViewModel.onDialogDismiss()
                             }
                         )
@@ -157,6 +158,7 @@ fun InvoiceScreen(
                         InvoiceCard(
                             invoice = invoice,
                             onClick = {
+                                onAddInvoice(invoice.id)
                                 Toast.makeText(
                                     context,
                                     "Invoice #${invoice.invoiceNumber} clicked",

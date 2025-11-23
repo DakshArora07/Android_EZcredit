@@ -15,7 +15,7 @@ interface InvoiceDao {
     fun getInvoices(): Flow<List<Invoice>>
 
     @Query("SELECT * FROM invoice_list WHERE id = :key")
-    fun getInvoiceById(key: Long): Invoice
+    suspend fun getInvoiceById(key: Long): Invoice
 
     @Query("SELECT customer_name FROM invoice_list AS i JOIN customer_list AS c ON i.customer_id = c.id WHERE i.id = :key")
     fun getCustomerNameByInvoiceId(key: Long): String

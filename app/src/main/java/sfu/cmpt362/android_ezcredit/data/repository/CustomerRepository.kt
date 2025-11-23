@@ -22,7 +22,7 @@ class CustomerRepository(private val customerDao: CustomerDao) {
         }
     }
 
-    fun getById(id: Long): Customer{
+    suspend fun getById(id: Long): Customer{
         return customerDao.getCustomerById(id)
     }
 

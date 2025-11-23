@@ -16,7 +16,7 @@ class InvoiceRepository(private val invoiceDao: InvoiceDao) {
         }
     }
 
-    fun getById(id: Long): Invoice{
+    suspend fun getById(id: Long): Invoice{
         return invoiceDao.getInvoiceById(id)
     }
 

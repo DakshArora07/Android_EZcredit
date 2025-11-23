@@ -19,7 +19,7 @@ interface CustomerDao {
     fun getCustomers(): Flow<List<Customer>>
 
     @Query("SELECT * FROM customer_list WHERE id = :key")
-    fun getCustomerById(key: Long): Customer
+    suspend fun getCustomerById(key: Long): Customer
 
     @Query("DELETE FROM customer_list WHERE id = :key")
     suspend fun deleteCustomerById(key: Long)
