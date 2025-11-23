@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "186557304878",
+    "project_id": "ezcredit-sfu",
+    "storage_bucket": "ezcredit-sfu.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:186557304878:android:001f4ca361975569228fbf",
+        "android_client_info": {
+          "package_name": "sfu.cmpt362.android_ezcredit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDt1R59gdciTLsbWqzB2OPBBSLWAOeqB_c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
