@@ -6,26 +6,50 @@ import sfu.cmpt362.android_ezcredit.ui.theme.*
 
 object CreditScoreCalculator {
 
-    // Range: 20-100
+    const val BASE_SCORE = 60
+
     fun calculateCreditScore(invoices: List<Invoice>) : Int{
 
-        val baseScore = 20
+        if (invoices.isEmpty()) return BASE_SCORE
 
-        if (invoices.isEmpty()) return baseScore
+        val totalScore = BASE_SCORE + paymentHistoryScore(invoices)
 
-
-        val paymentScore = calculatePaidInvoicesRatio(invoices) * 80
-
-        val totalScore = baseScore + paymentScore
-
-        return totalScore.toInt()
+        return totalScore
     }
 
-    private fun calculatePaidInvoicesRatio(invoices: List<Invoice>) : Double {
+    private fun paymentHistoryScore(invoices: List<Invoice>) : Int {
 
-        val totalInvoices = invoices.size
-        val paidInvoices = invoices.count { it.status == "Paid" }
-        return paidInvoices.toDouble() / totalInvoices.toDouble()
+        var score = 0
+
+        val paidIncrements = listOf(6, 5, 4, 3, 2)
+        val unpaidIncrements = listOf(-2,-3,-4,-5)
+        val overdueIncrements = -6
+
+        val paid = invoices.filter { it.status == "Paid" }
+        val unpaid = invoices.filter { it.status == "Unpaid" }
+        val overdue = invoices.filter { it.status == "PastDue" }
+
+        paid.forEachIndexed { index, _ ->
+            score += if (index < paidIncrements.size) {
+                paidIncrements[index]
+            } else {
+                paidIncrements.last()
+            }
+        }
+
+        unpaid.forEachIndexed { index, _ ->
+            score += if (index < unpaidIncrements.size){
+                unpaidIncrements[index]
+            } else {
+                unpaidIncrements.last()
+            }
+        }
+
+        overdue.forEach { _ ->
+            score += overdueIncrements
+        }
+
+        return score
     }
 
     fun getCreditScoreCategory(score: Int): String {
