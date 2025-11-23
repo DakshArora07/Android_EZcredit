@@ -88,7 +88,11 @@ fun NavigationDrawerScreen() {
                             style = MaterialTheme.typography.titleLarge,
                             modifier = Modifier.padding(16.dp)
                         )
-                        HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
+                        HorizontalDivider(
+                            Modifier,
+                            DividerDefaults.Thickness,
+                            DividerDefaults.color
+                        )
                         Spacer(Modifier.height(8.dp))
                         screens.forEach { screen ->
                             NavigationDrawerItem(
@@ -111,7 +115,6 @@ fun NavigationDrawerScreen() {
                             )
                         }
                     }
-
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Settings, contentDescription = null) },
                         label = { Text(stringResource(R.string.settings)) },
