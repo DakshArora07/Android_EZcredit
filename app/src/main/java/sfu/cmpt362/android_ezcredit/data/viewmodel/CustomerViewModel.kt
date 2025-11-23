@@ -6,6 +6,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.repository.CustomerRepository
 
@@ -42,8 +44,11 @@ class CustomerViewModel(private val repository: CustomerRepository) : ViewModel(
         repository.update(customer)
     }
 
-    fun getById(id: Long): Customer {
-        return repository.getById(id)
+    fun getCustomerById(id: Long, onResult:(Customer)->Unit){
+        viewModelScope.launch{
+            val customer = repository.getById(id)
+            onResult(customer)
+        }
     }
 
     fun delete(id: Long){

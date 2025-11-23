@@ -13,7 +13,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
 import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.data.AppDatabase
@@ -184,14 +186,29 @@ fun NavigationHost(
         composable("invoices") {
             InvoiceScreen(
                 invoiceViewModel = invoiceViewModel,
-                onAddInvoice = { navController.navigate("addInvoice") }
+                onAddInvoice = { invoiceId: Long ->
+                    if(invoiceId>=0L){
+                        navController.navigate("addInvoice?invoiceId=$invoiceId")
+                    }else{
+                        navController.navigate("addInvoice")
+                    }
+                }
             )
         }
-        composable("addInvoice") {
+        composable("addInvoice?invoiceId={invoiceId}",
+            arguments=listOf(
+                navArgument("invoiceId"){
+                    type = NavType.LongType
+                    defaultValue = -1L
+                }
+            )) {
+            val invoiceId = it.arguments?.getLong("invoiceId") ?: -1L
             InvoiceEntryScreen(
                 invoiceViewModel = invoiceViewModel,
                 customerViewModel = customerViewModel,
+                invoiceId = invoiceId,
                 onBack = { navController.popBackStack() }
+
             )
         }
         composable("calendar") { CalendarScreen() }

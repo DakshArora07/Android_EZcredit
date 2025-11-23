@@ -16,7 +16,7 @@ interface InvoiceDao {
     fun getInvoices(): Flow<List<Invoice>>
 
     @Query("SELECT * FROM invoice_list WHERE id = :key")
-    fun getInvoiceById(key: Long): Invoice
+    suspend fun getInvoiceById(key: Long): Invoice
 
     @Query("DELETE FROM invoice_list WHERE id = :key")
     suspend fun deleteInvoiceById(key: Long)

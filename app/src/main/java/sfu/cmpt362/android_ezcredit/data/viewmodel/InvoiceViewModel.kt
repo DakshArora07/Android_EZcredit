@@ -6,6 +6,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.repository.InvoiceRepository
 
@@ -47,8 +49,11 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
         amountText = ""
     }
 
-    fun getById(id: Long): Invoice {
-        return repository.getById(id)
+    fun getInvoiceById(id: Long, onResult: (Invoice) -> Unit){
+        viewModelScope.launch {
+            val invoice = repository.getById(id)
+            onResult(invoice)
+        }
     }
 
     fun delete(id: Long) {
