@@ -51,6 +51,14 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
         return repository.getById(id)
     }
 
+    fun getCustomerNameByInvoiceId(id: Long): String{
+        return repository.getCustomerNameByInvoiceId(id)
+    }
+
+    fun getInvoicesByCustomerId(id: Long): List<Invoice> {
+        return repository.getInvoicesByCustomerId(id)
+    }
+
     fun delete(id: Long) {
         val invoiceList = invoicesLiveData.value
         if (invoiceList != null && invoiceList.isNotEmpty()) {

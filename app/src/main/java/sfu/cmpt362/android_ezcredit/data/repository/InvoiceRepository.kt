@@ -20,6 +20,14 @@ class InvoiceRepository(private val invoiceDao: InvoiceDao) {
         return invoiceDao.getInvoiceById(id)
     }
 
+    fun getCustomerNameByInvoiceId(id: Long): String{
+        return invoiceDao.getCustomerNameByInvoiceId(id)
+    }
+
+    fun getInvoicesByCustomerId(id: Long): List<Invoice>{
+        return invoiceDao.getInvoicesByCustomerId(id)
+    }
+
     fun deleteById(id: Long){
         CoroutineScope(IO).launch {
             invoiceDao.deleteInvoiceById(id)
