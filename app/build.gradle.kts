@@ -102,4 +102,8 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+
+    // Work Schedular
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
 }
