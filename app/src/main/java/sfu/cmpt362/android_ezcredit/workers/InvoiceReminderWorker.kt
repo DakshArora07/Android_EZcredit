@@ -2,7 +2,9 @@ package sfu.cmpt362.android_ezcredit.workers
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -25,14 +27,16 @@ class InvoiceReminderWorker(
 ) : CoroutineWorker(context, params) {
 
     companion object {
-        const val CHANNEL_ID = "invoice_reminders"
-        const val CHANNEL_NAME = "Invoice Reminders"
+        private const val CHANNEL_ID = "invoice_reminders"
+        private const val CHANNEL_NAME = "Invoice Reminders"
         private const val NOTIFICATION_ID_BASE = 1000
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
             Log.d("InvoiceReminderWorker", "Worker started")
+
+            createNotificationChannel()
 
             val database = AppDatabase.getInstance(applicationContext)
             val invoiceRepository = InvoiceRepository(database.invoiceDao)
@@ -52,7 +56,6 @@ class InvoiceReminderWorker(
             }
 
             unpaidInvoices.forEach { invoice ->
-                // Replace clone and cast with safe copy
                 val dueDate = Calendar.getInstance().apply {
                     time = invoice.dueDate.time
                     set(Calendar.HOUR_OF_DAY, 0)
@@ -66,18 +69,15 @@ class InvoiceReminderWorker(
                 Log.d("InvoiceReminderWorker", "Invoice #${invoice.invoiceNumber}: dueDate=$dueDate, daysDifference=$daysDifference")
 
                 val shouldSendReminder = when (daysDifference) {
-                    -3 -> true
-                    0 -> true
-                    3 -> true
-                    5 -> true
+                    -3, 0, 3, 5 -> true
                     else -> false
                 }
 
                 if (shouldSendReminder) {
-                    Log.d("InvoiceReminderWorker", "Sending reminder for invoice #${invoice.invoiceNumber}")
+                    Log.d("InvoiceReminderWorker", "Preparing email intent for invoice #${invoice.invoiceNumber}")
 
                     val customer = customerRepository.getById(invoice.customerID)
-                    Log.d("InvoiceReminderWorker", "Customer found: ${customer.name}")
+                    Log.d("InvoiceReminderWorker", "Customer found: ${customer.name}, email: ${customer.email}")
 
                     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
                     val dueDateStr = dateFormat.format(invoice.dueDate.time)
@@ -90,11 +90,10 @@ class InvoiceReminderWorker(
                         daysOffset = daysDifference
                     )
 
-                    Log.d("InvoiceReminderWorker", "Reminder message: $message")
-
-                    sendReminderNotification(
-                        customer.name,
-                        invoice.invoiceNumber,
+                    sendEmailIntentNotification(
+                        applicationContext,
+                        customer.email,
+                        "Invoice #${invoice.invoiceNumber} Payment Reminder",
                         message,
                         invoice.id.toInt()
                     )
@@ -109,42 +108,53 @@ class InvoiceReminderWorker(
         }
     }
 
-
-    private fun sendReminderNotification(
-        customerName: String,
-        invoiceNumber: String,
-        message: String,
-        notificationId: Int
-    ) {
-        createNotificationChannel()
-        Log.d("InvoiceReminderWorker", "Sending notification for invoice #$invoiceNumber")
-
-        val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Reminder: Invoice #$invoiceNumber")
-            .setContentText("Reminder sent to $customerName")
-            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)  // Use high priority for visibility
-            .setAutoCancel(true)
-            .build()
-
-        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(NOTIFICATION_ID_BASE + notificationId, notification)
-    }
-
-
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH  // Changed to HIGH for better visibility
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Notifications for invoice payment reminders"
             }
-
-            val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager = applicationContext
+                .getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
     }
+
+    private fun sendEmailIntentNotification(
+        context: Context,
+        email: String,
+        subject: String,
+        body: String,
+        notificationId: Int
+    ) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "message/rfc822"
+            putExtra(Intent.EXTRA_EMAIL, arrayOf(email))
+            putExtra(Intent.EXTRA_SUBJECT, subject)
+            putExtra(Intent.EXTRA_TEXT, body)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            Intent.createChooser(intent, "Send Email"),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Send Email: $subject")
+            .setContentText("Tap to send this invoice reminder via email")
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(NOTIFICATION_ID_BASE + notificationId, notification)
+    }
+
 }
