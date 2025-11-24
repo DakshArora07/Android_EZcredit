@@ -23,6 +23,7 @@ import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
+import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceScreenViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -35,6 +36,7 @@ fun InvoiceEntryScreen(
     invoiceViewModel: InvoiceViewModel,
     customerViewModel: CustomerViewModel,
     invoiceId: Long,
+    ocrResult: InvoiceScreenViewModel.OcrInvoiceResult? = null,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -103,6 +105,35 @@ fun InvoiceEntryScreen(
 
     var showIssueDatePicker by rememberSaveable { mutableStateOf(false) }
     var showDueDatePicker by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(ocrResult) {
+        ocrResult?.let { result ->
+            if (!IS_EDIT_MODE) {
+                invoiceNumber = result.invoiceNumber ?: ""
+                amountText = result.amount ?: ""
+                customerSearchQuery = result.customerName ?: ""
+
+                result.issueDate?.let { dateStr ->
+                    val parts = dateStr.split("-")
+                    if (parts.size == 3) {
+                        val cal = Calendar.getInstance()
+                        cal.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
+                        localIssueDate = cal
+                    }
+                }
+                result.dueDate?.let { dateStr ->
+                    val parts = dateStr.split("-")
+                    if (parts.size == 3) {
+                        val cal = Calendar.getInstance()
+                        cal.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
+                        localDueDate = cal
+                    }
+                }
+            }
+
+        }
+    }
+
 
     // Helpers: Calendar <-> LocalDate <-> millis (UTC start of day)
     @RequiresApi(Build.VERSION_CODES.O)
