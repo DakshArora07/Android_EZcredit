@@ -39,6 +39,7 @@ import java.util.Locale
 fun InvoiceEntryScreen(
     invoiceViewModel: InvoiceViewModel,
     customerViewModel: CustomerViewModel,
+    invoiceScreenViewModel: InvoiceScreenViewModel,
     invoiceId: Long,
     ocrResult: InvoiceScreenViewModel.OcrInvoiceResult? = null,
     onBack: () -> Unit
@@ -475,7 +476,9 @@ fun InvoiceEntryScreen(
         }
 
         OutlinedButton(
-            onClick = onBack,
+            onClick = {
+                onBack()
+            },
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
             Text("Cancel", style = MaterialTheme.typography.titleMedium)
