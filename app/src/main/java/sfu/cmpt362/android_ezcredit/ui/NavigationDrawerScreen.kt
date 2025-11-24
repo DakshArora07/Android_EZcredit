@@ -193,6 +193,7 @@ fun NavigationHost(
             val customerId = it.arguments?.getLong("customerId") ?: -1L
             CustomerEntryScreen(
                 viewModel = customerViewModel,
+                invoiceViewModel = invoiceViewModel,
                 customerId = customerId,
                 onBack = { navController.popBackStack() }
             )

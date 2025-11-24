@@ -29,7 +29,7 @@ class InvoiceRepository(private val invoiceDao: InvoiceDao) {
         return invoiceDao.getCustomerNameByInvoiceId(id)
     }
 
-    fun getInvoicesByCustomerId(id: Long): List<Invoice>{
+    suspend fun getInvoicesByCustomerId(id: Long): List<Invoice>{
         return invoiceDao.getInvoicesByCustomerId(id)
     }
 
