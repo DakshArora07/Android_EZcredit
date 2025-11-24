@@ -4,8 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -13,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -24,10 +25,11 @@ import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.CalendarScreenViewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Receipt
 import java.text.SimpleDateFormat
-import java.util.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import java.util.Calendar
+import java.util.Locale
 
 data class DueDate(
     val date: Int,
@@ -116,13 +118,15 @@ fun CalendarScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
                     .padding(32.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 Header()
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    verticalAlignment = Alignment.Top
                 ) {
                     CalendarCard(
                         modifier = Modifier.weight(2f),
@@ -221,66 +225,79 @@ fun InvoiceItem(
     invoice: Invoice,
     onClick: () -> Unit
 ) {
-    val statusInfo = when (invoice.status) {
-        "Paid" -> Triple(
-            Color(0xFFDCFCE7),
-            Color(0xFF166534),
-            "Paid"
-        )
-        "Unpaid" -> Triple(
-            Color(0xFFFEF3C7),
-            Color(0xFF854D0E),
-            "Pending"
-        )
-        "PastDue" -> Triple(
-            Color(0xFFFEE2E2),
-            Color(0xFF991B1B),
-            "Overdue"
-        )
-        else -> Triple(
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.onSurfaceVariant,
-            invoice.status
-        )
-    }
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
+            .clickable { onClick() },
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = invoice.invoiceNumber,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Receipt,
+                contentDescription = "Invoice Icon",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(40.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp)
             ) {
                 Text(
-                    text = "$${String.format("%.2f", invoice.amount)}",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    text = "Invoice #${invoice.invoiceNumber}",
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
-                    text = statusInfo.third,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(statusInfo.first)
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = statusInfo.second
+                    text = "Amount: $${String.format("%.2f", invoice.amount)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Text(
+                    text = "Due: ${dateFormat.format(invoice.dueDate.time)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Status badge
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                color = when (invoice.status) {
+                    "Paid" -> MaterialTheme.colorScheme.primaryContainer
+                    "Unpaid" -> MaterialTheme.colorScheme.secondaryContainer
+                    "PastDue" -> MaterialTheme.colorScheme.errorContainer
+                    else -> MaterialTheme.colorScheme.surfaceVariant
+                }
+            ) {
+                Text(
+                    text = when (invoice.status) {
+                        "PastDue" -> "Past Due"
+                        else -> invoice.status
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = when (invoice.status) {
+                        "Paid" -> MaterialTheme.colorScheme.onPrimaryContainer
+                        "Unpaid" -> MaterialTheme.colorScheme.onSecondaryContainer
+                        "PastDue" -> MaterialTheme.colorScheme.onErrorContainer
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 )
             }
         }
@@ -291,7 +308,7 @@ fun InvoiceItem(
 fun Legend(color: Color, label: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Box(
             modifier = Modifier
@@ -389,7 +406,7 @@ fun CalendarCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Calendar Grid
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
                 // Day Headers
                 Row(modifier = Modifier.fillMaxWidth()) {
                     listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").forEach { day ->
@@ -406,34 +423,36 @@ fun CalendarCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Calendar Days
-                days.chunked(7).forEach { week ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        week.forEach { day ->
-                            val dayInvoices = day?.let { invoicesByDate[it] } ?: emptyList()
-                            CalendarDay(
-                                day = day,
-                                invoices = dayInvoices,
-                                isSelected = selectedDate?.date == day &&
-                                        selectedDate?.month == currentDate.get(Calendar.MONTH) &&
-                                        selectedDate.year == currentDate.get(Calendar.YEAR),
-                                isToday = day != null &&
-                                        day == today.get(Calendar.DAY_OF_MONTH) &&
-                                        currentDate.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
-                                        currentDate.get(Calendar.YEAR) == today.get(Calendar.YEAR),
-                                onDayClick = {
-                                    if (day != null) {
-                                        onDayClick(day)
-                                    }
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                        repeat(7 - week.size) {
-                            Spacer(modifier = Modifier.weight(1f))
+                // Calendar Days with spacing between rows
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    days.chunked(7).forEach { week ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            week.forEach { day ->
+                                val dayInvoices = day?.let { invoicesByDate[it] } ?: emptyList()
+                                CalendarDay(
+                                    day = day,
+                                    invoices = dayInvoices,
+                                    isSelected = selectedDate?.date == day &&
+                                            selectedDate?.month == currentDate.get(Calendar.MONTH) &&
+                                            selectedDate.year == currentDate.get(Calendar.YEAR),
+                                    isToday = day != null &&
+                                            day == today.get(Calendar.DAY_OF_MONTH) &&
+                                            currentDate.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
+                                            currentDate.get(Calendar.YEAR) == today.get(Calendar.YEAR),
+                                    onDayClick = {
+                                        if (day != null) {
+                                            onDayClick(day)
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            repeat(7 - week.size) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
@@ -473,11 +492,10 @@ fun CalendarDay(
     val borderColor = when {
         day == null -> Color.Transparent
         isSelected -> MaterialTheme.colorScheme.primary
-        invoices.isNotEmpty() -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
         else -> Color(0xFFE0E0E0)
     }
 
-    val borderWidth = if (isSelected) 3.dp else 2.dp
+    val borderWidth = if (isSelected) 2.dp else 1.dp
 
     val textColor = when {
         day == null -> Color.Transparent
@@ -488,29 +506,32 @@ fun CalendarDay(
     Box(
         modifier = modifier
             .aspectRatio(1f)
+            .clickable(enabled = day != null) { onDayClick() }
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
-            .padding(2.dp)
-            .border(borderWidth, borderColor, RoundedCornerShape(8.dp))
-            .clickable(enabled = day != null) { onDayClick() },
+            .border(borderWidth, borderColor, RoundedCornerShape(8.dp)),
         contentAlignment = Alignment.Center
     ) {
         if (day != null) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxSize()
             ) {
                 Text(
                     text = day.toString(),
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     fontWeight = if (isToday) FontWeight.Bold else FontWeight.SemiBold,
                     color = textColor
                 )
 
                 // Show status dots for invoices
                 if (invoices.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Spacer(modifier = Modifier.height(0.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         val statusColors = invoices.map { invoice ->
                             when (invoice.status) {
                                 "Paid" -> Color(0xFF22C55E)
@@ -520,13 +541,16 @@ fun CalendarDay(
                             }
                         }.distinct().take(3)
 
-                        statusColors.forEach { color ->
+                        statusColors.forEachIndexed { index, color ->
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
+                                    .size(4.dp)
                                     .clip(CircleShape)
                                     .background(color)
                             )
+                            if (index < statusColors.size - 1) {
+                                Spacer(modifier = Modifier.width(3.dp))
+                            }
                         }
                     }
                 }
