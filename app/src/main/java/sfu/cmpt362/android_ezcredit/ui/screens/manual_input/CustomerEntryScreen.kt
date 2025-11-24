@@ -195,10 +195,11 @@ fun CustomerEntryScreen(
                     }
 
                 if (IS_EDIT_MODE) {
-                    viewModel.updateCustomer(capitalizedName, currentEmail, currentPhone)
+                    val customer = viewModel.updateCustomer(customerId,capitalizedName, currentEmail, currentPhone)
+                    viewModel.update(customer)
                     Toast.makeText(context, "Customer updated", Toast.LENGTH_SHORT).show()
                 } else {
-                    viewModel.updateCustomer(capitalizedName, currentEmail, currentPhone)
+                    viewModel.updateCustomer(customerId,capitalizedName, currentEmail, currentPhone)
                     viewModel.insert()
                     Toast.makeText(context, "Customer added", Toast.LENGTH_SHORT).show()
                 }

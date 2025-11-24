@@ -19,10 +19,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
+import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceScreenViewModel
+import sfu.cmpt362.android_ezcredit.utils.CreditScoreCalculator
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -35,18 +40,20 @@ fun InvoiceEntryScreen(
     invoiceViewModel: InvoiceViewModel,
     customerViewModel: CustomerViewModel,
     invoiceId: Long,
+    ocrResult: InvoiceScreenViewModel.OcrInvoiceResult? = null,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val IS_EDIT_MODE = invoiceId >= 0
+    val coroutineScope = rememberCoroutineScope()
     var invoice by remember { mutableStateOf<Invoice?>(null) }
     var customer by remember { mutableStateOf<Customer?>(null) }
+    var invoiceIDFromDB: Long by rememberSaveable { mutableStateOf(-1) }
     var invoiceNumberFromDB by rememberSaveable { mutableStateOf("") }
     var invoiceTotalFromDB by rememberSaveable { mutableStateOf("") }
     var selectedStatusFromDB by rememberSaveable { mutableStateOf("") }
     var localIssueDateFromDB by rememberSaveable { mutableStateOf(Calendar.getInstance()) }
     var localDueDateFromDB by rememberSaveable { mutableStateOf(Calendar.getInstance()) }
-//    var selectedCustomerFromDB by remember { mutableStateOf<Customer?>(null) }
     val selectedCustomerFromDB = customerViewModel.customerFromDB
     var selectedCustomerId by rememberSaveable { mutableStateOf<Long?>(null) }
 
@@ -55,25 +62,23 @@ fun InvoiceEntryScreen(
     var hasLoadedFromDb by rememberSaveable { mutableStateOf(false) }
     if(IS_EDIT_MODE && !hasLoadedFromDb){
         LaunchedEffect(invoiceId) {
-//            if (invoiceId >= 0L) {
-                invoiceViewModel.getInvoiceById(invoiceId) { fetchedInvoice ->
-                    invoice = fetchedInvoice
-                    invoiceNumberFromDB = fetchedInvoice.invoiceNumber
-                    invoiceTotalFromDB = fetchedInvoice.amount.toString()
-                    selectedStatusFromDB = fetchedInvoice.status
-                    localIssueDateFromDB  = fetchedInvoice.invDate
-                    localDueDateFromDB = fetchedInvoice.dueDate
-                    val id:Long = fetchedInvoice.customerID
-                    customerViewModel.getCustomerById(id){fetchedCustomer ->
-                        customer = fetchedCustomer
-                       customerViewModel.customerFromDB = fetchedCustomer
-                        selectedCustomerId = fetchedCustomer.id
-                        customerSearchQuery = fetchedCustomer.name
-                    }
+            invoiceViewModel.getInvoiceById(invoiceId) { fetchedInvoice ->
+                invoice = fetchedInvoice
+                invoiceIDFromDB = fetchedInvoice.id
+                invoiceNumberFromDB = fetchedInvoice.invoiceNumber
+                invoiceTotalFromDB = fetchedInvoice.amount.toString()
+                selectedStatusFromDB = fetchedInvoice.status
+                localIssueDateFromDB  = fetchedInvoice.invDate
+                localDueDateFromDB = fetchedInvoice.dueDate
+                val id:Long = fetchedInvoice.customerID
+                customerViewModel.getCustomerById(id){fetchedCustomer ->
+                    customer = fetchedCustomer
+                    customerViewModel.customerFromDB = fetchedCustomer
+                    selectedCustomerId = fetchedCustomer.id
+                    customerSearchQuery = fetchedCustomer.name
                 }
-
-                hasLoadedFromDb=true
-//            }
+            }
+            hasLoadedFromDb=true
         }
     }
 
@@ -91,7 +96,6 @@ fun InvoiceEntryScreen(
     val customers by customerViewModel.customersLiveData.observeAsState(emptyList())
     var selectedCustomer = customers.firstOrNull { it.id == selectedCustomerId }
 
-//    var selectedCustomer by rememberSaveable { mutableStateOf<Customer?>(null) }
     var showCustomerDropdown by rememberSaveable { mutableStateOf(false) }
 
     val filteredCustomers = remember(customerSearchQuery, customers) {
@@ -101,6 +105,35 @@ fun InvoiceEntryScreen(
 
     var showIssueDatePicker by rememberSaveable { mutableStateOf(false) }
     var showDueDatePicker by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(ocrResult) {
+        ocrResult?.let { result ->
+            if (!IS_EDIT_MODE) {
+                invoiceNumber = result.invoiceNumber ?: ""
+                amountText = result.amount ?: ""
+                customerSearchQuery = result.customerName ?: ""
+
+                result.issueDate?.let { dateStr ->
+                    val parts = dateStr.split("-")
+                    if (parts.size == 3) {
+                        val cal = Calendar.getInstance()
+                        cal.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
+                        localIssueDate = cal
+                    }
+                }
+                result.dueDate?.let { dateStr ->
+                    val parts = dateStr.split("-")
+                    if (parts.size == 3) {
+                        val cal = Calendar.getInstance()
+                        cal.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
+                        localDueDate = cal
+                    }
+                }
+            }
+
+        }
+    }
+
 
     // Helpers: Calendar <-> LocalDate <-> millis (UTC start of day)
     @RequiresApi(Build.VERSION_CODES.O)
@@ -177,15 +210,12 @@ fun InvoiceEntryScreen(
         ) {
             OutlinedTextField(
                 value = if(IS_EDIT_MODE)selectedCustomerFromDB?.name ?: customerSearchQuery else selectedCustomer?.name ?: customerSearchQuery,
-                    //if (IS_EDIT_MODE) selectdCustomer?.name ?: customerSearchQuery else selectedCustomer?.name ?: customerSearchQuery,
                 onValueChange = { newValue->
                     customerSearchQuery = newValue
                     if (IS_EDIT_MODE) {
                         customerViewModel.customerFromDB=null
-//                        showCustomerDropdown = true
                     } else {
                         selectedCustomer = null
-//                        showCustomerDropdown = true
                     }
                 },
                 label = { Text("Customer Name") },
@@ -340,80 +370,104 @@ fun InvoiceEntryScreen(
         // Save button
         Button(
             onClick = {
-                if(IS_EDIT_MODE){
-                    val amount = invoiceTotalFromDB.toDoubleOrNull()
-                    if (invoiceNumberFromDB.isBlank() || amount == null || selectedStatusFromDB.isBlank()) {
+                if (IS_EDIT_MODE) {
+                    val newAmount = invoiceTotalFromDB.toDoubleOrNull()
+                    if (invoiceNumberFromDB.isBlank() || newAmount == null || selectedStatusFromDB.isBlank()) {
                         Toast.makeText(context, "Please fill all fields correctly", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
-                    if(selectedCustomerFromDB==null){
+                    if (selectedCustomerFromDB == null) {
                         Toast.makeText(context, "Please enter a valid Customer", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
 
-                    if (selectedStatusFromDB == "Unpaid" || selectedStatusFromDB == "PastDue") {
-                        selectedCustomerFromDB?.let { cust ->
+                    val oldAmount = invoice?.amount ?: 0.0
+                    val amountDifference = newAmount - oldAmount
+                    if ((selectedStatusFromDB == "Unpaid" || selectedStatusFromDB == "PastDue") && amountDifference != 0.0) {
+                        selectedCustomerFromDB.let { cust ->
                             val updatedCustomer = cust.copy(
-                                credit = cust.credit + amount
+                                credit = cust.credit + amountDifference
                             )
                             customerViewModel.update(updatedCustomer)
                         }
                     }
 
                     invoiceViewModel.updateInvoice(
+                        invoiceIDFromDB,
                         invoiceNumber = invoiceNumberFromDB,
                         customerId = selectedCustomerFromDB?.id ?: 0,
                         issueDate = localIssueDateFromDB,
                         dueDate = localDueDateFromDB,
-                        amount = amount,
+                        amount = newAmount,
                         status = selectedStatusFromDB
                     )
                     invoiceViewModel.update()
-//                    invoiceViewModel.insert()
                     Toast.makeText(context, "Invoice updated", Toast.LENGTH_SHORT).show()
                     onBack()
-                }else{
-                    if (invoiceNumber.isBlank() ||
-                        amountText.isBlank() ||
-                        selectedStatus.isBlank()
-                    ) {
-                        Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    } else if (selectedCustomer == null) {
-                        Toast.makeText(context, "Please enter a valid customer name", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
+                } else {
+                    coroutineScope.launch {
+                        if (invoiceNumber.isBlank() ||
+                            amountText.isBlank() ||
+                            selectedStatus.isBlank()
+                        ) {
+                            Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                            return@launch
+                        } else if (selectedCustomer == null) {
+                            Toast.makeText(context, "Please enter a valid customer name", Toast.LENGTH_SHORT).show()
+                            return@launch
+                        }
 
-                    val amount = amountText.toDoubleOrNull()
-                    if (amount == null) {
-                        Toast.makeText(context, "Amount must be a number", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
+                        val amount = amountText.toDoubleOrNull()
+                        if (amount == null) {
+                            Toast.makeText(context, "Amount must be a number", Toast.LENGTH_SHORT).show()
+                            return@launch
+                        }
 
-                    if (selectedStatus == "Unpaid" || selectedStatus == "PastDue") {
-                        selectedCustomer?.let { customer ->
-                            val updatedCustomer = customer.copy(
-                                credit = customer.credit + amount
+                        try {
+                            invoiceViewModel.updateAmountText(amountText)
+                            invoiceViewModel.updateInvoice(
+                                invoiceId,
+                                invoiceNumber = invoiceNumber,
+                                customerId = selectedCustomer?.id ?: 0,
+                                issueDate = localIssueDate,
+                                dueDate = localDueDate,
+                                amount = amount,
+                                status = selectedStatus
                             )
-                            customerViewModel.update(updatedCustomer)
+
+                            withContext(Dispatchers.IO) {
+                                invoiceViewModel.insert()
+                            }
+                            selectedCustomer?.let { customer ->
+                                withContext(Dispatchers.IO) {
+                                    val updatedCredit = if (selectedStatus == "Unpaid" || selectedStatus == "PastDue") {
+                                        customer.credit + amount
+                                    } else {
+                                        customer.credit
+                                    }
+                                    val invoices = invoiceViewModel.getInvoicesByCustomerId(customer.id)
+                                    val newCreditScore = CreditScoreCalculator.calculateCreditScore(invoices)
+                                    val updatedCustomer = customer.copy(
+                                        credit = updatedCredit,
+                                        creditScore = newCreditScore
+                                    )
+
+                                    customerViewModel.update(updatedCustomer)
+                                }
+                            }
+
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Invoice added", Toast.LENGTH_SHORT).show()
+                                onBack()
+                            }
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                            e.printStackTrace()
                         }
                     }
-
-                    invoiceViewModel.updateAmountText(amountText)
-                    invoiceViewModel.updateInvoice(
-                        invoiceNumber = invoiceNumber,
-                        customerId = selectedCustomer?.id ?: 0,
-                        issueDate = localIssueDate,
-                        dueDate = localDueDate,
-                        amount = amount,
-                        status = selectedStatus
-                    )
-
-                    invoiceViewModel.insert()
-                    Toast.makeText(context, "Invoice added", Toast.LENGTH_SHORT).show()
-                    onBack()
                 }
-
             },
             modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {

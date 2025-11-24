@@ -32,6 +32,7 @@ import sfu.cmpt362.android_ezcredit.ui.screens.AnalyticsScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.SettingsScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.manual_input.CustomerEntryScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.manual_input.InvoiceEntryScreen
+import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceScreenViewModel
 
 data class Screen(
     val route: String,
@@ -88,7 +89,11 @@ fun NavigationDrawerScreen() {
                             style = MaterialTheme.typography.titleLarge,
                             modifier = Modifier.padding(16.dp)
                         )
-                        HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
+                        HorizontalDivider(
+                            Modifier,
+                            DividerDefaults.Thickness,
+                            DividerDefaults.color
+                        )
                         Spacer(Modifier.height(8.dp))
                         screens.forEach { screen ->
                             NavigationDrawerItem(
@@ -111,7 +116,6 @@ fun NavigationDrawerScreen() {
                             )
                         }
                     }
-
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Settings, contentDescription = null) },
                         label = { Text(stringResource(R.string.settings)) },
@@ -206,23 +210,58 @@ fun NavigationHost(
                     }else{
                         navController.navigate("addInvoice")
                     }
+                },
+                onScanCompleted = { ocrResult ->
+                    navController.navigate(
+                        "addInvoice?invoiceId=-1&ocrInvoiceNumber=${ocrResult.invoiceNumber.orEmpty()}" +
+                                "&ocrAmount=${ocrResult.amount.orEmpty()}&ocrCustomer=${ocrResult.customerName.orEmpty()}"
+                    )
                 }
+
             )
         }
-        composable("addInvoice?invoiceId={invoiceId}",
-            arguments=listOf(
-                navArgument("invoiceId"){
+        composable(
+            "addInvoice?invoiceId={invoiceId}&ocrInvoiceNumber={ocrInvoiceNumber}&ocrAmount={ocrAmount}&ocrCustomer={ocrCustomer}",
+            arguments = listOf(
+                navArgument("invoiceId") {
                     type = NavType.LongType
                     defaultValue = -1L
+                },
+                navArgument("ocrInvoiceNumber") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("ocrAmount") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("ocrCustomer") {
+                    type = NavType.StringType
+                    defaultValue = ""
                 }
-            )) {
+            )
+        ) {
             val invoiceId = it.arguments?.getLong("invoiceId") ?: -1L
+            val ocrInvoiceNumber = it.arguments?.getString("ocrInvoiceNumber")?.takeIf { it.isNotBlank() }
+            val ocrAmount = it.arguments?.getString("ocrAmount")?.takeIf { it.isNotBlank() }
+            val ocrCustomer = it.arguments?.getString("ocrCustomer")?.takeIf { it.isNotBlank() }
+
+            val ocrResult = if (ocrInvoiceNumber != null || ocrAmount != null || ocrCustomer != null) {
+                InvoiceScreenViewModel.OcrInvoiceResult(
+                    invoiceNumber = ocrInvoiceNumber,
+                    amount = ocrAmount,
+                    customerName = ocrCustomer,
+                    issueDate = null,
+                    dueDate = null
+                )
+            } else null
+
             InvoiceEntryScreen(
                 invoiceViewModel = invoiceViewModel,
                 customerViewModel = customerViewModel,
                 invoiceId = invoiceId,
+                ocrResult = ocrResult, // pass OCR data here
                 onBack = { navController.popBackStack() }
-
             )
         }
         composable("calendar") { CalendarScreen(invoiceViewModel = invoiceViewModel) }

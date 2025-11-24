@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -18,10 +19,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
+import sfu.cmpt362.android_ezcredit.ui.theme.Red
+import sfu.cmpt362.android_ezcredit.utils.CreditScoreCalculator
+import sfu.cmpt362.android_ezcredit.workers.InvoiceReminderWorker
 
 
 @Composable
@@ -30,6 +37,7 @@ fun CustomerScreen(
     onAddCustomer: (id:Long) -> Unit
 ) {
     val customers by viewModel.customersLiveData.observeAsState(emptyList())
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -57,6 +65,18 @@ fun CustomerScreen(
             FloatingActionButton(onClick = {onAddCustomer(-1)}) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add Customer")
             }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+            onClick = {
+                val workRequest = OneTimeWorkRequestBuilder<InvoiceReminderWorker>().build()
+                WorkManager.getInstance(context).enqueue(workRequest)
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Run Invoice Reminder Worker")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -99,8 +119,8 @@ fun CustomerScreen(
                     CustomerCard(
                         name = customer.name,
                         email = customer.email,
-                        phone = customer.phoneNumber,
                         creditScore = customer.creditScore,
+                        credit = customer.credit,
                         onClick = {
                             onAddCustomer(customer.id)
                         }
@@ -111,8 +131,9 @@ fun CustomerScreen(
     }
 }
 
+
 @Composable
-fun CustomerCard( name: String, email: String, phone: String, creditScore: Int, onClick: () -> Unit
+fun CustomerCard( name: String, email: String, credit: Double, creditScore: Int, onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -131,7 +152,7 @@ fun CustomerCard( name: String, email: String, phone: String, creditScore: Int, 
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(text = name, style = MaterialTheme.typography.titleMedium)
-                Text(text = "Credit Score: $creditScore", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "Credit Score: $creditScore", style = MaterialTheme.typography.bodyMedium, color = CreditScoreCalculator.getCreditScoreColor(creditScore))
             }
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -142,6 +163,14 @@ fun CustomerCard( name: String, email: String, phone: String, creditScore: Int, 
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(text = email, style = MaterialTheme.typography.bodyMedium)
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "Credit: $$credit", style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

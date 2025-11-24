@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -33,13 +34,22 @@ import java.util.Locale
 fun InvoiceScreen(
     invoiceViewModel: InvoiceViewModel,
     invoiceScreenViewModel: InvoiceScreenViewModel = viewModel(),
-    onAddInvoice: (invoiceId:Long) -> Unit
+    onAddInvoice: (invoiceId:Long) -> Unit,
+    onScanCompleted: (InvoiceScreenViewModel.OcrInvoiceResult) -> Unit
 ) {
-    val OPEN_IN_EDIT_MODE:Boolean = false
     val context = LocalContext.current
     val cameraRequest by invoiceScreenViewModel.cameraRequest.collectAsState()
     val showDialog by invoiceScreenViewModel.showDialog.collectAsState()
     val invoices by invoiceViewModel.invoicesLiveData.observeAsState(emptyList())
+
+    val ocrResult by invoiceScreenViewModel.ocrResult.collectAsState()
+
+    LaunchedEffect(ocrResult) {
+        ocrResult?.let { result ->
+            onScanCompleted(result)
+
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -54,7 +64,7 @@ fun InvoiceScreen(
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicturePreview()
     ) { bitmap ->
-        bitmap?.let { invoiceScreenViewModel.onBitmapCaptured(it, context) }
+        bitmap?.let { invoiceScreenViewModel.onBitmapCaptured(it) }
         invoiceScreenViewModel.onCameraHandled()
     }
 
@@ -159,11 +169,6 @@ fun InvoiceScreen(
                             invoice = invoice,
                             onClick = {
                                 onAddInvoice(invoice.id)
-                                Toast.makeText(
-                                    context,
-                                    "Invoice #${invoice.invoiceNumber} clicked",
-                                    Toast.LENGTH_SHORT
-                                ).show()
                             }
                         )
                     }

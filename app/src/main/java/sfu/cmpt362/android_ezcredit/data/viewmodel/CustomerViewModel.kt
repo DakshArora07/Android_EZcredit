@@ -26,12 +26,22 @@ class CustomerViewModel(private val repository: CustomerRepository) : ViewModel(
 //    }
 
 
-    fun updateCustomer(name: String, email: String, phone: String) {
-        customer = customer.copy(
-            name = name,
-            email = email,
-            phoneNumber = phone
-        )
+    fun updateCustomer(customerId:Long, name: String, email: String, phone: String):Customer {
+        if(customerId==-1L){
+            customer = customer.copy(
+                name = name,
+                email = email,
+                phoneNumber = phone
+            )
+        }else{
+            customer = customer.copy(
+                customerId,
+                name = name,
+                email = email,
+                phoneNumber = phone
+            )
+        }
+        return customer
     }
 
     fun updateCreditText(text: String) {
@@ -44,7 +54,7 @@ class CustomerViewModel(private val repository: CustomerRepository) : ViewModel(
         creditText = ""
     }
 
-    fun update(customer: Customer) {
+    fun update(customer:Customer) {
         repository.update(customer)
     }
 
