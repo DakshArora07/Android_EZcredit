@@ -4,6 +4,7 @@ package sfu.cmpt362.android_ezcredit.data.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ColumnInfo
+import sfu.cmpt362.android_ezcredit.utils.CreditScoreCalculator
 
 @Entity(tableName = "customer_list")
 data class Customer (
@@ -21,7 +22,7 @@ data class Customer (
     val phoneNumber: String = "",
 
     @ColumnInfo(name = "customer_credit_score")
-    val creditScore: Int = 0,
+    val creditScore: Int = CreditScoreCalculator.BASE_SCORE,
 
     @ColumnInfo(name = "customer_credit")
     val credit: Double = 0.0

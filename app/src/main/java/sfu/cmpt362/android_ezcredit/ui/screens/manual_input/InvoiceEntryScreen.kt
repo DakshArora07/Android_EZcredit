@@ -21,10 +21,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
+import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceScreenViewModel
+import sfu.cmpt362.android_ezcredit.utils.CreditScoreCalculator
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -37,11 +42,13 @@ fun InvoiceEntryScreen(
     invoiceViewModel: InvoiceViewModel,
     customerViewModel: CustomerViewModel,
     invoiceId: Long,
+    ocrResult: InvoiceScreenViewModel.OcrInvoiceResult? = null,
     onBack: () -> Unit
 ) {
     var ALLOW_TO_EDIT by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     val IS_EDIT_MODE = invoiceId >= 0
+    val coroutineScope = rememberCoroutineScope()
     var invoice by remember { mutableStateOf<Invoice?>(null) }
     var customer by remember { mutableStateOf<Customer?>(null) }
     var invoiceIDFromDB: Long by rememberSaveable { mutableStateOf(-1) }
@@ -50,16 +57,17 @@ fun InvoiceEntryScreen(
     var selectedStatusFromDB by rememberSaveable { mutableStateOf("") }
     var localIssueDateFromDB by rememberSaveable { mutableStateOf(Calendar.getInstance()) }
     var localDueDateFromDB by rememberSaveable { mutableStateOf(Calendar.getInstance()) }
-//    var selectedCustomerFromDB by remember { mutableStateOf<Customer?>(null) }
     val selectedCustomerFromDB = customerViewModel.customerFromDB
+    val customerFromUserInput = customerViewModel.customerFromUserInputOnAddMode
     var selectedCustomerId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     var customerSearchQuery by rememberSaveable { mutableStateOf("") }
+    val customers by customerViewModel.customersLiveData.observeAsState(emptyList())
+
 
     var hasLoadedFromDb by rememberSaveable { mutableStateOf(false) }
     if (IS_EDIT_MODE && !hasLoadedFromDb) {
         LaunchedEffect(invoiceId) {
-//            if (invoiceId >= 0L) {
             invoiceViewModel.getInvoiceById(invoiceId) { fetchedInvoice ->
                 invoice = fetchedInvoice
                 invoiceIDFromDB = fetchedInvoice.id
@@ -68,6 +76,7 @@ fun InvoiceEntryScreen(
                 selectedStatusFromDB = fetchedInvoice.status
                 localIssueDateFromDB = fetchedInvoice.invDate
                 localDueDateFromDB = fetchedInvoice.dueDate
+
                 val id: Long = fetchedInvoice.customerID
                 customerViewModel.getCustomerById(id) { fetchedCustomer ->
                     customer = fetchedCustomer
@@ -76,9 +85,8 @@ fun InvoiceEntryScreen(
                     customerSearchQuery = fetchedCustomer.name
                 }
             }
-
+            customerViewModel.customerFromUserInputOnAddMode = customers.firstOrNull { it.id == selectedCustomerId }
             hasLoadedFromDb = true
-//            }
         }
     }
 
@@ -93,10 +101,9 @@ fun InvoiceEntryScreen(
     var expandedStatus by rememberSaveable { mutableStateOf(false) }
     var selectedStatus by rememberSaveable { mutableStateOf(invoiceViewModel.invoice.status) }
 
-    val customers by customerViewModel.customersLiveData.observeAsState(emptyList())
-    var selectedCustomer = customers.firstOrNull { it.id == selectedCustomerId }
 
-//    var selectedCustomer by rememberSaveable { mutableStateOf<Customer?>(null) }
+
+
     var showCustomerDropdown by rememberSaveable { mutableStateOf(false) }
 
     val filteredCustomers = remember(customerSearchQuery, customers) {
@@ -106,6 +113,35 @@ fun InvoiceEntryScreen(
 
     var showIssueDatePicker by rememberSaveable { mutableStateOf(false) }
     var showDueDatePicker by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(ocrResult) {
+        ocrResult?.let { result ->
+            if (!IS_EDIT_MODE) {
+                invoiceNumber = result.invoiceNumber ?: ""
+                amountText = result.amount ?: ""
+                customerSearchQuery = result.customerName ?: ""
+
+                result.issueDate?.let { dateStr ->
+                    val parts = dateStr.split("-")
+                    if (parts.size == 3) {
+                        val cal = Calendar.getInstance()
+                        cal.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
+                        localIssueDate = cal
+                    }
+                }
+                result.dueDate?.let { dateStr ->
+                    val parts = dateStr.split("-")
+                    if (parts.size == 3) {
+                        val cal = Calendar.getInstance()
+                        cal.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
+                        localDueDate = cal
+                    }
+                }
+            }
+
+        }
+    }
+
 
     // Helpers: Calendar <-> LocalDate <-> millis (UTC start of day)
     @RequiresApi(Build.VERSION_CODES.O)
@@ -183,16 +219,15 @@ fun InvoiceEntryScreen(
             )
         }
 
-            Text(
-                text = if (IS_EDIT_MODE) "edit the invoice details below" else "Fill in the invoice details below",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Text(
+            text = if (IS_EDIT_MODE) "edit the invoice details below" else "Fill in the invoice details below",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(1.dp))
-
-            // Invoice number
-            OutlinedTextField(
+           // Invoice number
+        OutlinedTextField(
                 value = if (IS_EDIT_MODE) invoiceNumberFromDB else invoiceNumber,
                 onValueChange = {
                     if (IS_EDIT_MODE) invoiceNumberFromDB = it else invoiceNumber = it
@@ -202,16 +237,16 @@ fun InvoiceEntryScreen(
                 singleLine = true,
                 enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
                 modifier = Modifier.fillMaxWidth().height(60.dp)
-            )
+        )
 
             // Customer dropdown
-            ExposedDropdownMenuBox(
+        ExposedDropdownMenuBox(
                 expanded = showCustomerDropdown && filteredCustomers.isNotEmpty(),
                 onExpandedChange = { showCustomerDropdown = it }
-            ) {
-                OutlinedTextField(
+        ) {
+            OutlinedTextField(
                     value = if (IS_EDIT_MODE) selectedCustomerFromDB?.name
-                        ?: customerSearchQuery else selectedCustomer?.name ?: customerSearchQuery,
+                        ?: customerSearchQuery else customerFromUserInput?.name ?: customerSearchQuery,
                     //if (IS_EDIT_MODE) selectdCustomer?.name ?: customerSearchQuery else selectedCustomer?.name ?: customerSearchQuery,
                     onValueChange = { newValue ->
                         customerSearchQuery = newValue
@@ -219,16 +254,16 @@ fun InvoiceEntryScreen(
                             customerViewModel.customerFromDB = null
 //                        showCustomerDropdown = true
                         } else {
-                            selectedCustomer = null
+                            customerViewModel.customerFromUserInputOnAddMode = null
 //                        showCustomerDropdown = true
                         }
                     },
                     label = { Text("Customer Name") },
                     leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                     trailingIcon = {
-                        if (selectedCustomer != null) {
+                        if (customerFromUserInput != null) {
                             IconButton(onClick = {
-                                selectedCustomer = null
+                                customerViewModel.customerFromUserInputOnAddMode = null
                                 customerSearchQuery = ""
                             }) {
                                 Icon(Icons.Default.Clear, contentDescription = "Clear")
@@ -238,12 +273,12 @@ fun InvoiceEntryScreen(
                     enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().menuAnchor()
-                )
+            )
 
-                ExposedDropdownMenu(
+            ExposedDropdownMenu(
                     expanded = showCustomerDropdown && filteredCustomers.isNotEmpty(),
                     onDismissRequest = { showCustomerDropdown = false }
-                ) {
+                     ) {
                     filteredCustomers.forEach { customer ->
                         DropdownMenuItem(
                             text = {
@@ -275,231 +310,266 @@ fun InvoiceEntryScreen(
                                     customerViewModel.customerFromDB = customer
                                     selectedCustomerId = customer.id
                                 } else {
-                                    selectedCustomer = customer
+                                    customerViewModel.customerFromUserInputOnAddMode = customer
                                     selectedCustomerId = customer.id
                                 }
                                 showCustomerDropdown = false
                             }
                         )
                     }
-                }
             }
+        }
 
-            // Issue date
-            OutlinedTextField(
-                value = if (IS_EDIT_MODE) dateFormat.format(localIssueDateFromDB.time)
-                else dateFormat.format(localIssueDate.time),
-                onValueChange = {},
-                label = { Text("Issue Date") },
-                leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
-                trailingIcon = {
-                    IconButton(onClick = { showIssueDatePicker = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Select Date")
-                    }
-                },
-                readOnly = true,
-                singleLine = true,
-                enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
-                modifier = Modifier.fillMaxWidth()
-            )
+        // Issue date
+        OutlinedTextField(
+            value = if (IS_EDIT_MODE) dateFormat.format(localIssueDateFromDB.time)
+            else dateFormat.format(localIssueDate.time),
+            onValueChange = {},
+            label = { Text("Issue Date") },
+            leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+            trailingIcon = {
+                IconButton(onClick = { showIssueDatePicker = true }) {
+                    Icon(Icons.Default.Edit, contentDescription = "Select Date")
+                }
+            },
+            readOnly = true,
+            singleLine = true,
+            enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            // Due date
-            OutlinedTextField(
-                value = if (IS_EDIT_MODE) dateFormat.format(localDueDateFromDB.time) else dateFormat.format(
-                    localDueDate.time
-                ),
-                onValueChange = {},
-                label = { Text("Due Date") },
-                leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
-                trailingIcon = {
-                    IconButton(onClick = { showDueDatePicker = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Select Date")
-                    }
-                },
-                readOnly = true,
-                singleLine = true,
-                enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
-                modifier = Modifier.fillMaxWidth()
-            )
+        // Due date
+        OutlinedTextField(
+            value = if (IS_EDIT_MODE) dateFormat.format(localDueDateFromDB.time) else dateFormat.format(
+                localDueDate.time
+            ),
+            onValueChange = {},
+            label = { Text("Due Date") },
+            leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+            trailingIcon = {
+                IconButton(onClick = { showDueDatePicker = true }) {
+                    Icon(Icons.Default.Edit, contentDescription = "Select Date")
+                }
+            },
+            readOnly = true,
+            singleLine = true,
+            enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            // Amount
-            OutlinedTextField(
-                value = if (IS_EDIT_MODE) invoiceTotalFromDB else amountText,
-                onValueChange = {
-                    if (IS_EDIT_MODE) {
-                        invoiceTotalFromDB = it
-                    } else {
-                        amountText = it
-                    }
-                },
-                label = { Text("Invoice Total") },
-                leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = null) },
-                singleLine = true,
-                enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
+        // Amount
+        OutlinedTextField(
+            value = if (IS_EDIT_MODE) invoiceTotalFromDB else amountText,
+            onValueChange = {
+                if (IS_EDIT_MODE) {
+                    invoiceTotalFromDB = it
+                } else {
+                    amountText = it
+                }
+            },
+            label = { Text("Invoice Total") },
+            leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = null) },
+            singleLine = true,
+            enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
 
             // Status dropdown - fixed with selectedStatus update and expanded toggle
-            ExposedDropdownMenuBox(
-                expanded = expandedStatus,
-                onExpandedChange = { expandedStatus = it }
-            ) {
-                OutlinedTextField(
-                    value = if (IS_EDIT_MODE) selectedStatusFromDB.ifEmpty { "Select Status" } else selectedStatus.ifEmpty { "Select Status" },
-                    onValueChange = {},
-                    enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
-                    readOnly = true,
-                    label = { Text("Status") },
-                    leadingIcon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
-                    trailingIcon = {
-                        IconButton(onClick = { expandedStatus = !expandedStatus }) {
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().menuAnchor()
-                )
-                ExposedDropdownMenu(
-                    expanded = expandedStatus,
-                    onDismissRequest = { expandedStatus = false }
-                ) {
-                    statusOptions.forEach { statusOption ->
-                        DropdownMenuItem(
-                            text = { Text(statusOption) },
-                            onClick = {
-                                if (IS_EDIT_MODE) {
-                                    selectedStatusFromDB = statusOption
-                                } else {
-                                    selectedStatus = statusOption
-                                }
-                                expandedStatus = false
-                            }
-                        )
+        ExposedDropdownMenuBox(
+            expanded = expandedStatus,
+            onExpandedChange = { expandedStatus = it }
+        ) {
+            OutlinedTextField(
+                value = if (IS_EDIT_MODE) selectedStatusFromDB.ifEmpty { "Select Status" } else selectedStatus.ifEmpty { "Select Status" },
+                onValueChange = {},
+                enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
+                readOnly = true,
+                label = { Text("Status") },
+                leadingIcon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
+                trailingIcon = {
+                    IconButton(onClick = { expandedStatus = !expandedStatus }) {
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                     }
+                },
+                modifier = Modifier.fillMaxWidth().menuAnchor()
+            )
+            ExposedDropdownMenu(
+                expanded = expandedStatus,
+                onDismissRequest = { expandedStatus = false }
+            ) {
+                statusOptions.forEach { statusOption ->
+                    DropdownMenuItem(
+                        text = { Text(statusOption) },
+                        onClick = {
+                            if (IS_EDIT_MODE) {
+                                selectedStatusFromDB = statusOption
+                            } else {
+                                selectedStatus = statusOption
+                            }
+                            expandedStatus = false
+                        }
+                    )
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
             // Save button
-            Button(
-                onClick = {
-                    if (IS_EDIT_MODE) {
-                        val amount = invoiceTotalFromDB.toDoubleOrNull()
-                        if (invoiceNumberFromDB.isBlank() || amount == null || selectedStatusFromDB.isBlank()) {
-                            Toast.makeText(
-                                context,
-                                "Please fill all fields correctly",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@Button
-                        }
-                        if (selectedCustomerFromDB == null) {
-                            Toast.makeText(
-                                context,
-                                "Please enter a valid Customer",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@Button
-                        }
+        Button(
+            onClick = {
+                if (IS_EDIT_MODE) {
+                    val newAmount = invoiceTotalFromDB.toDoubleOrNull()
+                    if (invoiceNumberFromDB.isBlank() || newAmount == null || selectedStatusFromDB.isBlank()) {
+                        Toast.makeText(
+                            context,
+                            "Please fill all fields correctly",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@Button
+                    }
+                    if (selectedCustomerFromDB == null) {
+                        Toast.makeText(
+                            context,
+                            "Please enter a valid Customer",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@Button
+                    }
 
-                        if (selectedStatusFromDB == "Unpaid" || selectedStatusFromDB == "PastDue") {
-                            selectedCustomerFromDB?.let { cust ->
-                                val updatedCustomer = cust.copy(
-                                    credit = cust.credit + amount
-                                )
-                                customerViewModel.update(updatedCustomer)
-                            }
+                    val oldAmount = invoice?.amount ?: 0.0
+                    val amountDifference = newAmount - oldAmount
+                    if ((selectedStatusFromDB == "Unpaid" || selectedStatusFromDB == "PastDue") && amountDifference != 0.0) {
+                        selectedCustomerFromDB.let { cust ->
+                            val updatedCustomer = cust.copy(
+                                credit = cust.credit + amountDifference
+                            )
+                            customerViewModel.update(updatedCustomer)
                         }
-                        invoiceViewModel.updateInvoice(
-                            invoiceIDFromDB,
-                            invoiceNumber = invoiceNumberFromDB,
-                            customerId = selectedCustomerFromDB?.id ?: 0,
-                            issueDate = localIssueDateFromDB,
-                            dueDate = localDueDateFromDB,
-                            amount = amount,
-                            status = selectedStatusFromDB
-                        )
-                        invoiceViewModel.update()
-//                    invoiceViewModel.insert()
-                        Toast.makeText(context, "Invoice updated", Toast.LENGTH_SHORT).show()
-                        onBack()
-                    } else {
+                    }
+
+                    invoiceViewModel.updateInvoice(
+                        invoiceIDFromDB,
+                        invoiceNumber = invoiceNumberFromDB,
+                        customerId = selectedCustomerFromDB?.id ?: 0,
+                        issueDate = localIssueDateFromDB,
+                        dueDate = localDueDateFromDB,
+                        amount = newAmount,
+                        status = selectedStatusFromDB
+                    )
+                    invoiceViewModel.update()
+                    Toast.makeText(context, "Invoice updated", Toast.LENGTH_SHORT).show()
+                    onBack()
+                } else {
+                    coroutineScope.launch {
+
                         if (invoiceNumber.isBlank() ||
                             amountText.isBlank() ||
                             selectedStatus.isBlank()
                         ) {
-                            Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT)
-                                .show()
-                            return@Button
-                        } else if (selectedCustomer == null) {
+
+                            Toast.makeText(
+                                context,
+                                "Please fill all fields",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@launch
+                        } else if (customerFromUserInput == null) {
                             Toast.makeText(
                                 context,
                                 "Please enter a valid customer name",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            return@Button
+                            return@launch
                         }
 
                         val amount = amountText.toDoubleOrNull()
                         if (amount == null) {
-                            Toast.makeText(context, "Amount must be a number", Toast.LENGTH_SHORT)
-                                .show()
-                            return@Button
+                            Toast.makeText(
+                                context,
+                                "Amount must be a number",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@launch
                         }
 
-                        if (selectedStatus == "Unpaid" || selectedStatus == "PastDue") {
-                            selectedCustomer?.let { customer ->
-                                val updatedCustomer = customer.copy(
-                                    credit = customer.credit + amount
-                                )
-                                customerViewModel.update(updatedCustomer)
+                        try {
+                            invoiceViewModel.updateAmountText(amountText)
+                            invoiceViewModel.updateInvoice(
+                                invoiceId,
+                                invoiceNumber = invoiceNumber,
+                                customerId = customerFromUserInput?.id ?: 0,
+                                issueDate = localIssueDate,
+                                dueDate = localDueDate,
+                                amount = amount,
+                                status = selectedStatus
+                            )
+
+                            withContext(Dispatchers.IO) {
+                                invoiceViewModel.insert()
                             }
+                            customerFromUserInput?.let { customer ->
+                                withContext(Dispatchers.IO) {
+                                    val updatedCredit =
+                                        if (selectedStatus == "Unpaid" || selectedStatus == "PastDue") {
+                                            customer.credit + amount
+                                        } else {
+                                            customer.credit
+                                        }
+
+                                    invoiceViewModel.getInvoicesByCustomerId(customer.id) { invoices ->
+                                        val newCreditScore = CreditScoreCalculator.calculateCreditScore(invoices)
+                                        val updatedCustomer = customer.copy(
+                                            credit = updatedCredit,
+                                            creditScore = newCreditScore
+                                        )
+                                        customerViewModel.update(updatedCustomer)
+                                    }
+                                }
+                            }
+
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Invoice added", Toast.LENGTH_SHORT)
+                                    .show()
+                                onBack()
+                            }
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    context,
+                                    "Error: ${e.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            e.printStackTrace()
                         }
-
-                        invoiceViewModel.updateAmountText(amountText)
-                        invoiceViewModel.updateInvoice(
-                            invoiceId,
-                            invoiceNumber = invoiceNumber,
-                            customerId = selectedCustomer?.id ?: 0,
-                            issueDate = localIssueDate,
-                            dueDate = localDueDate,
-                            amount = amount,
-                            status = selectedStatus
-                        )
-
-                        invoiceViewModel.insert()
-                        Toast.makeText(context, "Invoice added", Toast.LENGTH_SHORT).show()
-                        onBack()
                     }
-
-                },
-                modifier = Modifier.fillMaxWidth().height(56.dp), enabled = ALLOW_TO_EDIT
-            ) {
-                Text("Save Invoice", style = MaterialTheme.typography.titleMedium)
-            }
-
-            OutlinedButton(
-                onClick = onBack,
-                modifier = Modifier.fillMaxWidth().height(56.dp)
-            ) {
-                Text("Cancel", style = MaterialTheme.typography.titleMedium)
-            }
-            if (IS_EDIT_MODE && ALLOW_TO_EDIT) {
-                OutlinedButton(
-                    onClick = {
-                        invoiceViewModel.delete(invoiceId)
-                        onBack()
-                    },
-//                colors = ButtonDefaults.buttonColors(
-//                    containerColor = Color(0xFFFF8A80) ,   // background
-//                    contentColor = Color.White    // text color
-//                ),
-                    modifier = Modifier.fillMaxWidth().height(56.dp)
-                ) { Text("Delete", style = MaterialTheme.typography.titleMedium) }
-            }
-
+                }
+            },
+            modifier = Modifier.fillMaxWidth().height(56.dp)
+        ) {
+            Text("Save Invoice", style = MaterialTheme.typography.titleMedium)
         }
+
+        OutlinedButton(
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth().height(56.dp)
+        ) {
+            Text("Cancel", style = MaterialTheme.typography.titleMedium)
+        }
+        if (IS_EDIT_MODE && ALLOW_TO_EDIT) {
+            OutlinedButton(
+                onClick = {
+                    invoiceViewModel.delete(invoiceId)
+                    Toast.makeText(context, "Invoice deleted", Toast.LENGTH_SHORT).show()
+                    onBack()
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            ) { Text("Delete", style = MaterialTheme.typography.titleMedium) }
+        }
+
+
 
         // Issue Date Picker Dialog
         if (showIssueDatePicker) {
@@ -557,4 +627,5 @@ fun InvoiceEntryScreen(
             }
         }
     }
+}
 

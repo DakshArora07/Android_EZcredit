@@ -7,6 +7,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 import org.junit.Assert.*
+import sfu.cmpt362.android_ezcredit.workers.InvoiceReminderWorker
 
 /**
  * Instrumented test, which will execute on an Android device.
