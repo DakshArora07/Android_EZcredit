@@ -7,6 +7,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.repository.InvoiceRepository
@@ -66,7 +68,7 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
     }
 
     fun getInvoiceById(id: Long, onResult: (Invoice) -> Unit){
-        viewModelScope.launch {
+        CoroutineScope(Dispatchers.IO).launch {
             val invoice = repository.getById(id)
             onResult(invoice)
         }

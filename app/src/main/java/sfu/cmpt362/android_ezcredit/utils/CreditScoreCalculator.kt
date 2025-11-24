@@ -22,11 +22,9 @@ object CreditScoreCalculator {
         var score = 0
 
         val paidIncrements = listOf(6, 5, 4, 3, 2)
-        val unpaidIncrements = listOf(-2,-3,-4,-5)
-        val overdueIncrements = -6
+        val overdueIncrements = listOf(-2,-3,-4,-5,-6)
 
         val paid = invoices.filter { it.status == "Paid" }
-        val unpaid = invoices.filter { it.status == "Unpaid" }
         val overdue = invoices.filter { it.status == "PastDue" }
 
         paid.forEachIndexed { index, _ ->
@@ -37,17 +35,14 @@ object CreditScoreCalculator {
             }
         }
 
-        unpaid.forEachIndexed { index, _ ->
-            score += if (index < unpaidIncrements.size){
-                unpaidIncrements[index]
+        overdue.forEachIndexed { index, _ ->
+            score += if (index < overdueIncrements.size){
+                overdueIncrements[index]
             } else {
-                unpaidIncrements.last()
+                overdueIncrements.last()
             }
         }
 
-        overdue.forEach { _ ->
-            score += overdueIncrements
-        }
 
         return score
     }

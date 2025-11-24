@@ -26,6 +26,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
+import sfu.cmpt362.android_ezcredit.ui.theme.Red
+import sfu.cmpt362.android_ezcredit.utils.CreditScoreCalculator
 import sfu.cmpt362.android_ezcredit.workers.InvoiceReminderWorker
 
 
@@ -117,8 +119,8 @@ fun CustomerScreen(
                     CustomerCard(
                         name = customer.name,
                         email = customer.email,
-                        phone = customer.phoneNumber,
                         creditScore = customer.creditScore,
+                        credit = customer.credit,
                         onClick = {
                             onAddCustomer(customer.id)
                         }
@@ -131,7 +133,7 @@ fun CustomerScreen(
 
 
 @Composable
-fun CustomerCard( name: String, email: String, phone: String, creditScore: Int, onClick: () -> Unit
+fun CustomerCard( name: String, email: String, credit: Double, creditScore: Int, onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -150,7 +152,7 @@ fun CustomerCard( name: String, email: String, phone: String, creditScore: Int, 
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(text = name, style = MaterialTheme.typography.titleMedium)
-                Text(text = "Credit Score: $creditScore", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "Credit Score: $creditScore", style = MaterialTheme.typography.bodyMedium, color = CreditScoreCalculator.getCreditScoreColor(creditScore))
             }
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -161,6 +163,14 @@ fun CustomerCard( name: String, email: String, phone: String, creditScore: Int, 
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(text = email, style = MaterialTheme.typography.bodyMedium)
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "Credit: $$credit", style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

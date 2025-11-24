@@ -37,7 +37,6 @@ fun InvoiceScreen(
     onAddInvoice: (invoiceId:Long) -> Unit,
     onScanCompleted: (InvoiceScreenViewModel.OcrInvoiceResult) -> Unit
 ) {
-    val OPEN_IN_EDIT_MODE:Boolean = false
     val context = LocalContext.current
     val cameraRequest by invoiceScreenViewModel.cameraRequest.collectAsState()
     val showDialog by invoiceScreenViewModel.showDialog.collectAsState()
@@ -170,11 +169,6 @@ fun InvoiceScreen(
                             invoice = invoice,
                             onClick = {
                                 onAddInvoice(invoice.id)
-                                Toast.makeText(
-                                    context,
-                                    "Invoice #${invoice.invoiceNumber} clicked",
-                                    Toast.LENGTH_SHORT
-                                ).show()
                             }
                         )
                     }
