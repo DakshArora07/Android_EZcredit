@@ -124,7 +124,8 @@ fun CalendarScreen(
             ) {
                 Header()
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                        .heightIn(min = 200.dp),
                     horizontalArrangement = Arrangement.spacedBy(24.dp),
                     verticalAlignment = Alignment.Top
                 ) {
@@ -167,11 +168,11 @@ fun InvoiceDetailsCard(
     onInvoiceClick: (Long) -> Unit
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().heightIn(min = 200.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(24.dp)) {
+        Column(modifier = Modifier.padding(24.dp).fillMaxWidth()) {
             Text(
                 text = if (selectedDate != null) {
                     val cal = Calendar.getInstance().apply {
@@ -190,7 +191,10 @@ fun InvoiceDetailsCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (invoices.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     invoices.forEach { invoice ->
                         InvoiceItem(
                             invoice = invoice,
@@ -223,9 +227,12 @@ fun InvoiceDetailsCard(
 @Composable
 fun InvoiceItem(
     invoice: Invoice,
+    isHorizontal: Boolean = false, // new flag
     onClick: () -> Unit
 ) {
     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    val iconSize = if (isHorizontal) 24.dp else 32.dp
+    val paddingBetween = if (isHorizontal) 2.dp else 12.dp
 
     Card(
         modifier = Modifier
@@ -236,69 +243,136 @@ fun InvoiceItem(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.Receipt,
-                contentDescription = "Invoice Icon",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(40.dp)
-            )
-
+        if (isHorizontal) {
+            // Horizontal layout
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 16.dp)
+                    .fillMaxWidth()
+                    .padding(6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    text = "Invoice #${invoice.invoiceNumber}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "Amount: $${String.format("%.2f", invoice.amount)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Text(
-                    text = "Due: ${dateFormat.format(invoice.dueDate.time)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // Status badge
-            Surface(
-                shape = MaterialTheme.shapes.small,
-                color = when (invoice.status) {
-                    "Paid" -> MaterialTheme.colorScheme.primaryContainer
-                    "Unpaid" -> MaterialTheme.colorScheme.secondaryContainer
-                    "PastDue" -> MaterialTheme.colorScheme.errorContainer
-                    else -> MaterialTheme.colorScheme.surfaceVariant
-                }
-            ) {
-                Text(
-                    text = when (invoice.status) {
-                        "PastDue" -> "Past Due"
-                        else -> invoice.status
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = when (invoice.status) {
-                        "Paid" -> MaterialTheme.colorScheme.onPrimaryContainer
-                        "Unpaid" -> MaterialTheme.colorScheme.onSecondaryContainer
-                        "PastDue" -> MaterialTheme.colorScheme.onErrorContainer
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(paddingBetween)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Receipt,
+                        contentDescription = "Invoice Icon",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(iconSize)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Invoice #${invoice.invoiceNumber}",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Amount: ${String.format("%.2f", invoice.amount)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Due: ${dateFormat.format(invoice.dueDate.time)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
+                }
+
+                // Status below
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = when (invoice.status) {
+                        "Paid" -> MaterialTheme.colorScheme.primaryContainer
+                        "Unpaid" -> MaterialTheme.colorScheme.secondaryContainer
+                        "PastDue" -> MaterialTheme.colorScheme.errorContainer
+                        else -> MaterialTheme.colorScheme.surfaceVariant
+                    },
+                    modifier = Modifier.padding(start = iconSize + paddingBetween) // align with text
+                ) {
+                    Text(
+                        text = when (invoice.status) {
+                            "PastDue" -> "Past Due"
+                            else -> invoice.status
+                        },
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = when (invoice.status) {
+                            "Paid" -> MaterialTheme.colorScheme.onPrimaryContainer
+                            "Unpaid" -> MaterialTheme.colorScheme.onSecondaryContainer
+                            "PastDue" -> MaterialTheme.colorScheme.onErrorContainer
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+            }
+        } else {
+            // Vertical layout (original)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Receipt,
+                    contentDescription = "Invoice Icon",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(iconSize)
                 )
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = paddingBetween)
+                ) {
+                    Text(
+                        text = "Invoice #${invoice.invoiceNumber}",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Text(
+                        text = "Amount: ${String.format("%.2f", invoice.amount)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Text(
+                        text = "Due: ${dateFormat.format(invoice.dueDate.time)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Status badge
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = when (invoice.status) {
+                        "Paid" -> MaterialTheme.colorScheme.primaryContainer
+                        "Unpaid" -> MaterialTheme.colorScheme.secondaryContainer
+                        "PastDue" -> MaterialTheme.colorScheme.errorContainer
+                        else -> MaterialTheme.colorScheme.surfaceVariant
+                    }
+                ) {
+                    Text(
+                        text = when (invoice.status) {
+                            "PastDue" -> "Past Due"
+                            else -> invoice.status
+                        },
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = when (invoice.status) {
+                            "Paid" -> MaterialTheme.colorScheme.onPrimaryContainer
+                            "Unpaid" -> MaterialTheme.colorScheme.onSecondaryContainer
+                            "PastDue" -> MaterialTheme.colorScheme.onErrorContainer
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
             }
         }
     }
@@ -544,7 +618,7 @@ fun CalendarDay(
                         statusColors.forEachIndexed { index, color ->
                             Box(
                                 modifier = Modifier
-                                    .size(4.dp)
+                                    .size(6.dp)
                                     .clip(CircleShape)
                                     .background(color)
                             )

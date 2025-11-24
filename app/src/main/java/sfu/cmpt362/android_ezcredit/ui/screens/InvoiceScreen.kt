@@ -33,7 +33,7 @@ import java.util.Locale
 @Composable
 fun InvoiceScreen(
     invoiceViewModel: InvoiceViewModel,
-    invoiceScreenViewModel: InvoiceScreenViewModel = viewModel(),
+    invoiceScreenViewModel: InvoiceScreenViewModel,
     onAddInvoice: (invoiceId:Long) -> Unit,
     onScanCompleted: (InvoiceScreenViewModel.OcrInvoiceResult) -> Unit
 ) {
@@ -47,7 +47,7 @@ fun InvoiceScreen(
     LaunchedEffect(ocrResult) {
         ocrResult?.let { result ->
             onScanCompleted(result)
-
+            invoiceScreenViewModel.clearOcrResult()
         }
     }
 

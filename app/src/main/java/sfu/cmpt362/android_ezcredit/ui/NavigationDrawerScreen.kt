@@ -203,12 +203,14 @@ fun NavigationHost(
             )
         }
         composable("invoices") {
+            val invoiceScreenViewModel: InvoiceScreenViewModel = viewModel()
             InvoiceScreen(
                 invoiceViewModel = invoiceViewModel,
+                invoiceScreenViewModel = invoiceScreenViewModel,
                 onAddInvoice = { invoiceId: Long ->
-                    if(invoiceId>=0L){
+                    if (invoiceId >= 0L) {
                         navController.navigate("addInvoice?invoiceId=$invoiceId")
-                    }else{
+                    } else {
                         navController.navigate("addInvoice")
                     }
                 },
@@ -241,27 +243,33 @@ fun NavigationHost(
                     defaultValue = ""
                 }
             )
-        ) {
-            val invoiceId = it.arguments?.getLong("invoiceId") ?: -1L
-            val ocrInvoiceNumber = it.arguments?.getString("ocrInvoiceNumber")?.takeIf { it.isNotBlank() }
-            val ocrAmount = it.arguments?.getString("ocrAmount")?.takeIf { it.isNotBlank() }
-            val ocrCustomer = it.arguments?.getString("ocrCustomer")?.takeIf { it.isNotBlank() }
+        ) { backStackEntry ->
 
-            val ocrResult = if (ocrInvoiceNumber != null || ocrAmount != null || ocrCustomer != null) {
-                InvoiceScreenViewModel.OcrInvoiceResult(
-                    invoiceNumber = ocrInvoiceNumber,
-                    amount = ocrAmount,
-                    customerName = ocrCustomer,
-                    issueDate = null,
-                    dueDate = null
-                )
-            } else null
+            val invoiceId = backStackEntry.arguments?.getLong("invoiceId") ?: -1L
+            val ocrInvoiceNumber = backStackEntry.arguments?.getString("ocrInvoiceNumber")?.takeIf { it.isNotBlank() }
+            val ocrAmount = backStackEntry.arguments?.getString("ocrAmount")?.takeIf { it.isNotBlank() }
+            val ocrCustomer = backStackEntry.arguments?.getString("ocrCustomer")?.takeIf { it.isNotBlank() }
+
+            val ocrResult =
+                if (ocrInvoiceNumber != null || ocrAmount != null || ocrCustomer != null) {
+                    InvoiceScreenViewModel.OcrInvoiceResult(
+                        invoiceNumber = ocrInvoiceNumber,
+                        amount = ocrAmount,
+                        customerName = ocrCustomer,
+                        issueDate = null,
+                        dueDate = null
+                    )
+                } else null
+
+
+            val invoiceScreenViewModel: InvoiceScreenViewModel = viewModel(backStackEntry)
 
             InvoiceEntryScreen(
                 invoiceViewModel = invoiceViewModel,
                 customerViewModel = customerViewModel,
                 invoiceId = invoiceId,
-                ocrResult = ocrResult, // pass OCR data here
+                invoiceScreenViewModel = invoiceScreenViewModel,  // <-- FIXED
+                ocrResult = ocrResult,
                 onBack = { navController.popBackStack() }
             )
         }
