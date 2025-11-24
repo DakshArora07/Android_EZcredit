@@ -36,10 +36,6 @@ fun CustomerEntryScreen(
     var ALLOW_TO_EDIT by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     val IS_EDIT_MODE = customerId>=0
-
-//    val name = viewModel.customer.name
-//    val email = viewModel.customer.email
-//    val phone = viewModel.customer.phoneNumber
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var phone by rememberSaveable { mutableStateOf("") }
@@ -47,7 +43,6 @@ fun CustomerEntryScreen(
     var customerNameFromDB by rememberSaveable { mutableStateOf("") }
     var customerEmailFromDB by rememberSaveable { mutableStateOf("") }
     var customerPhoneFromDB by rememberSaveable { mutableStateOf("") }
-//    var customerCreditScoreFromDB by rememberSaveable { mutableStateOf("") }
     var hasLoadedFromDb by rememberSaveable { mutableStateOf(false) }
     if(IS_EDIT_MODE && !hasLoadedFromDb){
         LaunchedEffect(customerId) {
@@ -55,7 +50,6 @@ fun CustomerEntryScreen(
                 customerNameFromDB= fetchedCustomer.name
                 customerEmailFromDB = fetchedCustomer.email
                 customerPhoneFromDB = fetchedCustomer.phoneNumber
-//                customerCreditScoreFromDB  = fetchedCustomer.creditScore.toString()
             }
             hasLoadedFromDb=true
 
@@ -111,12 +105,6 @@ fun CustomerEntryScreen(
                 }else{
                     name = it
                 }
-//                viewModel.updateCustomer(
-//                    it,
-//                    email,
-//                    phone,
-//                    viewModel.creditText.toDoubleOrNull() ?: 0.0
-//                )
             },
             label = { Text("Name") },
             leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
@@ -158,12 +146,6 @@ fun CustomerEntryScreen(
                 }else{
                     phone = it
                 }
-//                viewModel.updateCustomer(
-//                    name,
-//                    email,
-//                    it,
-//                    viewModel.creditText.toDoubleOrNull() ?: 0.0
-//                )
             },
             label = { Text("Phone Number") },
             leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
@@ -177,28 +159,6 @@ fun CustomerEntryScreen(
             )
         )
 
-//        OutlinedTextField(
-//            value = if(IS_EDIT_MODE) customerCreditScoreFromDB else  viewModel.creditText,
-//            onValueChange = {
-//                if(IS_EDIT_MODE){
-//                    customerCreditScoreFromDB=it
-//                }else{
-//
-//                }
-////                viewModel.updateCreditText(it)
-////                viewModel.updateCustomer(name, email, phone, it.toDoubleOrNull() ?: 0.0)
-//            },
-//            label = { Text("Credit Amount") },
-//            leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = null) },
-//            singleLine = true,
-//            modifier = Modifier.fillMaxWidth(),
-//            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-//            colors = OutlinedTextFieldDefaults.colors(
-//                focusedBorderColor = MaterialTheme.colorScheme.primary,
-//                focusedLabelColor = MaterialTheme.colorScheme.primary,
-//            )
-//        )
-
         Spacer(modifier = Modifier.height(8.dp))
 
         Button(
@@ -207,18 +167,11 @@ fun CustomerEntryScreen(
                 val currentName = if (IS_EDIT_MODE) customerNameFromDB else name
                 val currentEmail = if (IS_EDIT_MODE) customerEmailFromDB else email
                 val currentPhone = if (IS_EDIT_MODE) customerPhoneFromDB else phone
-//                val currentCreditText = if (IS_EDIT_MODE) customerCreditScoreFromDB else viewModel.creditText
 
                 if (currentName.isBlank() || currentEmail.isBlank() || currentPhone.isBlank()) {
                     Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                     return@Button
                 }
-
-//                val creditValue = viewModel.creditText.toDoubleOrNull()
-//                if (creditValue == null) {
-//                    Toast.makeText(context, "Credit must be a number", Toast.LENGTH_SHORT).show()
-//                    return@Button
-//                }
 
                 val capitalizedName = currentName.split(" ")
                     .joinToString(" ") { word ->
@@ -274,10 +227,6 @@ fun CustomerEntryScreen(
                         }
                     }
                     },
-//                colors = ButtonDefaults.buttonColors(
-//                    containerColor = Color(0xFFFF8A80) ,   // background
-//                    contentColor = Color.White    // text color
-//                ),
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) { Text("Delete", style = MaterialTheme.typography.titleMedium)}
         }

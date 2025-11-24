@@ -268,7 +268,7 @@ fun NavigationHost(
                 invoiceViewModel = invoiceViewModel,
                 customerViewModel = customerViewModel,
                 invoiceId = invoiceId,
-                invoiceScreenViewModel = invoiceScreenViewModel,  // <-- FIXED
+                invoiceScreenViewModel = invoiceScreenViewModel,
                 ocrResult = ocrResult,
                 onBack = { navController.popBackStack() }
             )
