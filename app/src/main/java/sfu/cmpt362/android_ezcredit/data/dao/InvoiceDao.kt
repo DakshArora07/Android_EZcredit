@@ -25,7 +25,7 @@ interface InvoiceDao {
     fun getCustomerNameByInvoiceId(key: Long): String
 
     @Query("SELECT * FROM invoice_list WHERE customer_id = :key")
-    fun getInvoicesByCustomerId(key: Long): List<Invoice>
+    suspend fun getInvoicesByCustomerId(key: Long): List<Invoice>
 
     @Query("DELETE FROM invoice_list WHERE id = :key")
     suspend fun deleteInvoiceById(key: Long)

@@ -78,8 +78,11 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
         return repository.getCustomerNameByInvoiceId(id)
     }
 
-    fun getInvoicesByCustomerId(id: Long): List<Invoice> {
-        return repository.getInvoicesByCustomerId(id)
+    fun getInvoicesByCustomerId(id: Long, onResult: (List<Invoice>) -> Unit) {
+        viewModelScope.launch {
+            val invoices = repository.getInvoicesByCustomerId(id)
+            onResult(invoices)
+        }
     }
 
     fun delete(id: Long) {
