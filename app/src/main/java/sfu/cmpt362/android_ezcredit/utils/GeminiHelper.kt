@@ -61,6 +61,8 @@ object GeminiHelper {
             - Be professional and courteous, concise (2-3 sentences).
             - ${if (daysOffset > 0) "Mention that payment is overdue." else ""}
             - ${if (daysOffset <= 0) "Remind them of the upcoming/current due date." else ""}
+            - End the email by thanking (in a new line)
+            - Include: Pay here: https://buy.stripe.com/test_28E4gzfbk6PPbr1babcwg00 (in a separate paragraph)
         
             Generate only the message content with greeting, body, and closing formatted properly.
         """.trimIndent()
