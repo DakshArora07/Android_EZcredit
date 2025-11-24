@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="sfu.cmpt362.android_ezcredit" />
+                  <option name="mobileSdkAppId" value="1:186557304878:android:001f4ca361975569228fbf" />
+                  <option name="projectId" value="ezcredit-sfu" />
+                  <option name="projectNumber" value="186557304878" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

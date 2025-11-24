@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.vision.common)
     implementation(libs.androidx.compose.runtime.livedata)
+    implementation(libs.androidx.compose.ui.unit)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
