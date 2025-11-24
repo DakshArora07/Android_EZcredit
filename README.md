@@ -7,6 +7,11 @@ This project follows the **MVVM (Model-View-ViewModel)** architecture for a clea
 
 ![MVVM Architecture](./docs/MVVM.png)  
 
+## Threading
+
+This project actively involves using **Threads** for different UI and IO tasks.  
+
+![Threads Diagram](./docs/Threads.png)  
 
 ---
 
@@ -14,10 +19,12 @@ This project follows the **MVVM (Model-View-ViewModel)** architecture for a clea
 
 You can download the latest APK of the project here:  
 [Download APK](https://1drv.ms/u/c/a2e50b6392b4123e/ESVSOct-CntGnYsJraKw_H0BttE0P8dyy7iV7ycy_cjO4w?e=ZJbyXA)  
+
 ---
 
 ## [Source Code](https://github.com/DakshArora07/Android_EZcredit)
 
+---
 
 ## Demonstration of some of the project components
 1. **Customers**  
@@ -38,7 +45,7 @@ You can download the latest APK of the project here:
 
 ---
 
-## Milestones
+## Milestones for show_and_tell_1
 1. **OCR (Optical Character Recognition) Setup**
    - Implemented OCR functionality to extract text from images.
    - Configured text extraction logic and ensured accurate parsing of recognized text for further use within the app.
@@ -61,10 +68,32 @@ You can download the latest APK of the project here:
    - Added utility and helper classes to support OCR, gemini integration, and date handling.
    - Maintained clear package organization for easier navigation and scalability.
 
+---
+
+## Milestones for show_and_tell_2
+1. **UI/UX**​
+   - Improved UI Screens (Customer, Invoice, Calendar, Analytics)​
+   - Add/Delete/Edit customers and invoices from database​
+
+2. **Database & Data​**
+   - Improved Room Database functionality​
+   - Filters and Sort methods for data
+  
+3. **OCR & Scanning​**
+   - Improved OCR Scanning mechanism to scan actual invoices​
+  
+4. **Background Services​**
+   - Work Schedular
+   - Gemini Messaging​
+
+5. **Cloud​**
+   - Firebase real-time cloud sync
+  
+---
 
 ## Wokrload Distribution
 
-Show and Tell 1 Contributions
+Show and Tell 1 Contributions: 
 
 - **Ayush Arora** – Contributed to UI development and app navigation, designing layouts and implementing smooth transitions between key sections of the application.
 
@@ -76,17 +105,31 @@ Show and Tell 1 Contributions
 
 - **Henry Nguyen** – Developed the OCR functionality, enabling the extraction of text from invoice images captured through the camera.
   
-Future Workload Management
 
-- **Ayush Arora** - Will focus on developing the UI for customer and settings screens, including the login functionality, ensuring a smooth and intuitive user experience.
+Show and Tell 2 Contributions: 
+
+- **Ayush Arora** – Contributed to UI, added WorkScheduler, improved Gemini integration, created a basic credit score algorithm and designed presentation slides and video.
+
+- **Daksh Arora** – Improved the Room Database, added Firebase cloud database, enabled perfect synchronization using SyncManager and designed presentation slides and video.
   
-- **Daksh Arora** - Will finalize the Room Database setup and integrate Firebase for cloud storage and synchronization, ensuring reliable data persistence.
+- **Gurshan Singh Aulakh** – Focused on UI development, made the Invoice entry screen and Customer entry screen fully functional and created 2 modes (create and update).
+
+- **Hetmay Ketan Vora** – Worked on UI design, made the calendar fully functional, designed the UI of analytics and designed presentation script and audio.
+
+- **Henry Nguyen** – Refined OCR reading, formatted a paper invoice design, aligned the output of OCR with the invoice entry screen and designed the Thread diagram.
+
+
+Future Workload Management:
+
+- **Ayush Arora** - Will focus on developing the UI for Settings screen which will include the user profile, will improve credit score algorithm and background tasks. 
   
-- **Gurshan Singh Aulakh** - Will implement the credit score algorithm and set up automated reminders using Gemini to notify users about overdue or important invoices.
+- **Daksh Arora** - Will integrate Firebase authentication for multi user setup, use the same for access permissions and work on the database entity of Receipts.
   
-- **Hetmay Ketan Vora** - Will work on the UI for analytics and Calendar features, integrating the calendar with app data to allow users to view and manage invoices by date.
+- **Gurshan Singh Aulakh** - Will finalize the UI for Invoices and Customers, add functionality of adding Customers through Invoice entry screen and will enable sorting.
   
-- **Henry Nguyen** - Will complete the OCR functionality for hand-written invoices and complete the ui for invoice screen to add invoices through OCR and manually.
+- **Hetmay Ketan Vora** - Will improve the UI of calendar by adding manual reminder functionality and entry editing, will design analytics to include very robust reports.
+  
+- **Henry Nguyen** - Will work on the UI of Receipts and enable the integration of Receipts with Invoices to automatically settle amounts, will also work on OCR refinement.
 
 
 
