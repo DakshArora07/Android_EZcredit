@@ -1,7 +1,5 @@
 package sfu.cmpt362.android_ezcredit.ui.viewmodel
 
-import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -12,7 +10,6 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import sfu.cmpt362.android_ezcredit.ui.activities.OCRResultActivity
 
 class InvoiceScreenViewModel : ViewModel() {
 
