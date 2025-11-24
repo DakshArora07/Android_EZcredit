@@ -35,5 +35,9 @@ data class Invoice (
     var amount: Double = 0.0,
 
     @ColumnInfo(name = "invoice_status")
-    var status: String = ""
+    var status: String = "",
+
+    var lastModified: Long = 0L,
+
+    var isDeleted: Boolean = false
 )

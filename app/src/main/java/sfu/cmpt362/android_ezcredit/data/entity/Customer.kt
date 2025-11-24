@@ -25,6 +25,9 @@ data class Customer (
     val creditScore: Int = CreditScoreCalculator.BASE_SCORE,
 
     @ColumnInfo(name = "customer_credit")
-    val credit: Double = 0.0
+    val credit: Double = 0.0,
 
+    val lastModified: Long = 0L,
+
+    val isDeleted: Boolean = false
 )
