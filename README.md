@@ -18,7 +18,7 @@ This project actively involves using **Threads** for different UI and IO tasks.
 ## Download APK
 
 You can download the latest APK of the project here:  
-[Download APK](https://1drv.ms/u/c/931d74c7905f6350/IQC0ybSDx0AEQYFMSNEvQ1NMAT6AEvKSzQak_wpIyr92VsI?e=P7w50k)
+[Download APK](https://1drv.ms/u/c/931d74c7905f6350/IQC0ybSDx0AEQYFMSNEvQ1NMAa2oaHj9jSaq_yCUcGp78xc?e=xfi7al)
 
 ---
 
