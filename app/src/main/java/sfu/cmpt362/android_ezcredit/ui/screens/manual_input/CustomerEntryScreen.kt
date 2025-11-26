@@ -2,233 +2,282 @@ package sfu.cmpt362.android_ezcredit.ui.screens.manual_input
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 
 @Composable
 fun CustomerEntryScreen(
-    viewModel: CustomerViewModel,
+    customerViewModel: CustomerViewModel,
     invoiceViewModel: InvoiceViewModel,
-    customerId:Long,
+    customerId: Long,
+    onBack: () -> Unit) {
+
+    // Mode check:
+    // Add mode: id == -1
+    // View/Edit mode: id >= 0
+    if (customerId >= 0L) {
+        ViewEditCustomerScreen(customerViewModel, invoiceViewModel, customerId, onBack)
+    } else {
+        AddCustomerScreen(customerViewModel, onBack)
+    }
+}
+
+// Add mode
+// Calls the SetupUIViews with empty views
+@Composable
+fun AddCustomerScreen(
+    viewModel: CustomerViewModel,
     onBack: () -> Unit
 ) {
-    var ALLOW_TO_EDIT by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
-    val IS_EDIT_MODE = customerId>=0
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var phone by rememberSaveable { mutableStateOf("") }
 
-    var customerNameFromDB by rememberSaveable { mutableStateOf("") }
-    var customerEmailFromDB by rememberSaveable { mutableStateOf("") }
-    var customerPhoneFromDB by rememberSaveable { mutableStateOf("") }
+    SetupUIViews(
+        title = "Add New Customer",
+        subtitle = "Fill in the customer details below",
+        name = name,
+        onNameChange = { name = it },
+        email = email,
+        onEmailChange = { email = it },
+        phone = phone,
+        onPhoneChange = { phone = it },
+        isEditable = true,
+        showEditButton = false,
+        showDeleteButton = false,
+        onSave = {
+            if (name.isBlank() || email.isBlank() || phone.isBlank()) {
+                Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                return@SetupUIViews
+            }
+
+            val capitalizedName = name.split(" ")
+                .joinToString(" ") { word -> word.lowercase().replaceFirstChar { it.uppercase() } }
+
+            viewModel.updateCustomer(-1, capitalizedName, email, phone)
+            viewModel.insert()
+            Toast.makeText(context, "Customer added", Toast.LENGTH_SHORT).show()
+            onBack()
+        },
+        onCancel = onBack,
+        onDelete = {}
+    )
+}
+
+// View/Edit mode
+// Loads customer entry from database
+// Calls SetupViews with the customer details displayed
+@Composable
+fun ViewEditCustomerScreen(
+    viewModel: CustomerViewModel,
+    invoiceViewModel: InvoiceViewModel,
+    customerId: Long,
+    onBack: () -> Unit
+) {
+    val context = LocalContext.current
+    var allowToEdit by rememberSaveable { mutableStateOf(false) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var phone by rememberSaveable { mutableStateOf("") }
     var hasLoadedFromDb by rememberSaveable { mutableStateOf(false) }
-    if(IS_EDIT_MODE && !hasLoadedFromDb){
+
+    if (!hasLoadedFromDb) {
         LaunchedEffect(customerId) {
             viewModel.getCustomerById(customerId) { fetchedCustomer ->
-                customerNameFromDB= fetchedCustomer.name
-                customerEmailFromDB = fetchedCustomer.email
-                customerPhoneFromDB = fetchedCustomer.phoneNumber
+                name = fetchedCustomer.name
+                email = fetchedCustomer.email
+                phone = fetchedCustomer.phoneNumber
             }
-            hasLoadedFromDb=true
-
+            hasLoadedFromDb = true
         }
     }
 
+    SetupUIViews(
+        title = "Update Customer",
+        subtitle = "Edit the customer details below",
+        name = name,
+        onNameChange = { name = it },
+        email = email,
+        onEmailChange = { email = it },
+        phone = phone,
+        onPhoneChange = { phone = it },
+        isEditable = allowToEdit,
+        showEditButton = true,
+        onEditToggle = { allowToEdit = !allowToEdit },
+        showDeleteButton = allowToEdit,
+        onSave = {
+            if (name.isBlank() || email.isBlank() || phone.isBlank()) {
+                Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                return@SetupUIViews
+            }
+
+            val capitalizedName = name.split(" ")
+                .joinToString(" ") { word -> word.lowercase().replaceFirstChar { it.uppercase() } }
+
+            val customer = viewModel.updateCustomer(customerId, capitalizedName, email, phone)
+            viewModel.update(customer)
+            Toast.makeText(context, "Customer updated", Toast.LENGTH_SHORT).show()
+            onBack()
+        },
+        onCancel = onBack,
+        onDelete = {
+            invoiceViewModel.getInvoicesByCustomerId(customerId) { invoices ->
+                if (invoices.isNotEmpty()) {
+                    Toast.makeText(
+                        context,
+                        "Please delete all the customer invoices before deleting the customer",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    viewModel.delete(customerId)
+                    Toast.makeText(context, "Customer deleted", Toast.LENGTH_SHORT).show()
+                    onBack()
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun SetupUIViews(
+    title: String,
+    subtitle: String,
+    name: String,
+    onNameChange: (String) -> Unit,
+    email: String,
+    onEmailChange: (String) -> Unit,
+    phone: String,
+    onPhoneChange: (String) -> Unit,
+    isEditable: Boolean,
+    showEditButton: Boolean,
+    onEditToggle: () -> Unit = {},
+    showDeleteButton: Boolean,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
+    onDelete: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+            .padding(5.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        if(IS_EDIT_MODE){
+        // Header
+        if (showEditButton) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
-            ){
+            ) {
                 Text(
-                    text = "Update Customer",
+                    text = title,
                     style = MaterialTheme.typography.headlineLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Button(onClick = {ALLOW_TO_EDIT= !ALLOW_TO_EDIT},
-                    shape = MaterialTheme.shapes.medium){
-                    Icon(Icons.Default.Edit, contentDescription = null,tint = MaterialTheme.colorScheme.onPrimary)
-
+                Button(
+                    onClick = onEditToggle,
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
                 }
             }
-        }else{
+        } else {
             Text(
-                text = "Add New Customer",
+                text = title,
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.primary
             )
         }
 
-
         Text(
-            text = if(IS_EDIT_MODE )"Edit the customer details below" else "Fill in the customer details below",
-            style = MaterialTheme.typography.bodyLarge,
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Name
         OutlinedTextField(
-            value = if(IS_EDIT_MODE)customerNameFromDB else name,
-            onValueChange = {
-                if(IS_EDIT_MODE){
-                    customerNameFromDB=it
-                }else{
-                    name = it
-                }
-            },
+            value = name,
+            onValueChange = onNameChange,
             label = { Text("Name") },
             leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
             singleLine = true,
-            enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                focusedLabelColor = MaterialTheme.colorScheme.primary,
-            )
+            enabled = isEditable,
+            modifier = Modifier.fillMaxWidth()
         )
 
+        // Email
         OutlinedTextField(
-            value = if(IS_EDIT_MODE)customerEmailFromDB else email,
-            onValueChange = {
-                if(IS_EDIT_MODE){
-                    customerEmailFromDB=it
-                }else{
-                    email = it
-                }
-            },
+            value = email,
+            onValueChange = onEmailChange,
             label = { Text("Email") },
             leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
             singleLine = true,
-            enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
+            enabled = isEditable,
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                focusedLabelColor = MaterialTheme.colorScheme.primary,
-            )
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
         )
 
+        // Phone
         OutlinedTextField(
-            value = if(IS_EDIT_MODE)customerPhoneFromDB else phone,
-            onValueChange = {
-                if(IS_EDIT_MODE){
-                    customerPhoneFromDB=it
-                }else{
-                    phone = it
-                }
-            },
+            value = phone,
+            onValueChange = onPhoneChange,
             label = { Text("Phone Number") },
             leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
             singleLine = true,
-            enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
+            enabled = isEditable,
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                focusedLabelColor = MaterialTheme.colorScheme.primary,
-            )
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
+        // Buttons
         Button(
-            onClick = {
-
-                val currentName = if (IS_EDIT_MODE) customerNameFromDB else name
-                val currentEmail = if (IS_EDIT_MODE) customerEmailFromDB else email
-                val currentPhone = if (IS_EDIT_MODE) customerPhoneFromDB else phone
-
-                if (currentName.isBlank() || currentEmail.isBlank() || currentPhone.isBlank()) {
-                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
-                    return@Button
-                }
-
-                val capitalizedName = currentName.split(" ")
-                    .joinToString(" ") { word ->
-                        word.lowercase().replaceFirstChar { it.uppercase() }
-                    }
-
-                if (IS_EDIT_MODE) {
-                    val customer = viewModel.updateCustomer(customerId,capitalizedName, currentEmail, currentPhone)
-                    viewModel.update(customer)
-                    Toast.makeText(context, "Customer updated", Toast.LENGTH_SHORT).show()
-                } else {
-                    viewModel.updateCustomer(customerId,capitalizedName, currentEmail, currentPhone)
-                    viewModel.insert()
-                    Toast.makeText(context, "Customer added", Toast.LENGTH_SHORT).show()
-                }
-                onBack()
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = MaterialTheme.shapes.medium,
-            enabled = if (IS_EDIT_MODE) ALLOW_TO_EDIT else true,
-
+            onClick = onSave,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = MaterialTheme.shapes.medium
         ) {
-            Text(
-                text = "Save Customer",
-                style = MaterialTheme.typography.titleMedium
-            )
+            Text("Save Customer", style = MaterialTheme.typography.titleMedium)
         }
 
         OutlinedButton(
-            onClick = onBack,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            onClick = onCancel,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = MaterialTheme.shapes.medium
         ) {
-            Text(
-                text = "Cancel",
-                style = MaterialTheme.typography.titleMedium
-            )
+            Text("Cancel", style = MaterialTheme.typography.titleMedium)
         }
-        if(IS_EDIT_MODE && ALLOW_TO_EDIT){
+
+        if (showDeleteButton) {
             OutlinedButton(
-                onClick = {
-                    invoiceViewModel.getInvoicesByCustomerId(customerId){ invoices ->
-                        if (invoices.isNotEmpty()) {
-                            Toast.makeText(context, "Please delete all the customer invoices before deleting the customer", Toast.LENGTH_SHORT).show()
-                        } else {
-                            viewModel.delete(customerId)
-                            Toast.makeText(context, "Customer Deleted.", Toast.LENGTH_SHORT).show()
-                            onBack()
-                        }
-                    }
-                    },
-                modifier = Modifier.fillMaxWidth().height(56.dp)
-            ) { Text("Delete", style = MaterialTheme.typography.titleMedium)}
+                onClick = onDelete,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text("Delete", style = MaterialTheme.typography.titleMedium)
+            }
         }
     }
 }

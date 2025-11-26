@@ -10,7 +10,7 @@ import sfu.cmpt362.android_ezcredit.data.dao.InvoiceDao
 import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 
-@Database(entities = [Invoice::class, Customer::class], version = 1)
+@Database(entities = [Invoice::class, Customer::class], version = 2)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract val customerDao: CustomerDao
@@ -26,7 +26,9 @@ abstract class AppDatabase : RoomDatabase() {
                 var instance = INSTANCE
                 if(instance == null){
                     instance = Room.databaseBuilder(context.applicationContext,
-                        AppDatabase::class.java, "app_data").build()
+                        AppDatabase::class.java, "app_data")
+                        .fallbackToDestructiveMigration()
+                        .build()
                     INSTANCE = instance
                 }
                 return instance

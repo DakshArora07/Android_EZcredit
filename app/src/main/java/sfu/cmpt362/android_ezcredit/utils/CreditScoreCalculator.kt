@@ -14,7 +14,7 @@ object CreditScoreCalculator {
 
         val totalScore = BASE_SCORE + paymentHistoryScore(invoices)
 
-        return totalScore
+        return totalScore.coerceIn(0, 100)
     }
 
     private fun paymentHistoryScore(invoices: List<Invoice>) : Int {
@@ -22,7 +22,7 @@ object CreditScoreCalculator {
         var score = 0
 
         val paidIncrements = listOf(6, 5, 4, 3, 2)
-        val overdueIncrements = listOf(-2,-3,-4,-5,-6)
+        val overdueIncrements = listOf(-10,-9,-8,-7,-6,-5,-4,-3)
 
         val paid = invoices.filter { it.status == "Paid" }
         val overdue = invoices.filter { it.status == "PastDue" }

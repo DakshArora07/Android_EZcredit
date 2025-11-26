@@ -173,15 +173,12 @@ fun AnalyticsHeader() {
     ) {
         Text(
             text = "Analytics",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.primary
         )
         Text(
             text = "Business performance overview",
-            fontSize = 16.sp,
-            color = Color.Gray,
-            modifier = Modifier.padding(top = 4.dp)
+            style = MaterialTheme.typography.bodyLarge
         )
     }
 }

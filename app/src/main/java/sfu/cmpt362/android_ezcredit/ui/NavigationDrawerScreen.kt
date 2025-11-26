@@ -1,5 +1,7 @@
 package sfu.cmpt362.android_ezcredit.ui
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -47,6 +49,7 @@ val screens = listOf(
     Screen("analytics", R.string.analytics, Icons.Default.Analytics)
 )
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavigationDrawerScreen() {
@@ -163,6 +166,7 @@ fun NavigationDrawerScreen() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun NavigationHost(
     navController: NavHostController,
@@ -172,7 +176,7 @@ fun NavigationHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = "customers",
+        startDestination = "analytics",
         modifier = modifier,
     ) {
         composable("customers") {
@@ -196,7 +200,7 @@ fun NavigationHost(
             )) {
             val customerId = it.arguments?.getLong("customerId") ?: -1L
             CustomerEntryScreen(
-                viewModel = customerViewModel,
+                customerViewModel = customerViewModel,
                 invoiceViewModel = invoiceViewModel,
                 customerId = customerId,
                 onBack = { navController.popBackStack() }
@@ -261,14 +265,10 @@ fun NavigationHost(
                     )
                 } else null
 
-
-            val invoiceScreenViewModel: InvoiceScreenViewModel = viewModel(backStackEntry)
-
             InvoiceEntryScreen(
                 invoiceViewModel = invoiceViewModel,
                 customerViewModel = customerViewModel,
                 invoiceId = invoiceId,
-                invoiceScreenViewModel = invoiceScreenViewModel,
                 ocrResult = ocrResult,
                 onBack = { navController.popBackStack() }
             )
