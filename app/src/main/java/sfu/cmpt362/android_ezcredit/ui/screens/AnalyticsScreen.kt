@@ -36,12 +36,6 @@ data class CustomerRevenue(
     val maxAmount: Double
 )
 
-data class CustomerCreditScore(
-    val name: String,
-    val creditScore: Int,
-    val maxScore: Int
-)
-
 data class AnalyticsData(
     val debtRecovered: Double,
     val debtOutstanding: Double,
@@ -49,13 +43,13 @@ data class AnalyticsData(
     val monthlyRevenue: List<MonthlyRevenue>,
     val monthlyBreakdown: MonthlyBreakdown,
     val topCustomersByRevenue: List<CustomerRevenue>,
-    val topCustomersByCreditScore: List<CustomerCreditScore>
 )
 
 data class MonthlyBreakdown(
     val revenue: Double,
     val invoices: Int,
-    val outstanding: Double
+    val outstanding: Double,
+    val periodLabel: String
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,8 +63,8 @@ fun AnalyticsScreen(
     val customers by customerViewModel.customersLiveData.observeAsState(emptyList())
     var selectedPeriod by remember { mutableStateOf("Month") }
 
-    val analyticsData = remember(invoices, customers) {
-        calculateAnalytics(invoices, customers)
+    val analyticsData = remember(invoices, customers, selectedPeriod) {
+        calculateAnalytics(invoices, customers, selectedPeriod)
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -150,10 +144,16 @@ private fun AnalyticsContentVertical(analyticsData: AnalyticsData) {
 private fun AnalyticsContentHorizontal(analyticsData: AnalyticsData) {
     Spacer(modifier = Modifier.height(12.dp))
 
-    // Metric cards in a row
     MetricCardsRow(analyticsData = analyticsData)
 
-    // Revenue Trend and Monthly Breakdown side by side
+    RevenueTrendCard(
+        monthlyRevenue = analyticsData.monthlyRevenue,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 24.dp)
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -161,25 +161,16 @@ private fun AnalyticsContentHorizontal(analyticsData: AnalyticsData) {
             .padding(bottom = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        RevenueTrendCard(
-            monthlyRevenue = analyticsData.monthlyRevenue,
-            modifier = Modifier.weight(2f)
-        )
-
         MonthlyBreakdownCard(
             breakdown = analyticsData.monthlyBreakdown,
             modifier = Modifier.weight(1f)
         )
-    }
 
-    // Top Customers at the bottom
-    TopCustomersByRevenueCard(
-        topCustomers = analyticsData.topCustomersByRevenue,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(bottom = 24.dp)
-    )
+        TopCustomersByRevenueCard(
+            topCustomers = analyticsData.topCustomersByRevenue,
+            modifier = Modifier.weight(1f)
+        )
+    }
 }
 
 @Composable
@@ -236,7 +227,7 @@ private fun PeriodButton(
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(if (isSelected) Indigo else Color.White)
+            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.White)
             .clickable(onClick = onClick)
             .padding(horizontal = 24.dp, vertical = 11.dp)
     ) {
@@ -302,7 +293,7 @@ fun MetricCard(
                 text = value,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Indigo
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -369,7 +360,7 @@ private fun RevenueBar(
 
         ProgressBar(
             progress = if (maxAmount > 0) (amount / maxAmount).toFloat() else 0f,
-            color = Indigo,
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.weight(1f)
         )
 
@@ -397,7 +388,7 @@ fun MonthlyBreakdownCard(
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             Text(
-                text = "Monthly Breakdown",
+                text = "${breakdown.periodLabel} Breakdown",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
@@ -409,7 +400,7 @@ fun MonthlyBreakdownCard(
                 label = "Revenue",
                 value = formatCurrency(breakdown.revenue),
                 progress = 1f,
-                color = Indigo
+                color = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -524,7 +515,7 @@ private fun CustomerRevenueItem(
     colorIndex: Int
 ) {
     val color = when(colorIndex) {
-        0 -> Indigo
+        0 -> MaterialTheme.colorScheme.primary
         1 -> Green
         else -> Purple
     }
@@ -593,7 +584,8 @@ private fun ProgressBar(
     }
 }
 
-fun calculateAnalytics(invoices: List<Invoice>, customers: List<Customer>): AnalyticsData {
+
+fun calculateAnalytics(invoices: List<Invoice>, customers: List<Customer>, period: String): AnalyticsData {
     val debtRecovered = invoices
         .filter { it.status.equals("Paid", ignoreCase = true) }
         .sumOf { it.amount }
@@ -604,10 +596,9 @@ fun calculateAnalytics(invoices: List<Invoice>, customers: List<Customer>): Anal
 
     val invoicesSent = invoices.size
 
-    val monthlyRevenue = calculateMonthlyRevenue(invoices)
-    val monthlyBreakdown = calculateMonthlyBreakdown(invoices)
+    val monthlyRevenue = calculatePeriodRevenue(invoices, period)
+    val monthlyBreakdown = calculatePeriodBreakdown(invoices, period)
     val topCustomersByRevenue = calculateTopCustomersByRevenue(invoices, customers)
-    val topCustomersByCreditScore = calculateTopCustomersByCreditScore(customers)
 
     return AnalyticsData(
         debtRecovered = debtRecovered,
@@ -616,54 +607,67 @@ fun calculateAnalytics(invoices: List<Invoice>, customers: List<Customer>): Anal
         monthlyRevenue = monthlyRevenue,
         monthlyBreakdown = monthlyBreakdown,
         topCustomersByRevenue = topCustomersByRevenue,
-        topCustomersByCreditScore = topCustomersByCreditScore
     )
 }
 
-private fun calculateMonthlyRevenue(invoices: List<Invoice>): List<MonthlyRevenue> {
-    val monthlyRevenueMap = mutableMapOf<String, Double>()
+private fun calculatePeriodRevenue(invoices: List<Invoice>, period: String): List<MonthlyRevenue> {
+    val revenueMap = mutableMapOf<String, Double>()
 
     invoices.forEach { invoice ->
-        val monthKey = "${invoice.invDate.get(Calendar.YEAR)}-${invoice.invDate.get(Calendar.MONTH)}"
-        monthlyRevenueMap[monthKey] = monthlyRevenueMap.getOrDefault(monthKey, 0.0) + invoice.amount
+        val key = when (period) {
+            "Week" -> getWeekKey(invoice.invDate)
+            "Quarter" -> getQuarterKey(invoice.invDate)
+            else -> getMonthKey(invoice.invDate)
+        }
+        revenueMap[key] = revenueMap.getOrDefault(key, 0.0) + invoice.amount
     }
 
-    val maxMonthlyRevenue = monthlyRevenueMap.values.maxOrNull() ?: 1.0
+    val maxRevenue = revenueMap.values.maxOrNull() ?: 1.0
 
-    val sortedMonths = monthlyRevenueMap.entries
-        .sortedBy { entry ->
-            val parts = entry.key.split("-")
-            parts[0].toInt() * 12 + parts[1].toInt()
+    val sortedEntries = when (period) {
+        "Week" -> revenueMap.entries.sortedBy { parseWeekKey(it.key) }.takeLast(8)
+        "Quarter" -> revenueMap.entries.sortedBy { parseQuarterKey(it.key) }.takeLast(4)
+        else -> revenueMap.entries.sortedBy { parseMonthKey(it.key) }.takeLast(6)
+    }
+
+    return sortedEntries.map { (key, amount) ->
+        val label = when (period) {
+            "Week" -> formatWeekLabel(key)
+            "Quarter" -> formatQuarterLabel(key)
+            else -> formatMonthLabel(key)
         }
-        .takeLast(6)
-
-    return sortedMonths.map { (key, amount) ->
-        val parts = key.split("-")
-        val month = java.text.DateFormatSymbols().shortMonths[parts[1].toInt()]
         MonthlyRevenue(
-            month = month,
+            month = label,
             amount = amount,
-            maxAmount = maxMonthlyRevenue
+            maxAmount = maxRevenue
         )
     }
 }
 
-private fun calculateMonthlyBreakdown(invoices: List<Invoice>): MonthlyBreakdown {
+private fun calculatePeriodBreakdown(invoices: List<Invoice>, period: String): MonthlyBreakdown {
     val currentCalendar = Calendar.getInstance()
-    val currentYear = currentCalendar.get(Calendar.YEAR)
-    val currentMonth = currentCalendar.get(Calendar.MONTH)
 
-    val currentMonthInvoices = invoices.filter { invoice ->
-        invoice.invDate.get(Calendar.YEAR) == currentYear &&
-                invoice.invDate.get(Calendar.MONTH) == currentMonth
+    val periodInvoices = invoices.filter { invoice ->
+        when (period) {
+            "Week" -> isSameWeek(invoice.invDate, currentCalendar)
+            "Quarter" -> isSameQuarter(invoice.invDate, currentCalendar)
+            else -> isSameMonth(invoice.invDate, currentCalendar)
+        }
+    }
+
+    val periodLabel = when (period) {
+        "Week" -> "Weekly"
+        "Quarter" -> "Quarterly"
+        else -> "Monthly"
     }
 
     return MonthlyBreakdown(
-        revenue = currentMonthInvoices.sumOf { it.amount },
-        invoices = currentMonthInvoices.size,
-        outstanding = currentMonthInvoices
+        revenue = periodInvoices.sumOf { it.amount },
+        invoices = periodInvoices.size,
+        outstanding = periodInvoices
             .filter { !it.status.equals("Paid", ignoreCase = true) }
-            .sumOf { it.amount }
+            .sumOf { it.amount },
+        periodLabel = periodLabel
     )
 }
 
@@ -693,19 +697,62 @@ private fun calculateTopCustomersByRevenue(
         }
 }
 
-private fun calculateTopCustomersByCreditScore(customers: List<Customer>): List<CustomerCreditScore> {
-    val maxCreditScore = customers.maxOfOrNull { it.creditScore } ?: 850
+private fun getMonthKey(calendar: android.icu.util.Calendar): String {
+    return "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH)}"
+}
 
-    return customers
-        .sortedByDescending { it.creditScore }
-        .take(3)
-        .map { customer ->
-            CustomerCreditScore(
-                name = customer.name,
-                creditScore = customer.creditScore,
-                maxScore = maxCreditScore
-            )
-        }
+private fun getWeekKey(calendar: android.icu.util.Calendar): String {
+    return "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.WEEK_OF_YEAR)}"
+}
+
+private fun getQuarterKey(calendar: android.icu.util.Calendar): String {
+    val quarter = calendar.get(Calendar.MONTH) / 3 + 1
+    return "${calendar.get(Calendar.YEAR)}-Q$quarter"
+}
+
+private fun parseMonthKey(key: String): Int {
+    val parts = key.split("-")
+    return parts[0].toInt() * 12 + parts[1].toInt()
+}
+
+private fun parseWeekKey(key: String): Int {
+    val parts = key.split("-")
+    return parts[0].toInt() * 52 + parts[1].toInt()
+}
+
+private fun parseQuarterKey(key: String): Int {
+    val parts = key.split("-Q")
+    return parts[0].toInt() * 4 + parts[1].toInt()
+}
+
+private fun formatMonthLabel(key: String): String {
+    val parts = key.split("-")
+    return java.text.DateFormatSymbols().shortMonths[parts[1].toInt()]
+}
+
+private fun formatWeekLabel(key: String): String {
+    val parts = key.split("-")
+    return "W${parts[1]}"
+}
+
+private fun formatQuarterLabel(key: String): String {
+    return key.split("-")[1]
+}
+
+private fun isSameMonth(calendar1: android.icu.util.Calendar, calendar2: Calendar): Boolean {
+    return calendar1.get(Calendar.YEAR) == calendar2.get(Calendar.YEAR) &&
+            calendar1.get(Calendar.MONTH) == calendar2.get(Calendar.MONTH)
+}
+
+private fun isSameWeek(calendar1: android.icu.util.Calendar, calendar2: Calendar): Boolean {
+    return calendar1.get(Calendar.YEAR) == calendar2.get(Calendar.YEAR) &&
+            calendar1.get(Calendar.WEEK_OF_YEAR) == calendar2.get(Calendar.WEEK_OF_YEAR)
+}
+
+private fun isSameQuarter(calendar1: android.icu.util.Calendar, calendar2: Calendar): Boolean {
+    val quarter1 = calendar1.get(Calendar.MONTH) / 3
+    val quarter2 = calendar2.get(Calendar.MONTH) / 3
+    return calendar1.get(Calendar.YEAR) == calendar2.get(Calendar.YEAR) && quarter1 == quarter2
 }
 
 fun formatCurrency(amount: Double): String {
