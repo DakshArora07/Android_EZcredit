@@ -27,6 +27,11 @@ import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.CalendarScreenViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Receipt
+import sfu.cmpt362.android_ezcredit.ui.theme.Amber
+import sfu.cmpt362.android_ezcredit.ui.theme.Green
+import sfu.cmpt362.android_ezcredit.ui.theme.LightGray
+import sfu.cmpt362.android_ezcredit.ui.theme.Red
+import sfu.cmpt362.android_ezcredit.ui.theme.WhiteSmoke
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -46,10 +51,8 @@ fun CalendarScreen(
     val today = calendarScreenViewModel.today
     val currentDate = calendarScreenViewModel.currentDate
     val selectedDate = calendarScreenViewModel.selectedDate
-
     val allInvoices by invoiceViewModel.invoicesLiveData.observeAsState(emptyList())
 
-    // Group invoices by date for current month/year
     val invoicesByDate = remember(allInvoices, currentDate) {
         allInvoices.filter { invoice ->
             val dueDate = invoice.dueDate
@@ -60,7 +63,6 @@ fun CalendarScreen(
         }
     }
 
-    // Get invoices for selected date
     val selectedInvoices = remember(selectedDate, allInvoices) {
         if (selectedDate != null) {
             allInvoices.filter { invoice ->
@@ -78,84 +80,115 @@ fun CalendarScreen(
         val isVertical = maxWidth < 600.dp
 
         if (isVertical) {
-            // Vertical Layout
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Header()
-                CalendarCard(
-                    currentDate = currentDate,
-                    selectedDate = selectedDate,
-                    today = today,
-                    invoicesByDate = invoicesByDate,
-                    onDateChange = { newDate -> calendarScreenViewModel.updateCurrentDate(newDate) },
-                    onDayClick = { day ->
-                        calendarScreenViewModel.updateSelectedDate(
-                            DueDate(
-                                day,
-                                currentDate.get(Calendar.MONTH),
-                                currentDate.get(Calendar.YEAR)
-                            )
-                        )
-                    }
-                )
-
-                // Invoice details below calendar
-                if (selectedDate != null) {
-                    InvoiceDetailsCard(
-                        selectedDate = selectedDate,
-                        invoices = selectedInvoices,
-                        onInvoiceClick = onNavigateToInvoice
+            CalendarScreenVerticalLayout(
+                currentDate = currentDate,
+                selectedDate = selectedDate,
+                today = today,
+                invoicesByDate = invoicesByDate,
+                selectedInvoices = selectedInvoices,
+                onDateChange = calendarScreenViewModel::updateCurrentDate,
+                onDayClick = { day ->
+                    calendarScreenViewModel.updateSelectedDate(
+                        DueDate(day, currentDate.get(Calendar.MONTH), currentDate.get(Calendar.YEAR))
                     )
-                }
-            }
+                },
+                onNavigateToInvoice = onNavigateToInvoice
+            )
         } else {
-            // Horizontal Layout
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(32.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                Header()
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .heightIn(min = 200.dp),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    CalendarCard(
-                        modifier = Modifier.weight(2f),
-                        currentDate = currentDate,
-                        selectedDate = selectedDate,
-                        today = today,
-                        invoicesByDate = invoicesByDate,
-                        onDateChange = { newDate -> calendarScreenViewModel.updateCurrentDate(newDate) },
-                        onDayClick = { day ->
-                            calendarScreenViewModel.updateSelectedDate(
-                                DueDate(
-                                    day,
-                                    currentDate.get(Calendar.MONTH),
-                                    currentDate.get(Calendar.YEAR)
-                                )
-                            )
-                        }
+            CalendarScreenHorizontalLayout(
+                currentDate = currentDate,
+                selectedDate = selectedDate,
+                today = today,
+                invoicesByDate = invoicesByDate,
+                selectedInvoices = selectedInvoices,
+                onDateChange = calendarScreenViewModel::updateCurrentDate,
+                onDayClick = { day ->
+                    calendarScreenViewModel.updateSelectedDate(
+                        DueDate(day, currentDate.get(Calendar.MONTH), currentDate.get(Calendar.YEAR))
                     )
+                },
+                onNavigateToInvoice = onNavigateToInvoice
+            )
+        }
+    }
+}
 
-                    // Invoice details beside calendar
-                    InvoiceDetailsCard(
-                        modifier = Modifier.weight(1f),
-                        selectedDate = selectedDate,
-                        invoices = selectedInvoices,
-                        onInvoiceClick = onNavigateToInvoice
-                    )
-                }
-            }
+@Composable
+private fun CalendarScreenVerticalLayout(
+    currentDate: Calendar,
+    selectedDate: DueDate?,
+    today: Calendar,
+    invoicesByDate: Map<Int, List<Invoice>>,
+    selectedInvoices: List<Invoice>,
+    onDateChange: (Calendar) -> Unit,
+    onDayClick: (Int) -> Unit,
+    onNavigateToInvoice: (Long) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Header()
+        CalendarCard(
+            currentDate = currentDate,
+            selectedDate = selectedDate,
+            today = today,
+            invoicesByDate = invoicesByDate,
+            onDateChange = onDateChange,
+            onDayClick = onDayClick
+        )
+        if (selectedDate != null) {
+            InvoiceDetailsCard(
+                selectedDate = selectedDate,
+                invoices = selectedInvoices,
+                onInvoiceClick = onNavigateToInvoice
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalendarScreenHorizontalLayout(
+    currentDate: Calendar,
+    selectedDate: DueDate?,
+    today: Calendar,
+    invoicesByDate: Map<Int, List<Invoice>>,
+    selectedInvoices: List<Invoice>,
+    onDateChange: (Calendar) -> Unit,
+    onDayClick: (Int) -> Unit,
+    onNavigateToInvoice: (Long) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Header()
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            CalendarCard(
+                modifier = Modifier.weight(2f),
+                currentDate = currentDate,
+                selectedDate = selectedDate,
+                today = today,
+                invoicesByDate = invoicesByDate,
+                onDateChange = onDateChange,
+                onDayClick = onDayClick
+            )
+            InvoiceDetailsCard(
+                modifier = Modifier.weight(1f),
+                selectedDate = selectedDate,
+                invoices = selectedInvoices,
+                onInvoiceClick = onNavigateToInvoice
+            )
         }
     }
 }
@@ -172,7 +205,7 @@ fun InvoiceDetailsCard(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(24.dp).fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
             Text(
                 text = if (selectedDate != null) {
                     val cal = Calendar.getInstance().apply {
@@ -198,15 +231,14 @@ fun InvoiceDetailsCard(
                     invoices.forEach { invoice ->
                         InvoiceItem(
                             invoice = invoice,
+                            isHorizontal = false,
                             onClick = { onInvoiceClick(invoice.id) }
                         )
                     }
                 }
             } else {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 32.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -227,7 +259,7 @@ fun InvoiceDetailsCard(
 @Composable
 fun InvoiceItem(
     invoice: Invoice,
-    isHorizontal: Boolean = false, // new flag
+    isHorizontal: Boolean = false,
     onClick: () -> Unit
 ) {
     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
@@ -237,18 +269,15 @@ fun InvoiceItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable(onClick = onClick),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         if (isHorizontal) {
-            // Horizontal layout
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(6.dp),
+                modifier = Modifier.fillMaxWidth().padding(6.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Row(
@@ -279,40 +308,14 @@ fun InvoiceItem(
                         )
                     }
                 }
-
-                // Status below
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    color = when (invoice.status) {
-                        "Paid" -> MaterialTheme.colorScheme.primaryContainer
-                        "Unpaid" -> MaterialTheme.colorScheme.secondaryContainer
-                        "PastDue" -> MaterialTheme.colorScheme.errorContainer
-                        else -> MaterialTheme.colorScheme.surfaceVariant
-                    },
-                    modifier = Modifier.padding(start = iconSize + paddingBetween) // align with text
-                ) {
-                    Text(
-                        text = when (invoice.status) {
-                            "PastDue" -> "Past Due"
-                            else -> invoice.status
-                        },
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = when (invoice.status) {
-                            "Paid" -> MaterialTheme.colorScheme.onPrimaryContainer
-                            "Unpaid" -> MaterialTheme.colorScheme.onSecondaryContainer
-                            "PastDue" -> MaterialTheme.colorScheme.onErrorContainer
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                }
+                InvoiceStatusBadge(
+                    status = invoice.status,
+                    modifier = Modifier.padding(start = iconSize + paddingBetween)
+                )
             }
         } else {
-            // Vertical layout (original)
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
@@ -321,7 +324,6 @@ fun InvoiceItem(
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(iconSize)
                 )
-
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -332,49 +334,49 @@ fun InvoiceItem(
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
                     Text(
                         text = "Amount: ${String.format("%.2f", invoice.amount)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
                     Text(
                         text = "Due: ${dateFormat.format(invoice.dueDate.time)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
-                // Status badge
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    color = when (invoice.status) {
-                        "Paid" -> MaterialTheme.colorScheme.primaryContainer
-                        "Unpaid" -> MaterialTheme.colorScheme.secondaryContainer
-                        "PastDue" -> MaterialTheme.colorScheme.errorContainer
-                        else -> MaterialTheme.colorScheme.surfaceVariant
-                    }
-                ) {
-                    Text(
-                        text = when (invoice.status) {
-                            "PastDue" -> "Past Due"
-                            else -> invoice.status
-                        },
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = when (invoice.status) {
-                            "Paid" -> MaterialTheme.colorScheme.onPrimaryContainer
-                            "Unpaid" -> MaterialTheme.colorScheme.onSecondaryContainer
-                            "PastDue" -> MaterialTheme.colorScheme.onErrorContainer
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                }
+                InvoiceStatusBadge(status = invoice.status)
             }
         }
+    }
+}
+
+@Composable
+private fun InvoiceStatusBadge(status: String, modifier: Modifier = Modifier) {
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = when (status) {
+            "Paid" -> MaterialTheme.colorScheme.primaryContainer
+            "Unpaid" -> MaterialTheme.colorScheme.secondaryContainer
+            "PastDue" -> MaterialTheme.colorScheme.errorContainer
+            else -> MaterialTheme.colorScheme.surfaceVariant
+        },
+        modifier = modifier
+    ) {
+        Text(
+            text = when (status) {
+                "PastDue" -> "Past Due"
+                else -> status
+            },
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = when (status) {
+                "Paid" -> MaterialTheme.colorScheme.onPrimaryContainer
+                "Unpaid" -> MaterialTheme.colorScheme.onSecondaryContainer
+                "PastDue" -> MaterialTheme.colorScheme.onErrorContainer
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+        )
     }
 }
 
@@ -428,9 +430,12 @@ fun CalendarCard(
         set(Calendar.DAY_OF_MONTH, 1)
     }.get(Calendar.DAY_OF_WEEK) - 1
 
-    val days = mutableListOf<Int?>()
-    repeat(firstDayOfWeek) { days.add(null) }
-    repeat(daysInMonth) { days.add(it + 1) }
+    val days = remember(currentDate) {
+        mutableListOf<Int?>().apply {
+            repeat(firstDayOfWeek) { add(null) }
+            repeat(daysInMonth) { add(it + 1) }
+        }
+    }
 
     val monthName = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(currentDate.time)
 
@@ -440,7 +445,7 @@ fun CalendarCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            // Month Navigation
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -479,69 +484,84 @@ fun CalendarCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Calendar Grid
-            Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-                // Day Headers
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").forEach { day ->
-                        Text(
-                            text = day,
-                            modifier = Modifier.weight(1f),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Calendar Days with spacing between rows
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    days.chunked(7).forEach { week ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            week.forEach { day ->
-                                val dayInvoices = day?.let { invoicesByDate[it] } ?: emptyList()
-                                CalendarDay(
-                                    day = day,
-                                    invoices = dayInvoices,
-                                    isSelected = selectedDate?.date == day &&
-                                            selectedDate?.month == currentDate.get(Calendar.MONTH) &&
-                                            selectedDate.year == currentDate.get(Calendar.YEAR),
-                                    isToday = day != null &&
-                                            day == today.get(Calendar.DAY_OF_MONTH) &&
-                                            currentDate.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
-                                            currentDate.get(Calendar.YEAR) == today.get(Calendar.YEAR),
-                                    onDayClick = {
-                                        if (day != null) {
-                                            onDayClick(day)
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            repeat(7 - week.size) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                        }
-                    }
-                }
-            }
+            CalendarGrid(
+                days = days,
+                currentDate = currentDate,
+                selectedDate = selectedDate,
+                today = today,
+                invoicesByDate = invoicesByDate,
+                onDayClick = onDayClick
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Legend
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Legend(color = Color(0xFF22C55E), label = "Paid")
-                Legend(color = Color(0xFFEAB308), label = "Pending")
-                Legend(color = Color(0xFFEF4444), label = "Overdue")
+                Legend(color = Green, label = "Paid")
+                Legend(color = Amber, label = "Pending")
+                Legend(color = Red, label = "Overdue")
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarGrid(
+    days: List<Int?>,
+    currentDate: Calendar,
+    selectedDate: DueDate?,
+    today: Calendar,
+    invoicesByDate: Map<Int, List<Invoice>>,
+    onDayClick: (Int) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").forEach { day ->
+                Text(
+                    text = day,
+                    modifier = Modifier.weight(1f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            days.chunked(7).forEach { week ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    week.forEach { day ->
+                        val dayInvoices = day?.let { invoicesByDate[it] } ?: emptyList()
+                        CalendarDay(
+                            day = day,
+                            invoices = dayInvoices,
+                            isSelected = selectedDate?.date == day &&
+                                    selectedDate?.month == currentDate.get(Calendar.MONTH) &&
+                                    selectedDate.year == currentDate.get(Calendar.YEAR),
+                            isToday = day != null &&
+                                    day == today.get(Calendar.DAY_OF_MONTH) &&
+                                    currentDate.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
+                                    currentDate.get(Calendar.YEAR) == today.get(Calendar.YEAR),
+                            onDayClick = {
+                                if (day != null) {
+                                    onDayClick(day)
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    repeat(7 - week.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
             }
         }
     }
@@ -557,7 +577,7 @@ fun CalendarDay(
     modifier: Modifier = Modifier
 ) {
     val backgroundColor = when {
-        day == null -> Color(0xFFF5F5F5)
+        day == null -> WhiteSmoke
         isToday -> MaterialTheme.colorScheme.primaryContainer
         invoices.isNotEmpty() -> MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
         else -> Color.Transparent
@@ -566,10 +586,8 @@ fun CalendarDay(
     val borderColor = when {
         day == null -> Color.Transparent
         isSelected -> MaterialTheme.colorScheme.primary
-        else -> Color(0xFFE0E0E0)
+        else -> LightGray
     }
-
-    val borderWidth = if (isSelected) 2.dp else 1.dp
 
     val textColor = when {
         day == null -> Color.Transparent
@@ -583,7 +601,11 @@ fun CalendarDay(
             .clickable(enabled = day != null) { onDayClick() }
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
-            .border(borderWidth, borderColor, RoundedCornerShape(8.dp)),
+            .border(
+                if (isSelected) 2.dp else 1.dp,
+                borderColor,
+                RoundedCornerShape(8.dp)
+            ),
         contentAlignment = Alignment.Center
     ) {
         if (day != null) {
@@ -599,7 +621,6 @@ fun CalendarDay(
                     color = textColor
                 )
 
-                // Show status dots for invoices
                 if (invoices.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(0.dp))
                     Row(
@@ -608,9 +629,9 @@ fun CalendarDay(
                     ) {
                         val statusColors = invoices.map { invoice ->
                             when (invoice.status) {
-                                "Paid" -> Color(0xFF22C55E)
-                                "Unpaid" -> Color(0xFFEAB308)
-                                "PastDue" -> Color(0xFFEF4444)
+                                "Paid" -> Green
+                                "Unpaid" -> Amber
+                                "PastDue" -> Red
                                 else -> Color.Gray
                             }
                         }.distinct().take(3)
