@@ -273,7 +273,10 @@ fun NavigationHost(
                 onBack = { navController.popBackStack() }
             )
         }
-        composable("calendar") { CalendarScreen(invoiceViewModel = invoiceViewModel) }
+        composable("calendar") { CalendarScreen(invoiceViewModel = invoiceViewModel,
+            onNavigateToInvoice = { invoiceId ->
+                navController.navigate("addInvoice?invoiceId=$invoiceId")
+            }) }
         composable("analytics") { AnalyticsScreen(invoiceViewModel = invoiceViewModel,
             customerViewModel = customerViewModel) }
         composable("settings") { SettingsScreen() }
