@@ -44,6 +44,12 @@ object BackgroundTaskSchedular {
         )
     }
 
+    fun cancelInvoiceReminders(context: Context) {
+        Log.d(TAG, "Cancelling invoice reminders")
+        WorkManager.getInstance(context).cancelAllWorkByTag("invoice_reminders")
+    }
+
+
     fun scheduleCreditScoreUpdate(context: Context) {
         Log.d(TAG, "Scheduling credit score updates")
 
@@ -67,6 +73,11 @@ object BackgroundTaskSchedular {
             ExistingPeriodicWorkPolicy.KEEP,
             creditScoreUpdateWork
         )
+    }
+
+    fun cancelCreditScoreUpdate(context: Context) {
+        Log.d(TAG, "Cancelling credit score updates")
+        WorkManager.getInstance(context).cancelAllWorkByTag("credit_score_update")
     }
 
     private fun calculateInitialDelay(targetHour: Int): Long {
