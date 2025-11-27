@@ -20,6 +20,7 @@ import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
+import sfu.cmpt362.android_ezcredit.ui.theme.*
 import java.text.NumberFormat
 import java.util.*
 
@@ -57,7 +58,6 @@ data class MonthlyBreakdown(
     val outstanding: Double
 )
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalyticsScreen(
@@ -67,7 +67,6 @@ fun AnalyticsScreen(
 ) {
     val invoices by invoiceViewModel.invoicesLiveData.observeAsState(emptyList())
     val customers by customerViewModel.customersLiveData.observeAsState(emptyList())
-
     var selectedPeriod by remember { mutableStateOf("Month") }
 
     val analyticsData = remember(invoices, customers) {
@@ -80,7 +79,7 @@ fun AnalyticsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F5F5))
+                .background(WhiteSmoke)
                 .verticalScroll(rememberScrollState())
         ) {
             AnalyticsHeader()
@@ -91,76 +90,96 @@ fun AnalyticsScreen(
             )
 
             if (isVertical) {
-                // Vertical layout: Column for metric cards
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    MetricCard(
-                        title = "Debt Recovered",
-                        value = formatCurrency(analyticsData.debtRecovered),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    MetricCard(
-                        title = "Debt Outstanding",
-                        value = formatCurrency(analyticsData.debtOutstanding),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    MetricCard(
-                        title = "Invoices Sent",
-                        value = analyticsData.invoicesSent.toString(),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                AnalyticsContentVertical(analyticsData)
             } else {
-                // Horizontal layout: Row for metric cards
-                MetricCardsRow(analyticsData = analyticsData)
-            }
-
-            RevenueTrendCard(monthlyRevenue = analyticsData.monthlyRevenue)
-
-            if (isVertical) {
-                // Vertical layout: stack cards vertically
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    MonthlyBreakdownCard(
-                        breakdown = analyticsData.monthlyBreakdown
-                    )
-
-                    TopCustomersByRevenueCard(
-                        topCustomers = analyticsData.topCustomersByRevenue
-                    )
-                }
-            } else {
-                // Horizontal layout: side by side
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                        .padding(bottom = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    MonthlyBreakdownCard(
-                        breakdown = analyticsData.monthlyBreakdown,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    TopCustomersByRevenueCard(
-                        topCustomers = analyticsData.topCustomersByRevenue,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                AnalyticsContentHorizontal(analyticsData)
             }
         }
     }
+}
+
+@Composable
+private fun AnalyticsContentVertical(analyticsData: AnalyticsData) {
+    Spacer(modifier = Modifier.height(12.dp))
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        MetricCard(
+            title = "Debt Recovered",
+            value = formatCurrency(analyticsData.debtRecovered),
+            modifier = Modifier.fillMaxWidth()
+        )
+        MetricCard(
+            title = "Debt Outstanding",
+            value = formatCurrency(analyticsData.debtOutstanding),
+            modifier = Modifier.fillMaxWidth()
+        )
+        MetricCard(
+            title = "Invoices Sent",
+            value = analyticsData.invoicesSent.toString(),
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    RevenueTrendCard(
+        monthlyRevenue = analyticsData.monthlyRevenue,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 24.dp)
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        MonthlyBreakdownCard(breakdown = analyticsData.monthlyBreakdown)
+        TopCustomersByRevenueCard(topCustomers = analyticsData.topCustomersByRevenue)
+    }
+}
+
+@Composable
+private fun AnalyticsContentHorizontal(analyticsData: AnalyticsData) {
+    Spacer(modifier = Modifier.height(12.dp))
+
+    // Metric cards in a row
+    MetricCardsRow(analyticsData = analyticsData)
+
+    // Revenue Trend and Monthly Breakdown side by side
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        RevenueTrendCard(
+            monthlyRevenue = analyticsData.monthlyRevenue,
+            modifier = Modifier.weight(2f)
+        )
+
+        MonthlyBreakdownCard(
+            breakdown = analyticsData.monthlyBreakdown,
+            modifier = Modifier.weight(1f)
+        )
+    }
+
+    // Top Customers at the bottom
+    TopCustomersByRevenueCard(
+        topCustomers = analyticsData.topCustomersByRevenue,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 24.dp)
+    )
 }
 
 @Composable
@@ -197,28 +216,19 @@ fun PeriodSelector(
             .padding(top = 12.dp),
         horizontalArrangement = Arrangement.End
     ) {
-        PeriodButton(
-            text = "Week",
-            isSelected = selectedPeriod == "Week",
-            onClick = { onPeriodChange("Week") }
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        PeriodButton(
-            text = "Month",
-            isSelected = selectedPeriod == "Month",
-            onClick = { onPeriodChange("Month") }
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        PeriodButton(
-            text = "Quarter",
-            isSelected = selectedPeriod == "Quarter",
-            onClick = { onPeriodChange("Quarter") }
-        )
+        listOf("Week", "Month", "Quarter").forEachIndexed { index, period ->
+            if (index > 0) Spacer(modifier = Modifier.width(10.dp))
+            PeriodButton(
+                text = period,
+                isSelected = selectedPeriod == period,
+                onClick = { onPeriodChange(period) }
+            )
+        }
     }
 }
 
 @Composable
-fun PeriodButton(
+private fun PeriodButton(
     text: String,
     isSelected: Boolean,
     onClick: () -> Unit
@@ -226,7 +236,7 @@ fun PeriodButton(
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(if (isSelected) Color(0xFF4F46E5) else Color.White)
+            .background(if (isSelected) Indigo else Color.White)
             .clickable(onClick = onClick)
             .padding(horizontal = 24.dp, vertical = 11.dp)
     ) {
@@ -240,7 +250,7 @@ fun PeriodButton(
 }
 
 @Composable
-fun MetricCardsRow(analyticsData: AnalyticsData) {
+private fun MetricCardsRow(analyticsData: AnalyticsData) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -286,25 +296,25 @@ fun MetricCard(
             Text(
                 text = title,
                 fontSize = 14.sp,
-                color = Color.Gray
+                color = Grey
             )
             Text(
                 text = value,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF4F46E5)
+                color = Indigo
             )
         }
     }
 }
 
 @Composable
-fun RevenueTrendCard(monthlyRevenue: List<MonthlyRevenue>) {
+fun RevenueTrendCard(
+    monthlyRevenue: List<MonthlyRevenue>,
+    modifier: Modifier = Modifier
+) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(bottom = 24.dp),
+        modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -322,7 +332,7 @@ fun RevenueTrendCard(monthlyRevenue: List<MonthlyRevenue>) {
                 Text(
                     text = "No revenue data available",
                     fontSize = 16.sp,
-                    color = Color.Gray
+                    color = Grey
                 )
             } else {
                 monthlyRevenue.forEach { monthData ->
@@ -339,7 +349,7 @@ fun RevenueTrendCard(monthlyRevenue: List<MonthlyRevenue>) {
 }
 
 @Composable
-fun RevenueBar(
+private fun RevenueBar(
     month: String,
     amount: Double,
     maxAmount: Double
@@ -357,24 +367,11 @@ fun RevenueBar(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Box(modifier = Modifier.weight(1f)) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(16.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFE5E7EB))
-            )
-
-            val progress = if (maxAmount > 0) (amount / maxAmount).toFloat() else 0f
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(fraction = progress.coerceIn(0f, 1f))
-                    .height(16.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFF4F46E5))
-            )
-        }
+        ProgressBar(
+            progress = if (maxAmount > 0) (amount / maxAmount).toFloat() else 0f,
+            color = Indigo,
+            modifier = Modifier.weight(1f)
+        )
 
         Spacer(modifier = Modifier.width(16.dp))
 
@@ -412,7 +409,7 @@ fun MonthlyBreakdownCard(
                 label = "Revenue",
                 value = formatCurrency(breakdown.revenue),
                 progress = 1f,
-                color = Color(0xFF4F46E5)
+                color = Indigo
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -423,7 +420,7 @@ fun MonthlyBreakdownCard(
                 progress = if (breakdown.revenue > 0)
                     (breakdown.outstanding.toFloat() / breakdown.revenue.toFloat()).coerceIn(0f, 1f)
                 else 0f,
-                color = Color(0xFFFBBF24)
+                color = Yellow
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -434,14 +431,14 @@ fun MonthlyBreakdownCard(
                 progress = if (breakdown.revenue > 0)
                     (breakdown.invoices.toFloat() * 100f / breakdown.revenue.toFloat()).coerceIn(0f, 1f)
                 else 0f,
-                color = Color(0xFF10B981)
+                color = Green
             )
         }
     }
 }
 
 @Composable
-fun BreakdownItem(
+private fun BreakdownItem(
     label: String,
     value: String,
     progress: Float,
@@ -468,23 +465,11 @@ fun BreakdownItem(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Box(modifier = Modifier.fillMaxWidth().height(8.dp)) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFE5E7EB))
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(fraction = progress.coerceIn(0f, 1f))
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(color)
-            )
-        }
+        ProgressBar(
+            progress = progress,
+            color = color,
+            height = 8.dp
+        )
     }
 }
 
@@ -512,20 +497,15 @@ fun TopCustomersByRevenueCard(
                 Text(
                     text = "No customer data available",
                     fontSize = 14.sp,
-                    color = Color.Gray
+                    color = Grey
                 )
             } else {
                 topCustomers.forEachIndexed { index, customer ->
-                    val color = when(index) {
-                        0 -> Color(0xFF4F46E5)
-                        1 -> Color(0xFF10B981)
-                        else -> Color(0xFF8B5CF6)
-                    }
                     CustomerRevenueItem(
                         name = customer.name,
                         amount = customer.amount,
                         progress = customer.amount / customer.maxAmount,
-                        color = color
+                        colorIndex = index
                     )
                     if (index < topCustomers.size - 1) {
                         Spacer(modifier = Modifier.height(20.dp))
@@ -537,12 +517,18 @@ fun TopCustomersByRevenueCard(
 }
 
 @Composable
-fun CustomerRevenueItem(
+private fun CustomerRevenueItem(
     name: String,
     amount: Double,
     progress: Double,
-    color: Color
+    colorIndex: Int
 ) {
+    val color = when(colorIndex) {
+        0 -> Indigo
+        1 -> Green
+        else -> Purple
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -573,99 +559,55 @@ fun CustomerRevenueItem(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Box(modifier = Modifier.fillMaxWidth().height(8.dp)) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFE5E7EB))
-            )
+        ProgressBar(
+            progress = progress.toFloat(),
+            color = color,
+            height = 8.dp
+        )
+    }
+}
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(fraction = progress.toFloat().coerceIn(0f, 1f))
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(color)
-            )
-        }
+@Composable
+private fun ProgressBar(
+    progress: Float,
+    color: Color,
+    modifier: Modifier = Modifier,
+    height: androidx.compose.ui.unit.Dp = 16.dp
+) {
+    Box(modifier = modifier.fillMaxWidth().height(height)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(height)
+                .clip(RoundedCornerShape(height / 2))
+                .background(VeryLightGray)
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(fraction = progress.coerceIn(0f, 1f))
+                .height(height)
+                .clip(RoundedCornerShape(height / 2))
+                .background(color)
+        )
     }
 }
 
 fun calculateAnalytics(invoices: List<Invoice>, customers: List<Customer>): AnalyticsData {
-    val debtRecovered = invoices.filter { it.status.equals("Paid", ignoreCase = true) }.sumOf { it.amount }
-    val debtOutstanding = invoices.filter { !it.status.equals("Paid", ignoreCase = true) }.sumOf { it.amount }
+    val debtRecovered = invoices
+        .filter { it.status.equals("Paid", ignoreCase = true) }
+        .sumOf { it.amount }
+
+    val debtOutstanding = invoices
+        .filter { !it.status.equals("Paid", ignoreCase = true) }
+        .sumOf { it.amount }
+
     val invoicesSent = invoices.size
 
-    val monthlyRevenueMap = mutableMapOf<String, Double>()
-    invoices.forEach { invoice ->
-        val monthKey = "${invoice.invDate.get(java.util.Calendar.YEAR)}-${invoice.invDate.get(java.util.Calendar.MONTH)}"
-        monthlyRevenueMap[monthKey] = monthlyRevenueMap.getOrDefault(monthKey, 0.0) + invoice.amount
-    }
-
-    val maxMonthlyRevenue = monthlyRevenueMap.values.maxOrNull() ?: 1.0
-    val sortedMonths = monthlyRevenueMap.entries.sortedBy { entry ->
-        val parts = entry.key.split("-")
-        parts[0].toInt() * 12 + parts[1].toInt()
-    }.takeLast(6)
-
-    val monthlyRevenue = sortedMonths.map { (key, amount) ->
-        val parts = key.split("-")
-        val month = java.text.DateFormatSymbols().shortMonths[parts[1].toInt()]
-        MonthlyRevenue(
-            month = month,
-            amount = amount,
-            maxAmount = maxMonthlyRevenue
-        )
-    }
-
-    val currentCalendar = java.util.Calendar.getInstance()
-    val currentYear = currentCalendar.get(java.util.Calendar.YEAR)
-    val currentMonth = currentCalendar.get(java.util.Calendar.MONTH)
-
-    val currentMonthInvoices = invoices.filter { invoice ->
-        invoice.invDate.get(java.util.Calendar.YEAR) == currentYear &&
-                invoice.invDate.get(java.util.Calendar.MONTH) == currentMonth
-    }
-
-    val monthlyBreakdown = MonthlyBreakdown(
-        revenue = currentMonthInvoices.sumOf { it.amount },
-        invoices = currentMonthInvoices.size,
-        outstanding = currentMonthInvoices.filter { !it.status.equals("Paid", ignoreCase = true) }.sumOf { it.amount }
-    )
-
-    val customerMap = customers.associateBy { it.id }
-
-    val customerRevenueMap = mutableMapOf<String, Double>()
-    invoices.forEach { invoice ->
-        val customerName = customerMap[invoice.customerID]?.name ?: "Unknown"
-        customerRevenueMap[customerName] = customerRevenueMap.getOrDefault(customerName, 0.0) + invoice.amount
-    }
-
-    val maxCustomerRevenue = customerRevenueMap.values.maxOrNull() ?: 1.0
-    val topCustomersByRevenue = customerRevenueMap.entries
-        .sortedByDescending { it.value }
-        .take(3)
-        .map { (name, amount) ->
-            CustomerRevenue(
-                name = name,
-                amount = amount,
-                maxAmount = maxCustomerRevenue
-            )
-        }
-
-    val maxCreditScore = customers.maxOfOrNull { it.creditScore } ?: 850
-    val topCustomersByCreditScore = customers
-        .sortedByDescending { it.creditScore }
-        .take(3)
-        .map { customer ->
-            CustomerCreditScore(
-                name = customer.name,
-                creditScore = customer.creditScore,
-                maxScore = maxCreditScore
-            )
-        }
+    val monthlyRevenue = calculateMonthlyRevenue(invoices)
+    val monthlyBreakdown = calculateMonthlyBreakdown(invoices)
+    val topCustomersByRevenue = calculateTopCustomersByRevenue(invoices, customers)
+    val topCustomersByCreditScore = calculateTopCustomersByCreditScore(customers)
 
     return AnalyticsData(
         debtRecovered = debtRecovered,
@@ -676,6 +618,94 @@ fun calculateAnalytics(invoices: List<Invoice>, customers: List<Customer>): Anal
         topCustomersByRevenue = topCustomersByRevenue,
         topCustomersByCreditScore = topCustomersByCreditScore
     )
+}
+
+private fun calculateMonthlyRevenue(invoices: List<Invoice>): List<MonthlyRevenue> {
+    val monthlyRevenueMap = mutableMapOf<String, Double>()
+
+    invoices.forEach { invoice ->
+        val monthKey = "${invoice.invDate.get(Calendar.YEAR)}-${invoice.invDate.get(Calendar.MONTH)}"
+        monthlyRevenueMap[monthKey] = monthlyRevenueMap.getOrDefault(monthKey, 0.0) + invoice.amount
+    }
+
+    val maxMonthlyRevenue = monthlyRevenueMap.values.maxOrNull() ?: 1.0
+
+    val sortedMonths = monthlyRevenueMap.entries
+        .sortedBy { entry ->
+            val parts = entry.key.split("-")
+            parts[0].toInt() * 12 + parts[1].toInt()
+        }
+        .takeLast(6)
+
+    return sortedMonths.map { (key, amount) ->
+        val parts = key.split("-")
+        val month = java.text.DateFormatSymbols().shortMonths[parts[1].toInt()]
+        MonthlyRevenue(
+            month = month,
+            amount = amount,
+            maxAmount = maxMonthlyRevenue
+        )
+    }
+}
+
+private fun calculateMonthlyBreakdown(invoices: List<Invoice>): MonthlyBreakdown {
+    val currentCalendar = Calendar.getInstance()
+    val currentYear = currentCalendar.get(Calendar.YEAR)
+    val currentMonth = currentCalendar.get(Calendar.MONTH)
+
+    val currentMonthInvoices = invoices.filter { invoice ->
+        invoice.invDate.get(Calendar.YEAR) == currentYear &&
+                invoice.invDate.get(Calendar.MONTH) == currentMonth
+    }
+
+    return MonthlyBreakdown(
+        revenue = currentMonthInvoices.sumOf { it.amount },
+        invoices = currentMonthInvoices.size,
+        outstanding = currentMonthInvoices
+            .filter { !it.status.equals("Paid", ignoreCase = true) }
+            .sumOf { it.amount }
+    )
+}
+
+private fun calculateTopCustomersByRevenue(
+    invoices: List<Invoice>,
+    customers: List<Customer>
+): List<CustomerRevenue> {
+    val customerMap = customers.associateBy { it.id }
+    val customerRevenueMap = mutableMapOf<String, Double>()
+
+    invoices.forEach { invoice ->
+        val customerName = customerMap[invoice.customerID]?.name ?: "Unknown"
+        customerRevenueMap[customerName] = customerRevenueMap.getOrDefault(customerName, 0.0) + invoice.amount
+    }
+
+    val maxCustomerRevenue = customerRevenueMap.values.maxOrNull() ?: 1.0
+
+    return customerRevenueMap.entries
+        .sortedByDescending { it.value }
+        .take(3)
+        .map { (name, amount) ->
+            CustomerRevenue(
+                name = name,
+                amount = amount,
+                maxAmount = maxCustomerRevenue
+            )
+        }
+}
+
+private fun calculateTopCustomersByCreditScore(customers: List<Customer>): List<CustomerCreditScore> {
+    val maxCreditScore = customers.maxOfOrNull { it.creditScore } ?: 850
+
+    return customers
+        .sortedByDescending { it.creditScore }
+        .take(3)
+        .map { customer ->
+            CustomerCreditScore(
+                name = customer.name,
+                creditScore = customer.creditScore,
+                maxScore = maxCreditScore
+            )
+        }
 }
 
 fun formatCurrency(amount: Double): String {

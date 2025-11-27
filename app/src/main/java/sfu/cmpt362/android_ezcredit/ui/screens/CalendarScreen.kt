@@ -27,11 +27,7 @@ import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.CalendarScreenViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Receipt
-import sfu.cmpt362.android_ezcredit.ui.theme.Amber
-import sfu.cmpt362.android_ezcredit.ui.theme.Green
-import sfu.cmpt362.android_ezcredit.ui.theme.LightGray
-import sfu.cmpt362.android_ezcredit.ui.theme.Red
-import sfu.cmpt362.android_ezcredit.ui.theme.WhiteSmoke
+import sfu.cmpt362.android_ezcredit.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
