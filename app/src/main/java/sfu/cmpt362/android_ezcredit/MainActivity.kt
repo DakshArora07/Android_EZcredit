@@ -10,14 +10,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import sfu.cmpt362.android_ezcredit.ui.NavigationDrawerScreen
 import sfu.cmpt362.android_ezcredit.ui.theme.Android_EZCreditTheme
-import sfu.cmpt362.android_ezcredit.utils.ReminderScheduler
+import sfu.cmpt362.android_ezcredit.utils.BackgroundTaskSchedular
 
 class MainActivity : ComponentActivity() {
 
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
-                ReminderScheduler.scheduleInvoiceReminders(this)
+                BackgroundTaskSchedular.initializeAllTasks(this)
             } else {
                 // Permission denied: optionally notify user or proceed without reminders
             }
@@ -32,14 +32,14 @@ class MainActivity : ComponentActivity() {
                     this,
                     Manifest.permission.POST_NOTIFICATIONS
                 ) == PackageManager.PERMISSION_GRANTED -> {
-                    ReminderScheduler.scheduleInvoiceReminders(this)
+                    BackgroundTaskSchedular.initializeAllTasks(this)
                 }
                 else -> {
                     requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
         } else {
-            ReminderScheduler.scheduleInvoiceReminders(this)
+            BackgroundTaskSchedular.initializeAllTasks(this)
         }
 
         setContent {
