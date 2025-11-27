@@ -43,7 +43,7 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
             )
         }else{
             invoice = invoice.copy(
-                invoiceId,
+                id = invoiceId,
                 invoiceNumber = invoiceNumber,
                 customerID = customerId,
                 invDate = issueDate,
@@ -67,22 +67,16 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
         amountText = ""
     }
 
-    fun getInvoiceById(id: Long, onResult: (Invoice) -> Unit){
-        CoroutineScope(Dispatchers.IO).launch {
-            val invoice = repository.getById(id)
-            onResult(invoice)
-        }
+    suspend fun getInvoiceById(id: Long): Invoice {
+        return repository.getById(id)
     }
 
     fun getCustomerNameByInvoiceId(id: Long): String{
         return repository.getCustomerNameByInvoiceId(id)
     }
 
-    fun getInvoicesByCustomerId(id: Long, onResult: (List<Invoice>) -> Unit) {
-        viewModelScope.launch {
-            val invoices = repository.getInvoicesByCustomerId(id)
-            onResult(invoices)
-        }
+    suspend fun getInvoicesByCustomerId(id: Long): List<Invoice> {
+        return repository.getInvoicesByCustomerId(id)
     }
 
     fun delete(id: Long) {

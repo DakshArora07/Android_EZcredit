@@ -115,51 +115,37 @@ fun AddInvoiceScreen(
         showEditButton = false,
         showDeleteButton = false,
         onSave = {
-            coroutineScope.launch {
-                val selectedCustomer = customerViewModel.customerFromUserInputOnAddMode
-                if (invoiceNumber.isBlank() || amountText.isBlank() || selectedStatus.isBlank()) {
-                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-                if (selectedCustomer == null) {
-                    Toast.makeText(context, "Please enter a valid customer", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-                val amount = amountText.toDoubleOrNull()
-                if (amount == null) {
-                    Toast.makeText(context, "Amount must be a number", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-
-                try {
-                    invoiceViewModel.updateAmountText(amountText)
-                    invoiceViewModel.updateInvoice(-1, invoiceNumber, selectedCustomer.id,
-                        localIssueDate, localDueDate, amount, selectedStatus)
-
-                    withContext(Dispatchers.IO) {
-                        invoiceViewModel.insert()
-
-                        val updatedCredit = if (selectedStatus == "Unpaid" || selectedStatus == "PastDue") {
-                            selectedCustomer.credit + amount
-                        } else selectedCustomer.credit
-
-                        invoiceViewModel.getInvoicesByCustomerId(selectedCustomer.id) { invoices ->
-                            val newCreditScore = CreditScoreCalculator.calculateCreditScore(invoices)
-                            customerViewModel.update(selectedCustomer.copy(
-                                credit = updatedCredit,
-                                creditScore = newCreditScore
-                            ))
-                        }
-                    }
-
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Invoice added", Toast.LENGTH_SHORT).show()
-                        onBack()
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+            val selectedCustomer = customerViewModel.customerFromUserInputOnAddMode
+            if (invoiceNumber.isBlank() || amountText.isBlank() || selectedStatus.isBlank()){
+                Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                return@SetupUIViews
             }
+            if (selectedCustomer == null) {
+                Toast.makeText(context, "Please enter a valid customer", Toast.LENGTH_SHORT).show()
+                return@SetupUIViews
+            }
+
+            val amount = amountText.toDoubleOrNull()
+            if (amount == null) {
+                Toast.makeText(context, "Amount must be a number", Toast.LENGTH_SHORT).show()
+                return@SetupUIViews
+            }
+            invoiceViewModel.updateAmountText(amountText)
+            invoiceViewModel.updateInvoice(0, invoiceNumber, selectedCustomer.id,
+                localIssueDate, localDueDate, amount, selectedStatus)
+            invoiceViewModel.insert()
+
+            val updatedCredit = if (selectedStatus == "Unpaid" || selectedStatus == "PastDue") {
+                selectedCustomer.credit + amount
+            } else selectedCustomer.credit
+
+            customerViewModel.update(selectedCustomer.copy(
+                credit = updatedCredit))
+
+            Toast.makeText(context, "Invoice added", Toast.LENGTH_SHORT).show()
+            onBack()
+
+
         },
         onCancel = onBack,
         onDelete = {}
@@ -193,19 +179,18 @@ fun ViewEditInvoiceScreen(
 
     if (!hasLoadedFromDb) {
         LaunchedEffect(invoiceId) {
-            invoiceViewModel.getInvoiceById(invoiceId) { fetchedInvoice ->
-                invoice = fetchedInvoice
-                invoiceNumber = fetchedInvoice.invoiceNumber
-                amountText = fetchedInvoice.amount.toString()
-                selectedStatus = fetchedInvoice.status
-                localIssueDate = fetchedInvoice.invDate
-                localDueDate = fetchedInvoice.dueDate
+            val fetchedInvoice = invoiceViewModel.getInvoiceById(invoiceId)
+            invoice = fetchedInvoice
+            invoiceNumber = fetchedInvoice.invoiceNumber
+            amountText = fetchedInvoice.amount.toString()
+            selectedStatus = fetchedInvoice.status
+            localIssueDate = fetchedInvoice.invDate
+            localDueDate = fetchedInvoice.dueDate
 
-                customerViewModel.getCustomerById(fetchedInvoice.customerID) { fetchedCustomer ->
-                    customerViewModel.customerFromDB = fetchedCustomer
-                    customerSearchQuery = fetchedCustomer.name
-                }
-            }
+            val fetchedCustomer = customerViewModel.getCustomerById(fetchedInvoice.customerID)
+            customerViewModel.customerFromDB = fetchedCustomer
+            customerSearchQuery = fetchedCustomer.name
+
             hasLoadedFromDb = true
         }
     }

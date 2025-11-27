@@ -24,21 +24,17 @@ class CustomerViewModel(private val repository: CustomerRepository) : ViewModel(
         private set
 
     val customersLiveData: LiveData<List<Customer>> = repository.customers.asLiveData()
-//    fun setCustomerFromDB(customer: Customer?) {
-//        customerFromDB = customer
-//    }
-
 
     fun updateCustomer(customerId:Long, name: String, email: String, phone: String):Customer {
-        if(customerId==-1L){
-            customer = customer.copy(
+        customer = if(customerId==-1L){
+            customer.copy(
                 name = name,
                 email = email,
                 phoneNumber = phone
             )
         }else{
-            customer = customer.copy(
-                customerId,
+            customer.copy(
+                id = customerId,
                 name = name,
                 email = email,
                 phoneNumber = phone
@@ -61,11 +57,8 @@ class CustomerViewModel(private val repository: CustomerRepository) : ViewModel(
         repository.update(customer)
     }
 
-    fun getCustomerById(id: Long, onResult:(Customer)->Unit){
-        viewModelScope.launch{
-            val customer = repository.getById(id)
-            onResult(customer)
-        }
+    suspend fun getCustomerById(id: Long): Customer {
+        return repository.getById(id)
     }
 
     fun delete(id: Long){

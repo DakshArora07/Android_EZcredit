@@ -69,18 +69,6 @@ fun CustomerScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Button(
-            onClick = {
-                val workRequest = OneTimeWorkRequestBuilder<InvoiceReminderWorker>().build()
-                WorkManager.getInstance(context).enqueue(workRequest)
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Run Invoice Reminder Worker")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
         if (customers.isEmpty()){
             Box(
                 modifier = Modifier.fillMaxSize(),

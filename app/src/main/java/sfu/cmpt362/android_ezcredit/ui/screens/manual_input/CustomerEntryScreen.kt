@@ -15,6 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 
@@ -97,11 +102,10 @@ fun ViewEditCustomerScreen(
 
     if (!hasLoadedFromDb) {
         LaunchedEffect(customerId) {
-            viewModel.getCustomerById(customerId) { fetchedCustomer ->
-                name = fetchedCustomer.name
-                email = fetchedCustomer.email
-                phone = fetchedCustomer.phoneNumber
-            }
+            val selectedCustomer = viewModel.getCustomerById(customerId)
+            name = selectedCustomer.name
+            email = selectedCustomer.email
+            phone = selectedCustomer.phoneNumber
             hasLoadedFromDb = true
         }
     }
@@ -135,17 +139,22 @@ fun ViewEditCustomerScreen(
         },
         onCancel = onBack,
         onDelete = {
-            invoiceViewModel.getInvoicesByCustomerId(customerId) { invoices ->
+            CoroutineScope(Dispatchers.IO).launch {
+                val invoices = invoiceViewModel.getInvoicesByCustomerId(customerId)
                 if (invoices.isNotEmpty()) {
-                    Toast.makeText(
+                    withContext(Dispatchers.Main){Toast.makeText(
                         context,
                         "Please delete all the customer invoices before deleting the customer",
                         Toast.LENGTH_SHORT
                     ).show()
+                    }
+
                 } else {
                     viewModel.delete(customerId)
-                    Toast.makeText(context, "Customer deleted", Toast.LENGTH_SHORT).show()
-                    onBack()
+                    withContext(Dispatchers.Main){
+                        Toast.makeText(context, "Customer deleted", Toast.LENGTH_SHORT).show()
+                        onBack()
+                    }
                 }
             }
         }
