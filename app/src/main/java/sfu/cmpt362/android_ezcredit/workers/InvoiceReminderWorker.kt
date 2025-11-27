@@ -43,6 +43,10 @@ class InvoiceReminderWorker(
             val customerRepository = CustomerRepository(database.customerDao)
 
             val allInvoices = invoiceRepository.invoices.first()
+            if (allInvoices.isEmpty()) {
+                Log.d("InvoiceReminderWorker", "No invoices to process")
+                return@withContext Result.success()
+            }
             Log.d("InvoiceReminderWorker", "Total invoices loaded: ${allInvoices.size}")
 
             val unpaidInvoices = allInvoices.filter { it.status != "Paid" }
