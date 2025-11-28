@@ -8,6 +8,8 @@ import sfu.cmpt362.android_ezcredit.ui.theme.Grey
 import sfu.cmpt362.android_ezcredit.ui.theme.LightGreen
 import sfu.cmpt362.android_ezcredit.ui.theme.Orange
 import sfu.cmpt362.android_ezcredit.ui.theme.Red
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 object CreditScoreCalculator {
@@ -15,6 +17,8 @@ object CreditScoreCalculator {
     const val BASE_SCORE = 60
     const val PAYMENT_HISTORY_BASE_SCORE = 60
     const val OUTSTANDING_DEBT_BASE_SCORE = 40
+    const val MAX_SCORE = 100
+    const val MIN_SCORE = 0
 
     fun calculateCreditScore(invoices: List<Invoice>): Int {
 
@@ -23,7 +27,7 @@ object CreditScoreCalculator {
         val score = paymentHistoryScore(invoices) +
                 outstandingDebtScore(invoices)
 
-        return score
+        return min(MAX_SCORE, max(MIN_SCORE, score))
     }
 
     private fun paymentHistoryScore(invoices: List<Invoice>): Int {
@@ -41,9 +45,9 @@ object CreditScoreCalculator {
             -0.20 * PAYMENT_HISTORY_BASE_SCORE,
             -0.17 * PAYMENT_HISTORY_BASE_SCORE,
             -0.14 * PAYMENT_HISTORY_BASE_SCORE,
-            -0.1 * PAYMENT_HISTORY_BASE_SCORE,
-            -0.7 * PAYMENT_HISTORY_BASE_SCORE,
-            -0.5 * PAYMENT_HISTORY_BASE_SCORE)
+            -0.10 * PAYMENT_HISTORY_BASE_SCORE,
+            -0.07 * PAYMENT_HISTORY_BASE_SCORE,
+            -0.04 * PAYMENT_HISTORY_BASE_SCORE)
 
         val paid = invoices.filter { it.status == "Paid" }
         val overdue = invoices.filter { it.status == "PastDue" }
@@ -80,7 +84,7 @@ object CreditScoreCalculator {
         val ratio = outstanding / total
 
         return when {
-            ratio < 1 -> ((1-ratio) * OUTSTANDING_DEBT_BASE_SCORE).roundToInt()
+            ratio < 1 -> ((1 - ratio) * OUTSTANDING_DEBT_BASE_SCORE).roundToInt()
             else -> (OUTSTANDING_DEBT_BASE_SCORE * 0.1).roundToInt()
         }
     }
