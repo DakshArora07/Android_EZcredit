@@ -5,7 +5,10 @@ import android.util.Log
 import androidx.work.*
 import sfu.cmpt362.android_ezcredit.workers.CreditScoreUpdateWorker
 import sfu.cmpt362.android_ezcredit.workers.InvoiceReminderWorker
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 object BackgroundTaskSchedular {
@@ -17,6 +20,7 @@ object BackgroundTaskSchedular {
     fun initializeAllTasks(context: Context) {
         scheduleInvoiceReminders(context)
         scheduleCreditScoreUpdate(context)
+        checkWorkStatus(context)
     }
 
     fun scheduleInvoiceReminders(context: Context) {
@@ -26,69 +30,87 @@ object BackgroundTaskSchedular {
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
-        val initialDelay = calculateInitialDelay(9)
-        Log.d(TAG, "Initial delay for reminders: $initialDelay ms")
-
         val reminderWork = PeriodicWorkRequestBuilder<InvoiceReminderWorker>(
-            24, TimeUnit.HOURS
+            10, TimeUnit.MINUTES
         )
             .setConstraints(constraints)
-            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+            .setInitialDelay(1, TimeUnit.MINUTES)
             .addTag("invoice_reminders")
             .build()
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             REMINDER_WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.REPLACE,
             reminderWork
         )
     }
 
     fun cancelInvoiceReminders(context: Context) {
         Log.d(TAG, "Cancelling invoice reminders")
-        WorkManager.getInstance(context).cancelAllWorkByTag("invoice_reminders")
+        WorkManager.getInstance(context).cancelUniqueWork(REMINDER_WORK_NAME)
     }
-
 
     fun scheduleCreditScoreUpdate(context: Context) {
         Log.d(TAG, "Scheduling credit score updates")
 
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+            .setRequiresBatteryNotLow(false)
             .build()
 
-        val initialDelay = calculateInitialDelay(9)
-        Log.d(TAG, "Initial delay for credit score: $initialDelay ms")
-
         val creditScoreUpdateWork = PeriodicWorkRequestBuilder<CreditScoreUpdateWorker>(
-            24, TimeUnit.HOURS
+            10, TimeUnit.MINUTES
         )
             .setConstraints(constraints)
-            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+            .setInitialDelay(1, TimeUnit.MINUTES)
             .addTag("credit_score_update")
             .build()
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             CREDIT_SCORE_UPDATE_WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.REPLACE,
             creditScoreUpdateWork
         )
     }
 
-    fun cancelCreditScoreUpdate(context: Context) {
-        Log.d(TAG, "Cancelling credit score updates")
-        WorkManager.getInstance(context).cancelAllWorkByTag("credit_score_update")
-    }
+    fun checkWorkStatus(context: Context) {
+        val workManager = WorkManager.getInstance(context)
 
-    private fun calculateInitialDelay(targetHour: Int): Long {
-        val now = Calendar.getInstance()
-        val target = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, targetHour)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            if (before(now)) add(Calendar.DAY_OF_MONTH, 1)
+        try {
+            val creditScoreWorkInfos =
+                workManager.getWorkInfosForUniqueWork(CREDIT_SCORE_UPDATE_WORK_NAME)
+            creditScoreWorkInfos.get().forEach { workInfo ->
+                val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                    .format(Date(workInfo.nextScheduleTimeMillis))
+
+                Log.d(TAG, """
+                    ====================================
+                    Credit Score Work Status:
+                    State: ${workInfo.state}
+                    Next run: $nextRunTime
+                    Run attempt: ${workInfo.runAttemptCount}
+                    Tags: ${workInfo.tags}
+                    ====================================
+                """.trimIndent())
+            }
+
+            val reminderWorkInfos = workManager.getWorkInfosForUniqueWork(REMINDER_WORK_NAME)
+            reminderWorkInfos.get().forEach { workInfo ->
+                val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                    .format(Date(workInfo.nextScheduleTimeMillis))
+
+                Log.d(TAG, """
+                    ====================================
+                    Invoice Reminder Work Status:
+                    State: ${workInfo.state}
+                    Next run: $nextRunTime
+                    Run attempt: ${workInfo.runAttemptCount}
+                    Tags: ${workInfo.tags}
+                    ====================================
+                """.trimIndent())
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking work status: ${e.message}")
         }
-        return target.timeInMillis - now.timeInMillis
     }
 }
