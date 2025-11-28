@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import sfu.cmpt362.android_ezcredit.utils.BackgroundTaskSchedular
+import sfu.cmpt362.android_ezcredit.utils.PreferenceManager
 
 @Composable
 fun SettingsScreen(
@@ -21,7 +22,9 @@ fun SettingsScreen(
     onLogout: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    var invoiceRemindersEnabled by remember { mutableStateOf(true) }
+    var invoiceRemindersEnabled by remember {
+        mutableStateOf(PreferenceManager.isInvoiceReminderEnabled(context))
+    }
 
     Column(
         modifier = Modifier
@@ -119,6 +122,7 @@ fun SettingsScreen(
                     checked = invoiceRemindersEnabled,
                     onCheckedChange = { enabled ->
                         invoiceRemindersEnabled = enabled
+                        PreferenceManager.setInvoiceReminderEnabled(context, enabled)
                         handleInvoiceWorkerToggle(context, enabled)
                     }
                 )
