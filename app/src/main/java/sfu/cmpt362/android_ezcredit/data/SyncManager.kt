@@ -11,6 +11,7 @@ import sfu.cmpt362.android_ezcredit.data.dao.CustomerDao
 import sfu.cmpt362.android_ezcredit.data.dao.InvoiceDao
 import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
+import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 
 class SyncManager(
     private val customerDao: CustomerDao,
@@ -67,7 +68,7 @@ class SyncManager(
                         val invDateMillis = snap.child("invDate").getValue(Long::class.java) ?: 0L
                         val dueDateMillis = snap.child("dueDate").getValue(Long::class.java) ?: 0L
                         val amount = snap.child("amount").getValue(Double::class.java) ?: 0.0
-                        val status = snap.child("status").getValue(String::class.java) ?: ""
+                        val status = snap.child("status").getValue(InvoiceStatus::class.java) ?: InvoiceStatus.Unpaid
                         val lastModified = snap.child("lastModified").getValue(Long::class.java) ?: 0L
                         val isDeleted = snap.child("isDeleted").getValue(Boolean::class.java) ?: false
 

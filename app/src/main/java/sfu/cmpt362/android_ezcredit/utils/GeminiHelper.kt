@@ -17,10 +17,11 @@ object GeminiHelper {
         invoiceNumber: String,
         amount: Double,
         dueDate: String,
+        status: InvoiceStatus,
         daysOffset: Int
     ): String {
         try {
-            val prompt = buildPrompt(customerName, invoiceNumber, amount, dueDate, daysOffset)
+            val prompt = buildPrompt(customerName, invoiceNumber, amount, dueDate, status, daysOffset)
             Log.d("GeminiHelper", "Generating message with prompt:\n$prompt")
 
             val response = model.generateContent(prompt)
@@ -39,6 +40,7 @@ object GeminiHelper {
         invoiceNumber: String,
         amount: Double,
         dueDate: String,
+        status: InvoiceStatus,
         daysOffset: Int
     ): String {
 
@@ -50,6 +52,7 @@ object GeminiHelper {
             Invoice Number: $invoiceNumber
             Amount Due: $$amount
             Due Date: $dueDate
+            Invoice Status: ${status.name}
             
             Requirements:
             - Begin with a salutation greeting the customer by name on its own line.
@@ -59,8 +62,7 @@ object GeminiHelper {
             - Do not include a subject line or external greetings.
             - The entire message should be clear and well formatted with line breaks.
             - Be professional and courteous, concise (2-3 sentences).
-            - ${if (daysOffset > 0) "Mention that payment is overdue." else ""}
-            - ${if (daysOffset <= 0) "Remind them of the upcoming/current due date." else ""}
+            - Look at the invoice status to see whether it is unpaid or overdue, and mention it accordingly
             - End the email by thanking (in a new line)
             - Include: Pay here: https://buy.stripe.com/test_28E4gzfbk6PPbr1babcwg00 (in a separate paragraph)
         

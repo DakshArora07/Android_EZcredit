@@ -21,6 +21,7 @@ import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.ui.theme.*
+import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 import java.text.NumberFormat
 import java.util.*
 
@@ -587,11 +588,11 @@ private fun ProgressBar(
 
 fun calculateAnalytics(invoices: List<Invoice>, customers: List<Customer>, period: String): AnalyticsData {
     val debtRecovered = invoices
-        .filter { it.status.equals("Paid", ignoreCase = true) }
+        .filter { it.status == InvoiceStatus.Paid || it.status == InvoiceStatus.LatePayment }
         .sumOf { it.amount }
 
     val debtOutstanding = invoices
-        .filter { !it.status.equals("Paid", ignoreCase = true) }
+        .filter { it.status == InvoiceStatus.Unpaid || it.status == InvoiceStatus.PastDue }
         .sumOf { it.amount }
 
     val invoicesSent = invoices.size
@@ -665,7 +666,7 @@ private fun calculatePeriodBreakdown(invoices: List<Invoice>, period: String): M
         revenue = periodInvoices.sumOf { it.amount },
         invoices = periodInvoices.size,
         outstanding = periodInvoices
-            .filter { !it.status.equals("Paid", ignoreCase = true) }
+            .filter { it.status == InvoiceStatus.Unpaid || it.status == InvoiceStatus.PastDue }
             .sumOf { it.amount },
         periodLabel = periodLabel
     )

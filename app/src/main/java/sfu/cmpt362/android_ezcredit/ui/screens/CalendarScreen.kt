@@ -28,6 +28,7 @@ import sfu.cmpt362.android_ezcredit.ui.viewmodel.CalendarScreenViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Receipt
 import sfu.cmpt362.android_ezcredit.ui.theme.*
+import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -348,28 +349,28 @@ fun InvoiceItem(
 }
 
 @Composable
-private fun InvoiceStatusBadge(status: String, modifier: Modifier = Modifier) {
+private fun InvoiceStatusBadge(status: InvoiceStatus, modifier: Modifier = Modifier) {
     Surface(
         shape = MaterialTheme.shapes.small,
         color = when (status) {
-            "Paid" -> MaterialTheme.colorScheme.primaryContainer
-            "Unpaid" -> MaterialTheme.colorScheme.secondaryContainer
-            "PastDue" -> MaterialTheme.colorScheme.errorContainer
+            InvoiceStatus.Paid -> MaterialTheme.colorScheme.primaryContainer
+            InvoiceStatus.Unpaid -> MaterialTheme.colorScheme.secondaryContainer
+            InvoiceStatus.PastDue -> MaterialTheme.colorScheme.errorContainer
             else -> MaterialTheme.colorScheme.surfaceVariant
         },
         modifier = modifier
     ) {
         Text(
             text = when (status) {
-                "PastDue" -> "Past Due"
-                else -> status
+                InvoiceStatus.PastDue -> "Past Due"
+                else -> status.name
             },
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             style = MaterialTheme.typography.labelSmall,
             color = when (status) {
-                "Paid" -> MaterialTheme.colorScheme.onPrimaryContainer
-                "Unpaid" -> MaterialTheme.colorScheme.onSecondaryContainer
-                "PastDue" -> MaterialTheme.colorScheme.onErrorContainer
+                InvoiceStatus.Paid -> MaterialTheme.colorScheme.onPrimaryContainer
+                InvoiceStatus.Unpaid-> MaterialTheme.colorScheme.onSecondaryContainer
+                InvoiceStatus.PastDue -> MaterialTheme.colorScheme.onErrorContainer
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
             }
         )
@@ -495,9 +496,9 @@ fun CalendarCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Legend(color = Green, label = "Paid")
-                Legend(color = Amber, label = "Pending")
-                Legend(color = Red, label = "Overdue")
+                Legend(color = Green, label = InvoiceStatus.Paid.name)
+                Legend(color = Amber, label = InvoiceStatus.Unpaid.name)
+                Legend(color = Red, label = InvoiceStatus.PastDue.name)
             }
         }
     }
@@ -625,9 +626,9 @@ fun CalendarDay(
                     ) {
                         val statusColors = invoices.map { invoice ->
                             when (invoice.status) {
-                                "Paid" -> Green
-                                "Unpaid" -> Amber
-                                "PastDue" -> Red
+                                InvoiceStatus.Paid  -> Green
+                                InvoiceStatus.Unpaid -> Amber
+                                InvoiceStatus.PastDue -> Red
                                 else -> Color.Gray
                             }
                         }.distinct().take(3)

@@ -29,6 +29,7 @@ import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceScreenViewModel
 import sfu.cmpt362.android_ezcredit.utils.CreditScoreCalculator
+import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -65,7 +66,6 @@ fun AddInvoiceScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
 
     var invoiceNumber by rememberSaveable { mutableStateOf("") }
     var amountText by rememberSaveable { mutableStateOf("") }
@@ -116,7 +116,7 @@ fun AddInvoiceScreen(
         showDeleteButton = false,
         onSave = {
             val selectedCustomer = customerViewModel.customerFromUserInputOnAddMode
-            if (invoiceNumber.isBlank() || amountText.isBlank() || selectedStatus.isBlank()){
+            if (invoiceNumber.isBlank() || amountText.isBlank()){
                 Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                 return@SetupUIViews
             }
@@ -135,7 +135,7 @@ fun AddInvoiceScreen(
                 localIssueDate, localDueDate, amount, selectedStatus)
             invoiceViewModel.insert()
 
-            val updatedCredit = if (selectedStatus == "Unpaid" || selectedStatus == "PastDue") {
+            val updatedCredit = if (selectedStatus == InvoiceStatus.Unpaid || selectedStatus == InvoiceStatus.PastDue) {
                 selectedCustomer.credit + amount
             } else selectedCustomer.credit
 
@@ -169,7 +169,7 @@ fun ViewEditInvoiceScreen(
     var invoice by remember { mutableStateOf<Invoice?>(null) }
     var invoiceNumber by rememberSaveable { mutableStateOf("") }
     var amountText by rememberSaveable { mutableStateOf("") }
-    var selectedStatus by rememberSaveable { mutableStateOf("") }
+    var selectedStatus: InvoiceStatus by rememberSaveable { mutableStateOf(InvoiceStatus.Unpaid)}
     var localIssueDate by rememberSaveable { mutableStateOf(Calendar.getInstance()) }
     var localDueDate by rememberSaveable { mutableStateOf(Calendar.getInstance()) }
     var customerSearchQuery by rememberSaveable { mutableStateOf("") }
@@ -228,7 +228,7 @@ fun ViewEditInvoiceScreen(
             val selectedCustomer = customerViewModel.customerFromDB
             val newAmount = amountText.toDoubleOrNull()
 
-            if (invoiceNumber.isBlank() || newAmount == null || selectedStatus.isBlank()) {
+            if (invoiceNumber.isBlank() || newAmount == null) {
                 Toast.makeText(context, "Please fill all fields correctly", Toast.LENGTH_SHORT).show()
                 return@SetupUIViews
             }
@@ -239,7 +239,7 @@ fun ViewEditInvoiceScreen(
 
             val oldAmount = invoice?.amount ?: 0.0
             val amountDifference = newAmount - oldAmount
-            if ((selectedStatus == "Unpaid" || selectedStatus == "PastDue") && amountDifference != 0.0) {
+            if ((selectedStatus == InvoiceStatus.Unpaid || selectedStatus == InvoiceStatus.PastDue) && amountDifference != 0.0) {
                 customerViewModel.update(selectedCustomer.copy(credit = selectedCustomer.credit + amountDifference))
             }
 
@@ -280,8 +280,8 @@ private fun SetupUIViews(
     onDueDateChange: (Calendar) -> Unit,
     amountText: String,
     onAmountChange: (String) -> Unit,
-    selectedStatus: String,
-    onStatusChange: (String) -> Unit,
+    selectedStatus: InvoiceStatus,
+    onStatusChange: (InvoiceStatus) -> Unit,
     isEditable: Boolean,
     showEditButton: Boolean,
     onEditToggle: () -> Unit = {},
@@ -412,7 +412,7 @@ private fun SetupUIViews(
             onExpandedChange = { expandedStatus = it }
         ) {
             OutlinedTextField(
-                value = selectedStatus.ifEmpty { "Select Status" },
+                value = selectedStatus.name,
                 onValueChange = {},
                 enabled = isEditable,
                 readOnly = true,
@@ -429,9 +429,9 @@ private fun SetupUIViews(
                 expanded = expandedStatus,
                 onDismissRequest = { expandedStatus = false }
             ) {
-                listOf("Paid", "Unpaid", "PastDue").forEach { status ->
+                InvoiceStatus.entries.forEach { status ->
                     DropdownMenuItem(
-                        text = { Text(status) },
+                        text = { Text(status.name) },
                         onClick = {
                             onStatusChange(status)
                             expandedStatus = false

@@ -10,7 +10,7 @@ import sfu.cmpt362.android_ezcredit.data.dao.InvoiceDao
 import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 
-@Database(entities = [Invoice::class, Customer::class], version = 2)
+@Database(entities = [Invoice::class, Customer::class], version = 3)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract val customerDao: CustomerDao

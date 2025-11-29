@@ -7,6 +7,7 @@ import androidx.work.WorkerParameters
 import kotlinx.coroutines.flow.first
 import sfu.cmpt362.android_ezcredit.data.AppDatabase
 import sfu.cmpt362.android_ezcredit.data.repository.InvoiceRepository
+import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 import java.util.Calendar
 
 class OverdueInvoiceStatusWorker (context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -39,12 +40,12 @@ class OverdueInvoiceStatusWorker (context: Context, params: WorkerParameters) : 
                 set(Calendar.MILLISECOND, 0)
             }
 
-            invoice.status == "Unpaid" &&
+            invoice.status == InvoiceStatus.Unpaid &&
                     dueDate.before(today)
         }
 
         overdueInvoices.forEach { invoice ->
-            invoice.status = "PastDue"
+            invoice.status = InvoiceStatus.PastDue
             invoiceRepository.update(invoice)
         }
 

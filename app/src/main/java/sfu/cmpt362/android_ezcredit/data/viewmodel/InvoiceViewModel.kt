@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.repository.InvoiceRepository
+import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 
 class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() {
 
@@ -30,7 +31,7 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
         issueDate: android.icu.util.Calendar,
         dueDate: android.icu.util.Calendar,
         amount: Double,
-        status: String
+        status: InvoiceStatus
     ) {
         if(invoiceId==-1L){
             invoice = invoice.copy(

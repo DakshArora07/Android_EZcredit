@@ -5,6 +5,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 
 @Entity(
     tableName = "invoice_list",
@@ -35,7 +36,7 @@ data class Invoice (
     var amount: Double = 0.0,
 
     @ColumnInfo(name = "invoice_status")
-    var status: String = "",
+    var status: InvoiceStatus = InvoiceStatus.Unpaid,
 
     var lastModified: Long = 0L,
 

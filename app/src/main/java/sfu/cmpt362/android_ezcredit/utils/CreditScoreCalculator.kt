@@ -49,8 +49,8 @@ object CreditScoreCalculator {
             -0.07 * PAYMENT_HISTORY_BASE_SCORE,
             -0.04 * PAYMENT_HISTORY_BASE_SCORE)
 
-        val paid = invoices.filter { it.status == "Paid" }
-        val overdue = invoices.filter { it.status == "PastDue" }
+        val paid = invoices.filter { it.status == InvoiceStatus.Paid }
+        val overdue = invoices.filter { it.status == InvoiceStatus.PastDue }
 
         paid.forEachIndexed { index, _ ->
             val inc = if (index < paidIncrements.size) {
@@ -78,7 +78,7 @@ object CreditScoreCalculator {
         if (total == 0.0) return OUTSTANDING_DEBT_BASE_SCORE
 
         val outstanding = invoices
-            .filter { it.status != "Paid" }
+            .filter { it.status == InvoiceStatus.Unpaid || it.status == InvoiceStatus.PastDue }
             .sumOf { it.amount }
 
         val ratio = outstanding / total

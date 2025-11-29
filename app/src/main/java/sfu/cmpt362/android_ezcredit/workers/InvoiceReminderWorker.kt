@@ -18,6 +18,7 @@ import sfu.cmpt362.android_ezcredit.data.AppDatabase
 import sfu.cmpt362.android_ezcredit.data.repository.CustomerRepository
 import sfu.cmpt362.android_ezcredit.data.repository.InvoiceRepository
 import sfu.cmpt362.android_ezcredit.utils.GeminiHelper
+import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -49,7 +50,7 @@ class InvoiceReminderWorker(
             }
             Log.d("InvoiceReminderWorker", "Total invoices loaded: ${allInvoices.size}")
 
-            val unpaidInvoices = allInvoices.filter { it.status != "Paid" }
+            val unpaidInvoices = allInvoices.filter { it.status == InvoiceStatus.Unpaid || it.status == InvoiceStatus.PastDue }
             Log.d("InvoiceReminderWorker", "Unpaid invoices count: ${unpaidInvoices.size}")
 
             val today = Calendar.getInstance().apply {
@@ -91,6 +92,7 @@ class InvoiceReminderWorker(
                         invoiceNumber = invoice.invoiceNumber,
                         amount = invoice.amount,
                         dueDate = dueDateStr,
+                        status = invoice.status,
                         daysOffset = daysDifference
                     )
 

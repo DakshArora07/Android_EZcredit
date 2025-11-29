@@ -27,6 +27,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.unit.DpOffset
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
+import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 import java.util.Locale
 
 @Composable
@@ -233,23 +234,23 @@ fun InvoiceCard(invoice: Invoice, onClick: () -> Unit) {
             Surface(
                 shape = MaterialTheme.shapes.small,
                 color = when (invoice.status) {
-                    "Paid" -> MaterialTheme.colorScheme.primaryContainer
-                    "Unpaid" -> MaterialTheme.colorScheme.secondaryContainer
-                    "PastDue" -> MaterialTheme.colorScheme.errorContainer
+                    InvoiceStatus.Paid -> MaterialTheme.colorScheme.primaryContainer
+                    InvoiceStatus.Unpaid -> MaterialTheme.colorScheme.secondaryContainer
+                    InvoiceStatus.PastDue -> MaterialTheme.colorScheme.errorContainer
                     else -> MaterialTheme.colorScheme.surfaceVariant
                 }
             ) {
                 Text(
                     text = when (invoice.status) {
-                        "PastDue" -> "Past Due"
-                        else -> invoice.status
+                        InvoiceStatus.PastDue -> "Past Due"
+                        else -> invoice.status.name
                     },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     style = MaterialTheme.typography.labelMedium,
                     color = when (invoice.status) {
-                        "Paid" -> MaterialTheme.colorScheme.onPrimaryContainer
-                        "Unpaid" -> MaterialTheme.colorScheme.onSecondaryContainer
-                        "PastDue" -> MaterialTheme.colorScheme.onErrorContainer
+                        InvoiceStatus.Paid -> MaterialTheme.colorScheme.onPrimaryContainer
+                        InvoiceStatus.Unpaid -> MaterialTheme.colorScheme.onSecondaryContainer
+                        InvoiceStatus.PastDue -> MaterialTheme.colorScheme.onErrorContainer
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )
