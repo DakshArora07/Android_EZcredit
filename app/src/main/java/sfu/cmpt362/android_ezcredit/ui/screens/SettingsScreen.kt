@@ -34,19 +34,19 @@ fun SettingsScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(28.dp)
     ) {
-        screenTitle()
-        sectionTitles("Account")
-        userProfile(onProfileClick)
-        sectionTitles("Background Tasks")
-        invoiceReminderSwitch(context,
+        ScreenTitle()
+        SectionTitles("Account")
+        UserProfile(onProfileClick)
+        SectionTitles("Background Tasks")
+        InvoiceReminderSwitch(context,
             invoiceRemindersEnabled,
             settingsScreenViewModel)
         Spacer(modifier = Modifier.weight(1f))
-        logout(onLogout)
+        Logout(onLogout)
     }
 }
 @Composable
-private fun screenTitle(){
+private fun ScreenTitle(){
     Text(
         text = "Settings",
         style = MaterialTheme.typography.headlineLarge,
@@ -54,7 +54,7 @@ private fun screenTitle(){
     )
 }
 @Composable
-private fun sectionTitles (title: String) {
+private fun SectionTitles (title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleMedium,
@@ -62,7 +62,7 @@ private fun sectionTitles (title: String) {
     )
 }
 @Composable
-private fun userProfile(onProfileClick: ()-> Unit){
+private fun UserProfile(onProfileClick: ()-> Unit){
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large
@@ -101,7 +101,7 @@ private fun userProfile(onProfileClick: ()-> Unit){
     }
 }
 @Composable
-private fun invoiceReminderSwitch (context: Context, invoiceRemindersEnabled: Boolean, settingsScreenViewModel: SettingsScreenViewModel){
+private fun InvoiceReminderSwitch (context: Context, invoiceRemindersEnabled: Boolean, settingsScreenViewModel: SettingsScreenViewModel){
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large
@@ -138,7 +138,7 @@ private fun invoiceReminderSwitch (context: Context, invoiceRemindersEnabled: Bo
     }
 }
 @Composable
-private fun logout(onLogout: () -> Unit){
+private fun Logout(onLogout: () -> Unit){
     Button(
         onClick = onLogout,
         modifier = Modifier
