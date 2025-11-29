@@ -211,6 +211,7 @@ fun NavigationHost(
             InvoiceScreen(
                 invoiceViewModel = invoiceViewModel,
                 invoiceScreenViewModel = invoiceScreenViewModel,
+                customerViewModel,
                 onAddInvoice = { invoiceId: Long ->
                     if (invoiceId >= 0L) {
                         navController.navigate("addInvoice?invoiceId=$invoiceId")

@@ -2,6 +2,10 @@ package sfu.cmpt362.android_ezcredit.ui.viewmodel
 
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.common.InputImage
@@ -10,6 +14,7 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import sfu.cmpt362.android_ezcredit.data.entity.Customer
 
 class InvoiceScreenViewModel : ViewModel() {
 
@@ -22,6 +27,12 @@ class InvoiceScreenViewModel : ViewModel() {
     private val _ocrResult = MutableStateFlow<OcrInvoiceResult?>(null)
     val ocrResult = _ocrResult.asStateFlow()
 
+    private val _customerFilter = MutableStateFlow<Customer?>(null)
+    val customerFilter = _customerFilter.asStateFlow()
+
+    fun setCustomerFilter(customer: Customer?) {
+        _customerFilter.value = customer
+    }
 
     data class OcrInvoiceResult(
         val invoiceNumber: String? = null,

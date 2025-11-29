@@ -15,6 +15,8 @@ class CustomerViewModel(private val repository: CustomerRepository) : ViewModel(
 
     var customer by mutableStateOf(Customer())
         private set
+
+
     var customerFromDB by mutableStateOf<Customer?>(null)
         public set
 
@@ -24,7 +26,7 @@ class CustomerViewModel(private val repository: CustomerRepository) : ViewModel(
         private set
 
     val customersLiveData: LiveData<List<Customer>> = repository.customers.asLiveData()
-
+    var defCustomersOrSorted by mutableStateOf<List<Customer>>(emptyList())
     fun updateCustomer(customerId:Long, name: String, email: String, phone: String):Customer {
         customer = if(customerId==-1L){
             customer.copy(

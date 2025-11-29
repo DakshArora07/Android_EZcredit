@@ -20,15 +20,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceScreenViewModel
-import sfu.cmpt362.android_ezcredit.utils.CreditScoreCalculator
 import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 import java.time.Instant
 import java.time.LocalDate
@@ -327,6 +323,11 @@ private fun SetupUIViews(
         } else {
             Text(title, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
         }
+        Button(onClick = {
+            
+        }){
+            Text("Generate PDF", style = MaterialTheme.typography.titleMedium)
+        }
 
         Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(8.dp))
@@ -455,13 +456,13 @@ private fun SetupUIViews(
                 Text("Delete", style = MaterialTheme.typography.titleMedium)
             }
         }
-
+        val forIssueDate=true
         // Date Pickers
         if (showIssueDatePicker) {
-            DatePickerDialog(issueDatePickerState, onIssueDateChange) { showIssueDatePicker = false }
+            DatePickerDialog(issueDatePickerState, onIssueDateChange,{ showIssueDatePicker = false }, null, forIssueDate )
         }
         if (showDueDatePicker) {
-            DatePickerDialog(dueDatePickerState, onDueDateChange) { showDueDatePicker = false }
+            DatePickerDialog(dueDatePickerState, onDueDateChange,  { showDueDatePicker = false }, localIssueDate, !forIssueDate)
         }
     }
 }
@@ -496,14 +497,28 @@ private fun DateField(
 private fun DatePickerDialog(
     state: DatePickerState,
     onDateChange: (Calendar) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    localIssueDate: Calendar?,
+    forIssueDate:Boolean
 ) {
+    val context = LocalContext.current
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = {
                 state.selectedDateMillis?.let { millis ->
-                    onDateChange(millisUtcToLocalDate(millis).toLocalMidnightCalendar())
+                    val selectedCalender =millisUtcToLocalDate(millis).toLocalMidnightCalendar()
+                    if(forIssueDate){
+                        onDateChange(selectedCalender)
+                    }
+                    if(!forIssueDate && localIssueDate!=null){
+                        if(selectedCalender.before(localIssueDate)){
+                            Toast.makeText(context, "Due date cannot be earlier than issue date", Toast.LENGTH_SHORT).show()
+                            state.selectedDateMillis = localIssueDate.toUtcStartOfDayMillis()
+                        }else{
+                            onDateChange(selectedCalender)
+                        }
+                    }
                 }
                 onDismiss()
             }) {
