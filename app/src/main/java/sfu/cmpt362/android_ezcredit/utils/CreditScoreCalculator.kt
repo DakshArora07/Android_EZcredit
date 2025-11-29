@@ -75,7 +75,7 @@ object CreditScoreCalculator {
     private fun outstandingDebtScore(invoices: List<Invoice>): Int {
 
         val total = invoices.sumOf { it.amount }
-        if (total == 0.0) return OUTSTANDING_DEBT_BASE_SCORE
+        if (total == 0.0) return MIN_SCORE
 
         val outstanding = invoices
             .filter { it.status == InvoiceStatus.Unpaid || it.status == InvoiceStatus.PastDue }
@@ -96,7 +96,7 @@ object CreditScoreCalculator {
             in 55..69 -> "Good"
             in 40..54 -> "Fair"
             in 20..39 -> "Poor"
-            else -> "No Score"
+            else -> "Extremely Poor"
         }
     }
 
