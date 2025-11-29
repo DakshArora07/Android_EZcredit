@@ -40,11 +40,10 @@ object BackgroundTaskSchedular {
         val initialDelay = calculateInitialDelay(10) // Send updates every day at 10 am
 
         val reminderWork = PeriodicWorkRequestBuilder<InvoiceReminderWorker>(
-            24, TimeUnit.HOURS,
-            15, TimeUnit.MINUTES
+            24, TimeUnit.HOURS
         )
             .setConstraints(constraints)
-            .setInitialDelay(initialDelay, TimeUnit.SECONDS)
+            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
             .addTag("invoice_reminders")
             .build()
 
@@ -95,12 +94,11 @@ object BackgroundTaskSchedular {
 
         val initialDelay = calculateInitialDelay(0) // Invoice status updates every day at 12 am
 
-
         val overdueInvoiceStatusWorker = PeriodicWorkRequestBuilder<OverdueInvoiceStatusWorker>(
             24, TimeUnit.HOURS,
         )
             .setConstraints(constraints)
-            .setInitialDelay(initialDelay, TimeUnit.MINUTES)
+            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
             .addTag("overdue_invoice_status_update")
             .build()
 
