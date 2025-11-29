@@ -69,11 +69,20 @@ fun AddCustomerScreen(
                 Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                 return@SetupUIViews
             }
-
+            // Email validation - must contain @ and .
+            if (!email.contains("@") || !email.contains(".")) {
+                Toast.makeText(context, "Please enter a valid email address", Toast.LENGTH_SHORT).show()
+                return@SetupUIViews
+            }
+            val cleanPhone = phone.filter { it.isDigit() }
+            if (cleanPhone.length != 10) {
+                Toast.makeText(context, "Phone number must be exactly 10 digits", Toast.LENGTH_SHORT).show()
+                return@SetupUIViews
+            }
             val capitalizedName = name.split(" ")
                 .joinToString(" ") { word -> word.lowercase().replaceFirstChar { it.uppercase() } }
 
-            viewModel.updateCustomer(-1, capitalizedName, email, phone)
+            viewModel.updateCustomer(-1, capitalizedName, email, cleanPhone)
             viewModel.insert()
             Toast.makeText(context, "Customer added", Toast.LENGTH_SHORT).show()
             onBack()
@@ -129,10 +138,20 @@ fun ViewEditCustomerScreen(
                 return@SetupUIViews
             }
 
+            // Email validation - must contain @ and .
+            if (!email.contains("@") || !email.contains(".")) {
+                Toast.makeText(context, "Please enter a valid email address", Toast.LENGTH_SHORT).show()
+                return@SetupUIViews
+            }
+            val cleanPhone = phone.filter { it.isDigit() }
+            if (cleanPhone.length != 10) {
+                Toast.makeText(context, "Phone number must be exactly 10 digits", Toast.LENGTH_SHORT).show()
+                return@SetupUIViews
+            }
             val capitalizedName = name.split(" ")
                 .joinToString(" ") { word -> word.lowercase().replaceFirstChar { it.uppercase() } }
 
-            val customer = viewModel.updateCustomer(customerId, capitalizedName, email, phone)
+            val customer = viewModel.updateCustomer(customerId, capitalizedName, email, cleanPhone)
             viewModel.update(customer)
             Toast.makeText(context, "Customer updated", Toast.LENGTH_SHORT).show()
             onBack()
