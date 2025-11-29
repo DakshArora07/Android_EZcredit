@@ -7,16 +7,22 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,15 +35,25 @@ import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.ui.theme.Red
 import sfu.cmpt362.android_ezcredit.utils.CreditScoreCalculator
 import sfu.cmpt362.android_ezcredit.workers.InvoiceReminderWorker
-
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import sfu.cmpt362.android_ezcredit.data.entity.Customer
 
 @Composable
 fun CustomerScreen(
     viewModel: CustomerViewModel,
     onAddCustomer: (id:Long) -> Unit
 ) {
+    var sortCustomersByName by rememberSaveable { mutableStateOf(false) }
     val customers by viewModel.customersLiveData.observeAsState(emptyList())
     val context = LocalContext.current
+    var filterListExpanded by rememberSaveable { mutableStateOf(false) }
+
+    viewModel.defCustomersOrSorted = if (sortCustomersByName) {
+        customers.sortedBy { it.name } // apply sort
+    } else {
+        customers // original list
+    }
 
     Column(
         modifier = Modifier
@@ -61,6 +77,28 @@ fun CustomerScreen(
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
+            Box {
+                FloatingActionButton(onClick = { filterListExpanded = true }) {
+                    Icon(
+                        Icons.Default.FilterAlt,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                DropdownMenu(
+                    expanded = filterListExpanded,
+                    onDismissRequest = { filterListExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Sort by Name") },
+                        onClick = {
+                            sortCustomersByName = !sortCustomersByName
+//
+                            filterListExpanded = false
+                        }
+                    )
+                }
+            }
 
             FloatingActionButton(onClick = {onAddCustomer(-1)}) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add Customer")
@@ -69,7 +107,7 @@ fun CustomerScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        if (customers.isEmpty()){
+        if ( viewModel.defCustomersOrSorted.isEmpty()){
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -103,7 +141,7 @@ fun CustomerScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(customers) { customer ->
+                items(viewModel.defCustomersOrSorted) { customer ->
                     CustomerCard(
                         name = customer.name,
                         email = customer.email,

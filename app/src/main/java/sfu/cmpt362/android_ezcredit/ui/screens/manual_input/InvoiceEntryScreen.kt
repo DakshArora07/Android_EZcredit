@@ -323,6 +323,11 @@ private fun SetupUIViews(
         } else {
             Text(title, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
         }
+        Button(onClick = {
+            
+        }){
+            Text("Generate PDF", style = MaterialTheme.typography.titleMedium)
+        }
 
         Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(8.dp))

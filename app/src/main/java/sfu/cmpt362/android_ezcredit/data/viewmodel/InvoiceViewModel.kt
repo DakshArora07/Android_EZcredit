@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.repository.InvoiceRepository
 import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
@@ -18,7 +19,7 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
 
     var invoice by mutableStateOf(Invoice())
         private set
-
+    var defInvoicesOrSorted by mutableStateOf<List<Invoice>>(emptyList())
     var amountText by mutableStateOf("")
         private set
 
