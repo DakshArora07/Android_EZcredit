@@ -73,10 +73,7 @@ class InvoiceReminderWorker(
 
                 Log.d("InvoiceReminderWorker", "Invoice #${invoice.invoiceNumber}: dueDate=$dueDate, daysDifference=$daysDifference")
 
-                val shouldSendReminder = when (daysDifference) {
-                    -3, 0, 3, 5 -> true
-                    else -> false
-                }
+                val shouldSendReminder = daysDifference in -2..30
 
                 if (shouldSendReminder) {
                     Log.d("InvoiceReminderWorker", "Preparing email intent for invoice #${invoice.invoiceNumber}")
