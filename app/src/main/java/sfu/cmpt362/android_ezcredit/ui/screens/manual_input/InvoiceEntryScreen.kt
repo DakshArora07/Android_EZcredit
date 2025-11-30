@@ -1,5 +1,6 @@
 package sfu.cmpt362.android_ezcredit.ui.screens.manual_input
 
+import android.content.Context
 import android.icu.text.SimpleDateFormat
 import android.icu.util.Calendar
 import android.os.Build
@@ -26,6 +27,7 @@ import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceScreenViewModel
 import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
+import sfu.cmpt362.android_ezcredit.utils.PdfUtils
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -40,7 +42,7 @@ fun InvoiceEntryScreen(
     invoiceId: Long,
     ocrResult: InvoiceScreenViewModel.OcrInvoiceResult? = null,
     onBack: () -> Unit) {
-
+    val context = LocalContext.current
     // Check for the modes:
     // Add mode: id == -1
     // View/Edit mode: id >= 0
@@ -83,6 +85,7 @@ fun AddInvoiceScreen(
     }
 
     SetupUIViews(
+        context = context,
         title = "Add New Invoice",
         subtitle = "Fill in the invoice details below",
         invoiceNumber = invoiceNumber,
@@ -192,6 +195,7 @@ fun ViewEditInvoiceScreen(
     }
 
     SetupUIViews(
+        context = context,
         title = "Update Invoice",
         subtitle = "Edit the invoice details below",
         invoiceNumber = invoiceNumber,
@@ -260,6 +264,7 @@ fun ViewEditInvoiceScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SetupUIViews(
+    context: Context,
     title: String,
     subtitle: String,
     invoiceNumber: String,
@@ -324,7 +329,15 @@ private fun SetupUIViews(
             Text(title, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
         }
         Button(onClick = {
-            
+            PdfUtils.generateInvoicePdf(
+                context = context,
+                invoiceNumber = invoiceNumber,
+                customerName = selectedCustomer?.name ?: "Unknown",
+                amount = amountText,
+                issueDate = localIssueDate.time.toString(),
+                dueDate = localDueDate.time.toString(),
+                status = selectedStatus.name
+            )
         }){
             Text("Generate PDF", style = MaterialTheme.typography.titleMedium)
         }
