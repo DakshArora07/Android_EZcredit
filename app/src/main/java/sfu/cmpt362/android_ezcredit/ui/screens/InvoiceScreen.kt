@@ -13,9 +13,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterAlt
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.unit.sp
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
@@ -234,7 +237,7 @@ fun InvoiceScreen(
                             expanded = filterListExpanded,
                             onDismissRequest = { filterListExpanded = false }
                         ) {
-                            // Status Filter Option
+
                             DropdownMenuItem(
                                 text = {
                                     Row(
@@ -242,13 +245,12 @@ fun InvoiceScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Checkbox(
-                                                checked = filterByStatus,
-                                                onCheckedChange = {
-                                                    filterByStatus = it
-                                                    if (!it) selectedStatuses = emptySet()
-                                                }
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Icon(
+                                                Icons.Default.FilterList,
+                                                contentDescription = "Status options available",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
                                             )
                                             Text("Filter By Status")
                                         }
@@ -264,7 +266,6 @@ fun InvoiceScreen(
                                 }
                             )
 
-                            // Due Date Filter Option
                             DropdownMenuItem(
                                 text = {
                                     Row(
@@ -272,13 +273,14 @@ fun InvoiceScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                             Checkbox(
                                                 checked = filterByDueDate,
                                                 onCheckedChange = {
                                                     filterByDueDate = it
                                                     if (!it) selectedDueDateLocal = null
-                                                }
+                                                },
+                                                modifier = Modifier.size(20.dp)
                                             )
                                             Text("Filter By Due Date")
                                         }
@@ -286,7 +288,8 @@ fun InvoiceScreen(
                                             Icon(
                                                 Icons.Default.Check,
                                                 contentDescription = "Active",
-                                                tint = MaterialTheme.colorScheme.primary
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
                                             )
                                         }
                                     }
@@ -300,7 +303,6 @@ fun InvoiceScreen(
 
                             Divider()
 
-                            // Clear All Filters
                             DropdownMenuItem(
                                 text = { Text("Clear All Filters") },
                                 onClick = {
@@ -421,11 +423,6 @@ fun InvoiceScreen(
             // Customer Search Input Field
             Box(modifier = Modifier.fillMaxWidth()) {
                 val focusRequester = remember { FocusRequester() }
-
-                LaunchedEffect(Unit) {
-                    focusRequester.requestFocus()
-                }
-
                 OutlinedTextField(
                     value = customerSearchQuery,
                     onValueChange = { query ->
