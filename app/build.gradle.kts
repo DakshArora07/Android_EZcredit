@@ -31,6 +31,23 @@ android {
             "GEMINI_API_KEY",
             "\"${properties.getProperty("GEMINI_API_KEY", "")}\""
         )
+        buildConfigField(
+            "String",
+            "MAILGUN_API_KEY",
+            "\"${properties.getProperty("MAILGUN_API_KEY", "")}\""
+        )
+
+        buildConfigField(
+            "String",
+            "MAILGUN_DOMAIN",
+            "\"${properties.getProperty("MAILGUN_DOMAIN", "")}\""
+        )
+
+        buildConfigField(
+            "String",
+            "FROM_EMAIL",
+            "\"${properties.getProperty("FROM_EMAIL", "")}\""
+        )
     }
 
     buildTypes {
@@ -106,4 +123,7 @@ dependencies {
 
     // Work Schedular
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // For making HTTP requests
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
 }

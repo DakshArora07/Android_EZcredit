@@ -37,19 +37,24 @@ object BackgroundTaskSchedular {
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
-        val initialDelay = calculateInitialDelay(10) // Send updates every day at 10 am
-
-        val reminderWork = PeriodicWorkRequestBuilder<InvoiceReminderWorker>(
-            24, TimeUnit.HOURS
-        )
+        val reminderWork = OneTimeWorkRequestBuilder<InvoiceReminderWorker>()
             .setConstraints(constraints)
-            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
-            .addTag("invoice_reminders")
+            .setInitialDelay(10, TimeUnit.SECONDS)  // Start after 10 seconds
+            .addTag("invoice_reminders_test")
             .build()
+//        val initialDelay = calculateInitialDelay(10) // Send updates every day at 10 am
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+//        val reminderWork = PeriodicWorkRequestBuilder<InvoiceReminderWorker>(
+//            15, TimeUnit.MINUTES
+////        )
+//            .setConstraints(constraints)
+//            .setInitialDelay(1, TimeUnit.MINUTES)
+//            .addTag("invoice_reminders")
+//            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
             REMINDER_WORK_NAME,
-            ExistingPeriodicWorkPolicy.REPLACE,
+            ExistingWorkPolicy.REPLACE,
             reminderWork
         )
     }
