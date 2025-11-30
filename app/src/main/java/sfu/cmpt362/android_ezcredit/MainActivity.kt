@@ -8,8 +8,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import sfu.cmpt362.android_ezcredit.ui.NavigationDrawerScreen
+import sfu.cmpt362.android_ezcredit.ui.screens.LoginScreen
 import sfu.cmpt362.android_ezcredit.ui.theme.Android_EZCreditTheme
 import sfu.cmpt362.android_ezcredit.utils.BackgroundTaskSchedular
 
@@ -46,7 +51,16 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             Android_EZCreditTheme {
-                NavigationDrawerScreen()
+                var isLoggedIn by remember { mutableStateOf(false) }
+
+                if (isLoggedIn) {
+                    NavigationDrawerScreen()
+                } else {
+                    LoginScreen(
+                        onLoginSuccess = { isLoggedIn = true }
+                    )
+                }
+
             }
         }
     }
