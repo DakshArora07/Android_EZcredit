@@ -69,7 +69,7 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
         amountText = ""
     }
 
-    fun getInvoiceById(id: Long): Invoice {
+    suspend fun getInvoiceById(id: Long): Invoice {
         return repository.getById(id)
     }
 
@@ -77,7 +77,7 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
         return repository.getCustomerNameByInvoiceId(id)
     }
 
-    fun getInvoicesByCustomerId(id: Long): List<Invoice> {
+    suspend fun getInvoicesByCustomerId(id: Long): List<Invoice> {
         return repository.getInvoicesByCustomerId(id)
     }
 

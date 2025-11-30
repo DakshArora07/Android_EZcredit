@@ -31,7 +31,7 @@ class InvoiceRepository(
         }
     }
 
-    fun getById(id: Long): Invoice{
+    suspend fun getById(id: Long): Invoice{
         return invoiceDao.getInvoiceById(id)
     }
 
@@ -39,7 +39,7 @@ class InvoiceRepository(
         return invoiceDao.getCustomerNameByInvoiceId(id)
     }
 
-    fun getInvoicesByCustomerId(id: Long): List<Invoice>{
+    suspend fun getInvoicesByCustomerId(id: Long): List<Invoice>{
         return invoiceDao.getInvoicesByCustomerId(id)
     }
 
