@@ -1,5 +1,6 @@
 package sfu.cmpt362.android_ezcredit.ui.screens
 
+import android.app.TimePickerDialog
 import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.SettingsScreenViewModel
+import sfu.cmpt362.android_ezcredit.utils.PreferenceManager
 
 @Composable
 fun SettingsScreen(
@@ -38,9 +40,12 @@ fun SettingsScreen(
         SectionTitles("Account")
         UserProfile(onProfileClick)
         SectionTitles("Background Tasks")
-        InvoiceReminderSwitch(context,
-            invoiceRemindersEnabled,
-            settingsScreenViewModel)
+        ReminderSettingsCard(
+            context = context,
+            enabled = invoiceRemindersEnabled,
+            hour = PreferenceManager.getInvoiceReminderHour(context),
+            settingsScreenViewModel = settingsScreenViewModel
+        )
         Spacer(modifier = Modifier.weight(1f))
         Logout(onLogout)
     }
@@ -101,42 +106,87 @@ private fun UserProfile(onProfileClick: ()-> Unit){
     }
 }
 @Composable
-private fun InvoiceReminderSwitch (context: Context, invoiceRemindersEnabled: Boolean, settingsScreenViewModel: SettingsScreenViewModel){
+fun ReminderSettingsCard(
+    context: Context,
+    enabled: Boolean,
+    hour: Int,
+    settingsScreenViewModel: SettingsScreenViewModel
+) {
+    var showPicker by remember { mutableStateOf(false) }
+
+    if (showPicker) {
+        TimePickerDialog(
+            context,
+            { _, selectedHour, _ ->
+                settingsScreenViewModel.updateReminderHour(context, selectedHour)
+                showPicker = false
+            },
+            hour,
+            0,
+            false
+        ).apply {
+            setOnDismissListener { showPicker = false }
+            show()
+        }
+    }
+
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Column(modifier = Modifier.padding(18.dp)) {
 
-            Column(
-                modifier = Modifier.weight(1f)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Invoice Reminders", style = MaterialTheme.typography.bodyLarge)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Invoice Reminders", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        if (enabled)
+                            "Automatic reminder emails are ON"
+                        else
+                            "Enable automatic reminder emails",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
-                Text(
-                    if (invoiceRemindersEnabled)
-                        "Disable automatic emails"
-                    else
-                        "Enable automatic emails",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                Switch(
+                    checked = enabled,
+                    onCheckedChange = { on ->
+                        settingsScreenViewModel.toggleInvoiceReminder(context, on)
+                    }
                 )
             }
 
-            Switch(
-                checked = invoiceRemindersEnabled,
-                onCheckedChange = { enabled ->
-                    settingsScreenViewModel.toggleInvoiceReminder(context, enabled)
+            if (enabled) {
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showPicker = true },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Reminder Time", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "${hour}:00",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null
+                    )
                 }
-            )
+            }
         }
     }
 }
+
 @Composable
 private fun Logout(onLogout: () -> Unit){
     Button(

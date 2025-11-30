@@ -14,6 +14,9 @@ class SettingsScreenViewModel : ViewModel() {
     private val _invoiceRemindersEnabled = MutableStateFlow(false)
     val invoiceRemindersEnabled: StateFlow<Boolean> = _invoiceRemindersEnabled.asStateFlow()
 
+    private val _reminderHour = MutableStateFlow(9)
+    val reminderHour = _reminderHour.asStateFlow()
+
     fun loadInvoiceReminderState(context: Context) {
         viewModelScope.launch {
             _invoiceRemindersEnabled.value = PreferenceManager.isInvoiceReminderEnabled(context)
@@ -27,6 +30,18 @@ class SettingsScreenViewModel : ViewModel() {
             handleInvoiceWorkerToggle(context, enabled)
         }
     }
+
+    fun updateReminderHour(context: Context, hour: Int) {
+        viewModelScope.launch {
+            _reminderHour.value = hour
+            PreferenceManager.setInvoiceReminderHour(context, hour)
+
+            if (invoiceRemindersEnabled.value) {
+                BackgroundTaskSchedular.scheduleInvoiceReminders(context)
+            }
+        }
+    }
+
 
     private fun handleInvoiceWorkerToggle(context: Context, enabled: Boolean) {
         if (enabled) {
