@@ -32,7 +32,7 @@ class CustomerRepository(
         }
     }
 
-    suspend fun getById(id: Long): Customer{
+    fun getById(id: Long): Customer{
         return customerDao.getCustomerById(id)
     }
 

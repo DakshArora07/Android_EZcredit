@@ -15,11 +15,8 @@ class CustomerViewModel(private val repository: CustomerRepository) : ViewModel(
 
     var customer by mutableStateOf(Customer())
         private set
-
-
     var customerFromDB by mutableStateOf<Customer?>(null)
         public set
-
     var customerFromUserInputOnAddMode by mutableStateOf<Customer?>(null)
         public set
     var creditText by mutableStateOf("")

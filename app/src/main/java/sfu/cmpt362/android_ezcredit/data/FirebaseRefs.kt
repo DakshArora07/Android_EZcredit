@@ -11,4 +11,7 @@ object FirebaseRefs {
 
     val invoicesRef: DatabaseReference
         get() = db.getReference("ezcredit").child("invoices")
+
+    val receiptsRef: DatabaseReference
+        get() = db.getReference("ezcredit").child("receipts")
 }

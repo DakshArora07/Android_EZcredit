@@ -7,14 +7,17 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import sfu.cmpt362.android_ezcredit.data.dao.CustomerDao
 import sfu.cmpt362.android_ezcredit.data.dao.InvoiceDao
+import sfu.cmpt362.android_ezcredit.data.dao.ReceiptDao
 import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
+import sfu.cmpt362.android_ezcredit.data.entity.Receipt
 
-@Database(entities = [Invoice::class, Customer::class], version = 3)
+@Database(entities = [Invoice::class, Customer::class, Receipt::class], version = 4)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract val customerDao: CustomerDao
     abstract val invoiceDao: InvoiceDao
+    abstract val receiptDao: ReceiptDao
 
     companion object{
         //The Volatile keyword guarantees visibility of changes to the INSTANCE variable across threads

@@ -31,7 +31,7 @@ class InvoiceRepository(
         }
     }
 
-    suspend fun getById(id: Long): Invoice{
+    fun getById(id: Long): Invoice{
         return invoiceDao.getInvoiceById(id)
     }
 
@@ -39,7 +39,7 @@ class InvoiceRepository(
         return invoiceDao.getCustomerNameByInvoiceId(id)
     }
 
-    suspend fun getInvoicesByCustomerId(id: Long): List<Invoice>{
+    fun getInvoicesByCustomerId(id: Long): List<Invoice>{
         return invoiceDao.getInvoicesByCustomerId(id)
     }
 
@@ -52,7 +52,6 @@ class InvoiceRepository(
             )
             invoiceDao.deleteInvoiceById(id)
             pushToFirebase(deleted)
-            invoiceDao.deleteInvoiceById(id)
         }
     }
 
