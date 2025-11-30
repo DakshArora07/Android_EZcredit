@@ -127,4 +127,7 @@ dependencies {
 
     // For making HTTP requests
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
+
+    //for itextpdf
+    implementation("com.itextpdf:itextpdf:5.5.13.3")
 }
