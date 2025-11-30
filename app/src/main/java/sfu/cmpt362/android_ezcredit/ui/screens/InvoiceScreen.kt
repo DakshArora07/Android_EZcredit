@@ -13,36 +13,33 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterAlt
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.DpOffset
 import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceScreenViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.unit.DpOffset
-import androidx.lifecycle.viewmodel.compose.viewModel
-import sfu.cmpt362.android_ezcredit.data.entity.Customer
-import sfu.cmpt362.android_ezcredit.data.entity.Invoice
+import androidx.compose.ui.unit.sp
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
-import java.util.Calendar
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,26 +48,33 @@ fun InvoiceScreen(
     invoiceViewModel: InvoiceViewModel,
     invoiceScreenViewModel: InvoiceScreenViewModel,
     customerViewModel: CustomerViewModel,
-    onAddInvoice: (invoiceId:Long) -> Unit,
+    onAddInvoice: (invoiceId: Long) -> Unit,
     onScanCompleted: (InvoiceScreenViewModel.OcrInvoiceResult) -> Unit
 ) {
-    var textFieldFocusState by remember { mutableStateOf(true) }
+    // Live data and state holders
     val invoices by invoiceViewModel.invoicesLiveData.observeAsState(emptyList())
+    val customers = customerViewModel.customersLiveData.value ?: emptyList()
+    val context = LocalContext.current
+
     var filterListExpanded by rememberSaveable { mutableStateOf(false) }
-    var clearFilters by rememberSaveable { mutableStateOf(false) }
 
-    var sortInvoicesByDueDateToday by rememberSaveable { mutableStateOf(false) }
-    var showStatusDropdown by rememberSaveable { mutableStateOf(false) }
-    var  selectedStatus by rememberSaveable { mutableStateOf("") }
-    val customers = customerViewModel.customersLiveData.value
+    // Status filter
+    var filterByStatus by rememberSaveable { mutableStateOf(false) }
+    var selectedStatuses by rememberSaveable { mutableStateOf(setOf<String>()) }
+    var showStatusMenu by rememberSaveable { mutableStateOf(false) }
 
-    // Search functionality states
+    // Due date filter
+    var filterByDueDate by rememberSaveable { mutableStateOf(false) }
+    // store selected date as LocalDate to avoid timezone issues
+    var selectedDueDateLocal by rememberSaveable { mutableStateOf<LocalDate?>(null) }
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
+
+    // Customer search/filter
     var customerSearchQuery by rememberSaveable { mutableStateOf("") }
     val selectedCustomer by invoiceScreenViewModel.customerFilter.collectAsState()
-
     var showCustomerDropdown by rememberSaveable { mutableStateOf(false) }
 
-    // Filter customers based on search query
+    // Filter customers for dropdown
     val filteredCustomers = if (customerSearchQuery.isNotEmpty() && selectedCustomer == null) {
         customers.filter {
             it.name.contains(customerSearchQuery, ignoreCase = true) ||
@@ -80,59 +84,48 @@ fun InvoiceScreen(
         emptyList()
     }
 
-    // Filter invoices by selected customer
-    var filteredInvoices = if (selectedCustomer != null) {
-        invoices.filter { it.customerID == selectedCustomer!!.id }
-    } else {
-        invoices
+    // Apply filters to invoices
+    var filteredInvoices = invoices
+
+    // Customer filter
+    if (selectedCustomer != null) {
+        filteredInvoices = filteredInvoices.filter { it.customerID == selectedCustomer!!.id }
     }
-    filteredInvoices = if (selectedStatus.isNotBlank()) {
-        filteredInvoices.filter {
-            when (selectedStatus) {
-                "Paid" -> it.status == InvoiceStatus.Paid
-                "Unpaid" -> it.status == InvoiceStatus.Unpaid
-                "Past Due" -> it.status == InvoiceStatus.PastDue
-                "Late Payment" -> it.status == InvoiceStatus.LatePayment
-                else -> true
+
+    // Status filter
+    if (filterByStatus && selectedStatuses.isNotEmpty()) {
+        filteredInvoices = filteredInvoices.filter { invoice ->
+            selectedStatuses.any { status ->
+                when (status) {
+                    "Paid" -> invoice.status == InvoiceStatus.Paid
+                    "Unpaid" -> invoice.status == InvoiceStatus.Unpaid
+                    "Past Due" -> invoice.status == InvoiceStatus.PastDue
+                    "Late Payment" -> invoice.status == InvoiceStatus.LatePayment
+                    else -> false
+                }
             }
         }
-    } else {
-        filteredInvoices
     }
 
-    // Filter by due date today
-    filteredInvoices = if (sortInvoicesByDueDateToday) {
-        filteredInvoices.filter { invoice ->
-            val today = android.icu.util.Calendar.getInstance().apply {
-                set(android.icu.util.Calendar.HOUR_OF_DAY, 0)
-                set(android.icu.util.Calendar.MINUTE, 0)
-                set(android.icu.util.Calendar.SECOND, 0)
-                set(android.icu.util.Calendar.MILLISECOND, 0)
-            }
-
-            val dueDate = invoice.dueDate.clone() as android.icu.util.Calendar
-            dueDate.set(android.icu.util.Calendar.HOUR_OF_DAY, 0)
-            dueDate.set(android.icu.util.Calendar.MINUTE, 0)
-            dueDate.set(android.icu.util.Calendar.SECOND, 0)
-            dueDate.set(android.icu.util.Calendar.MILLISECOND, 0)
-
-            dueDate.timeInMillis == today.timeInMillis
+    // Due date filter - FIX: compare LocalDate values to avoid timezone shift
+    if (filterByDueDate && selectedDueDateLocal != null) {
+        filteredInvoices = filteredInvoices.filter { invoice ->
+            val invoiceLocalDate = Instant.ofEpochMilli(invoice.dueDate.timeInMillis)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+            invoiceLocalDate == selectedDueDateLocal
         }
-    } else {
-        filteredInvoices
     }
 
-    // Sort Invoices
+    // Update invoiceViewModel's defInvoicesOrSorted (keep original behavior)
     invoiceViewModel.defInvoicesOrSorted = filteredInvoices
 
-
-    val context = LocalContext.current
+    // Camera / OCR state from viewmodel
     val cameraRequest by invoiceScreenViewModel.cameraRequest.collectAsState()
     val showDialog by invoiceScreenViewModel.showDialog.collectAsState()
-
-
     val ocrResult by invoiceScreenViewModel.ocrResult.collectAsState()
 
+    // When OCR result available, callback and clear
     LaunchedEffect(ocrResult) {
         ocrResult?.let { result ->
             onScanCompleted(result)
@@ -140,6 +133,7 @@ fun InvoiceScreen(
         }
     }
 
+    // Permission and camera launchers
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -161,12 +155,53 @@ fun InvoiceScreen(
         cameraLauncher.launch(null)
     }
 
+    // Date Picker Dialog handling: NOTE - DatePicker returns an instant representing UTC midnight of chosen date.
+    if (showDatePicker) {
+        val initialMillis = selectedDueDateLocal?.atStartOfDay(ZoneId.systemDefault())?.toInstant()
+            ?.toEpochMilli() ?: System.currentTimeMillis()
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    // dpState.selectedDateMillis is typically UTC midnight for chosen date.
+                    // Interpret it as a UTC date to extract the chosen calendar date,
+                    // then compare with invoice LocalDate (systemDefault) when filtering.
+                    val selectedMillis = datePickerState.selectedDateMillis
+                    if (selectedMillis != null) {
+                        val chosenDateUtc = Instant.ofEpochMilli(selectedMillis)
+                            .atZone(ZoneId.of("UTC"))
+                            .toLocalDate()
+                        // store chosen date (calendar date) as LocalDate — compares correctly against invoice LocalDate
+                        selectedDueDateLocal = chosenDateUtc
+                        filterByDueDate = true
+                    } else {
+                        selectedDueDateLocal = null
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    // Main UI
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
+            // Header row: title, filter FAB, add invoice FAB & menu
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -185,163 +220,209 @@ fun InvoiceScreen(
                     )
                 }
 
-                Box {
-                    FloatingActionButton(onClick = { filterListExpanded = true }) {
-                        Icon(
-                            Icons.Default.FilterAlt,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = filterListExpanded,
-                        onDismissRequest = { filterListExpanded = false }
-                    ) {
-                        DropdownMenuItem(
+                // Filters and add button area
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Filter FAB
+                    Box {
+                        FloatingActionButton(onClick = { filterListExpanded = true }) {
+                            Icon(
+                                Icons.Default.FilterAlt,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
 
-                            text = {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("Sort By Status")
-                                    if (selectedStatus.isNotEmpty()) {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = "Active",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-                                   },
-                            onClick = {
-                                filterListExpanded = false
-                                showStatusDropdown=true
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                Text("Sort By Due Date Today")
-                                if (sortInvoicesByDueDateToday) {
-                                    Icon(
-                                        Icons.Default.Check,
-                                        contentDescription = "Active",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                                   }
-                                   },
-                            onClick = {
-                                sortInvoicesByDueDateToday = !sortInvoicesByDueDateToday
-                                filterListExpanded = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("Clear Filters")
-                                    if (clearFilters) {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = "Active",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-                            },
-                            onClick = {
-                                clearFilters = !clearFilters
-                                filterListExpanded = false
-                                invoiceScreenViewModel.setCustomerFilter(null)
-                                sortInvoicesByDueDateToday=false
-                                selectedStatus=""
-                            }
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = showStatusDropdown,
-                        onDismissRequest = { showStatusDropdown = false },
-                    ) {
-                        listOf("Paid", "Unpaid", "Past Due", "Late Payment").forEach { status ->
+                        // Main Filter Menu
+                        DropdownMenu(
+                            expanded = filterListExpanded,
+                            onDismissRequest = { filterListExpanded = false }
+                        ) {
+
                             DropdownMenuItem(
                                 text = {
                                     Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(status)
-                                    if (selectedStatus == status) {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = "Selected",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Icon(
+                                                Icons.Default.FilterList,
+                                                contentDescription = "Status options available",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text("Filter By Status")
+                                        }
+                                        if (selectedStatuses.isNotEmpty()) {
+                                            Badge { Text("${selectedStatuses.size}") }
+                                        }
                                     }
-                                } },
-
+                                },
                                 onClick = {
-                                    selectedStatus = status
-                                    showStatusDropdown = false
+                                    filterByStatus = true
+                                    showStatusMenu = true
+                                    filterListExpanded = false
+                                }
+                            )
+
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Checkbox(
+                                                checked = filterByDueDate,
+                                                onCheckedChange = {
+                                                    filterByDueDate = it
+                                                    if (!it) selectedDueDateLocal = null
+                                                },
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text("Filter By Due Date")
+                                        }
+                                        if (filterByDueDate && selectedDueDateLocal != null) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = "Active",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    filterByDueDate = true
+                                    showDatePicker = true
+                                    filterListExpanded = false
+                                }
+                            )
+
+                            Divider()
+
+                            DropdownMenuItem(
+                                text = { Text("Clear All Filters") },
+                                onClick = {
+                                    filterByStatus = false
+                                    selectedStatuses = emptySet()
+                                    filterByDueDate = false
+                                    selectedDueDateLocal = null
+                                    invoiceScreenViewModel.setCustomerFilter(null)
+                                    customerSearchQuery = ""
                                     filterListExpanded = false
                                 }
                             )
                         }
-                    }
-                }
 
+                        // Status Filter Submenu
+                        DropdownMenu(
+                            expanded = showStatusMenu,
+                            onDismissRequest = { showStatusMenu = false }
+                        ) {
+                            Text(
+                                text = "Select Statuses",
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
 
-                Box {
-                    FloatingActionButton(
-                        onClick = { invoiceScreenViewModel.onAddInvoiceButtonClicked() }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add Invoice"
-                        )
-                    }
+                            Divider()
 
-                    DropdownMenu(
-                        expanded = showDialog,
-                        onDismissRequest = { invoiceScreenViewModel.onDialogDismiss() },
-                        offset = DpOffset(x = 0.dp, y = 8.dp)
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Scan Invoice") },
-                            onClick = {
-                                invoiceScreenViewModel.onDialogDismiss()
-                                permissionLauncher.launch(android.Manifest.permission.CAMERA)
+                            listOf("Paid", "Unpaid", "Past Due", "Late Payment").forEach { status ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Checkbox(
+                                                checked = selectedStatuses.contains(status),
+                                                onCheckedChange = {
+                                                    selectedStatuses = if (it) {
+                                                        selectedStatuses + status
+                                                    } else {
+                                                        selectedStatuses - status
+                                                    }
+                                                }
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(status)
+                                        }
+                                    },
+                                    onClick = {
+                                        selectedStatuses = if (selectedStatuses.contains(status)) {
+                                            selectedStatuses - status
+                                        } else {
+                                            selectedStatuses + status
+                                        }
+                                    }
+                                )
                             }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Add Manually") },
-                            onClick = {
-                                onAddInvoice(-1L)
-                                invoiceScreenViewModel.onDialogDismiss()
+
+                            Divider()
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                TextButton(onClick = { selectedStatuses = emptySet() }) {
+                                    Text("Clear All")
+                                }
+
+                                TextButton(onClick = { showStatusMenu = false }) {
+                                    Text("Done")
+                                }
                             }
-                        )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Add invoice FAB and menu (Scan/Add)
+                    Box {
+                        FloatingActionButton(
+                            onClick = { invoiceScreenViewModel.onAddInvoiceButtonClicked() }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add Invoice"
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showDialog,
+                            onDismissRequest = { invoiceScreenViewModel.onDialogDismiss() },
+                            offset = DpOffset(x = 0.dp, y = 8.dp)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Scan Invoice") },
+                                onClick = {
+                                    invoiceScreenViewModel.onDialogDismiss()
+                                    permissionLauncher.launch(android.Manifest.permission.CAMERA)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Add Manually") },
+                                onClick = {
+                                    onAddInvoice(-1L)
+                                    invoiceScreenViewModel.onDialogDismiss()
+                                }
+                            )
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-
-// Customer Search Input Field
+            // Customer Search Input Field
             Box(modifier = Modifier.fillMaxWidth()) {
                 val focusRequester = remember { FocusRequester() }
-
-                // Auto-focus when the screen loads
-                LaunchedEffect(Unit) {
-                    focusRequester.requestFocus()
-                }
-
                 OutlinedTextField(
                     value = customerSearchQuery,
                     onValueChange = { query ->
@@ -362,7 +443,6 @@ fun InvoiceScreen(
                                 customerSearchQuery = ""
                                 invoiceScreenViewModel.setCustomerFilter(null)
                                 showCustomerDropdown = false
-                                // Re-focus after clearing
                                 focusRequester.requestFocus()
                             }) {
                                 Icon(Icons.Default.Clear, contentDescription = "Clear")
@@ -375,12 +455,11 @@ fun InvoiceScreen(
                         .focusRequester(focusRequester)
                 )
 
-                // CUSTOM DROPDOWN - No more DropdownMenu!
                 if (showCustomerDropdown && filteredCustomers.isNotEmpty()) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 56.dp) // Position below text field
+                            .padding(top = 56.dp)
                             .heightIn(max = 200.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                         shape = MaterialTheme.shapes.medium,
@@ -399,7 +478,6 @@ fun InvoiceScreen(
                                             invoiceScreenViewModel.setCustomerFilter(customer)
                                             customerSearchQuery = customer.name
                                             showCustomerDropdown = false
-                                            // Re-focus after selection
                                             focusRequester.requestFocus()
                                         },
                                     color = MaterialTheme.colorScheme.surface
@@ -430,9 +508,8 @@ fun InvoiceScreen(
                                         )
                                     }
                                 }
-                                // Add divider between items (except last one)
                                 if (customer != filteredCustomers.last()) {
-                                    Divider(
+                                    HorizontalDivider(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(horizontal = 16.dp),
@@ -448,26 +525,80 @@ fun InvoiceScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Show active filter chip
-            if (selectedCustomer != null) {
-                FilterChip(
-                    selected = true,
-                    onClick = {
-                        invoiceScreenViewModel.setCustomerFilter(null)
-                        customerSearchQuery = ""
-                    },
-                    label = { Text("Filtering: ${selectedCustomer!!.name}") },
-                    trailingIcon = {
-                        Icon(
-                            Icons.Default.Clear,
-                            contentDescription = "Clear filter",
-                            modifier = Modifier.size(18.dp)
-                        )
+            // Active Filter Chips
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (selectedCustomer != null) {
+                    FilterChip(
+                        selected = true,
+                        onClick = {
+                            invoiceScreenViewModel.setCustomerFilter(null)
+                            customerSearchQuery = ""
+                        },
+                        label = { Text("Customer: ${selectedCustomer!!.name}") },
+                        trailingIcon = {
+                            Icon(
+                                Icons.Default.Clear,
+                                contentDescription = "Clear filter",
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    )
+                }
+
+                if (filterByStatus && selectedStatuses.isNotEmpty()) {
+                    FilterChip(
+                        selected = true,
+                        onClick = { showStatusMenu = true },
+                        label = { Text("Status (${selectedStatuses.size})") },
+                        trailingIcon = {
+                            IconButton(
+                                onClick = {
+                                    filterByStatus = false
+                                    selectedStatuses = emptySet()
+                                },
+                                modifier = Modifier.size(18.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Clear,
+                                    contentDescription = "Clear filter",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    )
+                }
+
+                if (filterByDueDate && selectedDueDateLocal != null) {
+                    val dateFormat = SimpleDateFormat("MMM dd", Locale.getDefault())
+                    // Format the selectedDueDateLocal to a string similar to DateFormat
+                    val labelText = try {
+                        val instant = selectedDueDateLocal!!.atStartOfDay(ZoneId.systemDefault()).toInstant()
+                        dateFormat.format(java.util.Date.from(instant))
+                    } catch (e: Exception) {
+                        selectedDueDateLocal.toString()
                     }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+
+                    FilterChip(
+                        selected = true,
+                        onClick = { showDatePicker = true },
+                        label = { Text("Due: $labelText") },
+                        trailingIcon = {
+                            Icon(
+                                Icons.Default.Clear,
+                                contentDescription = "Clear filter",
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    )
+                }
             }
-            
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Invoices list or empty-state
             if (invoiceViewModel.defInvoicesOrSorted.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -485,12 +616,16 @@ fun InvoiceScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "No invoices yet",
+                            text = "No invoices found",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "Add your first invoice to get started",
+                            text = if (selectedCustomer != null || filterByStatus || filterByDueDate) {
+                                "Try adjusting your filters"
+                            } else {
+                                "Add your first invoice to get started"
+                            },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -516,7 +651,7 @@ fun InvoiceScreen(
 }
 
 @Composable
-fun InvoiceCard(invoice: Invoice, onClick: () -> Unit) {
+fun InvoiceCard(invoice: sfu.cmpt362.android_ezcredit.data.entity.Invoice, onClick: () -> Unit) {
     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
 
     Card(
@@ -567,7 +702,6 @@ fun InvoiceCard(invoice: Invoice, onClick: () -> Unit) {
                 )
             }
 
-            // Status badge
             Surface(
                 shape = MaterialTheme.shapes.small,
                 color = when (invoice.status) {
@@ -595,84 +729,3 @@ fun InvoiceCard(invoice: Invoice, onClick: () -> Unit) {
         }
     }
 }
-//
-//             Customer Search Input Field
-//            ExposedDropdownMenuBox(
-//                expanded = showCustomerDropdown && filteredCustomers.isNotEmpty(),
-//                onExpandedChange = {  showCustomerDropdown = it },
-//                modifier = Modifier.fillMaxWidth()
-//            ) {
-//                val focusRequester = remember { FocusRequester() }
-//                LaunchedEffect(Unit) {
-//                    focusRequester.requestFocus()
-//                }
-//                OutlinedTextField(
-//                    value =  customerSearchQuery,
-//                    onValueChange = { query ->
-//                        customerSearchQuery = query
-//                        if (selectedCustomer != null) {
-//                            invoiceScreenViewModel.setCustomerFilter(null)
-//                        }
-////                        showCustomerDropdown = query.isNotEmpty()
-//                        showCustomerDropdown = query.isNotEmpty() && filteredCustomers.isNotEmpty()
-//                    },
-//                    label = { Text("Search by Customer") },
-//                    placeholder = { Text("Type customer name") },
-//                    leadingIcon = {
-//                        Icon(Icons.Default.Search, contentDescription = "Search")
-//                    },
-//                    trailingIcon = {
-//                        if (selectedCustomer != null || customerSearchQuery.isNotEmpty()) {
-//                            IconButton(onClick = {
-//                                customerSearchQuery = ""
-//                                invoiceScreenViewModel.setCustomerFilter(null)
-//                                showCustomerDropdown = false
-//                            }) {
-//                                Icon(Icons.Default.Clear, contentDescription = "Clear")
-//                            }
-//                        }
-//                    },
-//                    singleLine = true,
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .menuAnchor()
-//                )
-//
-//                ExposedDropdownMenu(
-//                    expanded = showCustomerDropdown && filteredCustomers.isNotEmpty(),
-//                    onDismissRequest = { showCustomerDropdown = false }
-//                ) {
-//                    filteredCustomers.forEach { customer ->
-//                        DropdownMenuItem(
-//                            text = {
-//                                Column {
-//                                    Row(
-//                                        Modifier.fillMaxWidth(),
-//                                        horizontalArrangement = Arrangement.SpaceBetween
-//                                    ) {
-//                                        Text(
-//                                            customer.name,
-//                                            style = MaterialTheme.typography.bodyLarge
-//                                        )
-//                                        Text(
-//                                            "ID: ${customer.id}",
-//                                            style = MaterialTheme.typography.bodySmall,
-//                                            color = MaterialTheme.colorScheme.primary
-//                                        )
-//                                    }
-//                                    Text(
-//                                        customer.email,
-//                                        style = MaterialTheme.typography.bodySmall,
-//                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-//                                    )
-//                                }
-//                            },
-//                            onClick = {
-//                                invoiceScreenViewModel.setCustomerFilter(customer)
-//                                customerSearchQuery = customer.name
-//                                showCustomerDropdown = false
-//                            }
-//                        )
-//                    }
-//                }
-//            }

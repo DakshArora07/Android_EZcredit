@@ -6,6 +6,7 @@ import androidx.work.*
 import sfu.cmpt362.android_ezcredit.workers.CreditScoreUpdateWorker
 import sfu.cmpt362.android_ezcredit.workers.InvoiceReminderWorker
 import sfu.cmpt362.android_ezcredit.workers.OverdueInvoiceStatusWorker
+import sfu.cmpt362.android_ezcredit.workers.PaidInvoiceStatusWorker
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -18,6 +19,7 @@ object BackgroundTaskSchedular {
     private const val REMINDER_WORK_NAME = "invoice_reminder_work"
     private const val CREDIT_SCORE_UPDATE_WORK_NAME = "credit_score_update_work"
     private const val OVERDUE_INVOICE_STATUS_UPDATE_WORK_NAME = "overdue_invoice_status_update_work"
+    private const val PAID_INVOICE_STATUS_UPDATE_WORK_NAME = "paid_invoice_status_update_work"
 
     fun initializeAllTasks(context: Context) {
         if (PreferenceManager.isInvoiceReminderEnabled(context)) {
@@ -27,6 +29,7 @@ object BackgroundTaskSchedular {
         }
         scheduleCreditScoreUpdate(context)
         scheduleOverdueInvoiceWorker(context)
+        schedulePaidInvoiceWorker(context)
         checkWorkStatus(context)
     }
 
@@ -37,24 +40,20 @@ object BackgroundTaskSchedular {
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
-        val reminderWork = OneTimeWorkRequestBuilder<InvoiceReminderWorker>()
+        val hour = PreferenceManager.getInvoiceReminderHour(context)
+        val initialDelay = calculateInitialDelay(hour) // Send updates every day at user selected hour
+
+        val reminderWork = PeriodicWorkRequestBuilder<InvoiceReminderWorker>(
+            24, TimeUnit.HOURS
+        )
             .setConstraints(constraints)
-            .setInitialDelay(10, TimeUnit.SECONDS)  // Start after 10 seconds
-            .addTag("invoice_reminders_test")
+            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+            .addTag("invoice_reminders")
             .build()
-//        val initialDelay = calculateInitialDelay(10) // Send updates every day at 10 am
 
-//        val reminderWork = PeriodicWorkRequestBuilder<InvoiceReminderWorker>(
-//            15, TimeUnit.MINUTES
-////        )
-//            .setConstraints(constraints)
-//            .setInitialDelay(1, TimeUnit.MINUTES)
-//            .addTag("invoice_reminders")
-//            .build()
-
-        WorkManager.getInstance(context).enqueueUniqueWork(
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             REMINDER_WORK_NAME,
-            ExistingWorkPolicy.REPLACE,
+            ExistingPeriodicWorkPolicy.REPLACE,
             reminderWork
         )
     }
@@ -72,7 +71,7 @@ object BackgroundTaskSchedular {
             .setRequiresBatteryNotLow(false)
             .build()
 
-        val initialDelay = calculateInitialDelay(1) // Credit score updates every night at 1 am
+        val initialDelay = calculateInitialDelay(2) // Credit score updates every night at 2 am
 
         val creditScoreUpdateWork = PeriodicWorkRequestBuilder<CreditScoreUpdateWorker>(
             24, TimeUnit.HOURS
@@ -90,7 +89,7 @@ object BackgroundTaskSchedular {
     }
 
     fun scheduleOverdueInvoiceWorker(context: Context) {
-        Log.d(TAG, "Scheduling invoice status updates")
+        Log.d(TAG, "Scheduling overdue invoice status updates")
 
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
@@ -112,6 +111,32 @@ object BackgroundTaskSchedular {
             ExistingPeriodicWorkPolicy.REPLACE,
             overdueInvoiceStatusWorker
         )
+    }
+
+    fun schedulePaidInvoiceWorker(context: Context) {
+        Log.d(TAG, "Scheduling paid invoice status updates")
+
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+            .setRequiresBatteryNotLow(false)
+            .build()
+
+        val initialDelay = calculateInitialDelay(1)
+
+        val paidInvoiceStatusWorker = PeriodicWorkRequestBuilder<PaidInvoiceStatusWorker>(
+            24, TimeUnit.HOURS
+        )
+            .setConstraints(constraints)
+            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+            .addTag("paid_invoice_status_update")
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            PAID_INVOICE_STATUS_UPDATE_WORK_NAME,
+            ExistingPeriodicWorkPolicy.REPLACE,
+            paidInvoiceStatusWorker
+        )
+
     }
 
     private fun calculateInitialDelay(targetHour: Int): Long {
@@ -169,6 +194,21 @@ object BackgroundTaskSchedular {
                 Log.d(TAG, """
                     ====================================
                     Overdue Invoice Status Work Status:
+                    State: ${workInfo.state}
+                    Next run: $nextRunTime
+                    Run attempt: ${workInfo.runAttemptCount}
+                    Tags: ${workInfo.tags}
+                    ====================================
+                    """.trimIndent())
+            }
+
+            val paidInvoiceStatusWorkerInfos = workManager.getWorkInfosForUniqueWork(PAID_INVOICE_STATUS_UPDATE_WORK_NAME)
+            paidInvoiceStatusWorkerInfos.get().forEach { workInfo ->
+                val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                    .format(Date(workInfo.nextScheduleTimeMillis))
+                Log.d(TAG, """
+                    ====================================
+                    Paid Invoice Status Work Status:
                     State: ${workInfo.state}
                     Next run: $nextRunTime
                     Run attempt: ${workInfo.runAttemptCount}

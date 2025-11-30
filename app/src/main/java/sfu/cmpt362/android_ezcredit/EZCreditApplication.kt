@@ -17,7 +17,7 @@ class EZCreditApplication : Application() {
         FirebaseDatabase.getInstance().setPersistenceEnabled(true)
 
         val database = AppDatabase.getInstance(this)
-        val syncManager = SyncManager(database.customerDao, database.invoiceDao, applicationScope)
+        val syncManager = SyncManager(database.customerDao, database.invoiceDao, database.receiptDao, applicationScope)
         syncManager.start()
     }
 }

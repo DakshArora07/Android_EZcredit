@@ -52,7 +52,6 @@ class InvoiceRepository(
             )
             invoiceDao.deleteInvoiceById(id)
             pushToFirebase(deleted)
-            invoiceDao.deleteInvoiceById(id)
         }
     }
 
