@@ -3,7 +3,6 @@ package sfu.cmpt362.android_ezcredit.ui
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
@@ -45,6 +44,8 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.core.content.ContextCompat
 import sfu.cmpt362.android_ezcredit.utils.BackgroundTaskSchedular
 
@@ -56,9 +57,9 @@ data class Screen(
 
 val screens = listOf(
     Screen("analytics", R.string.analytics, Icons.Default.Analytics),
-    Screen("receipts", R.string.receipts, Icons.Default.ReceiptLong),
     Screen("customers", R.string.customers, Icons.Default.People),
     Screen("invoices", R.string.invoices, Icons.Default.Receipt),
+    Screen("receipts", R.string.receipts, Icons.AutoMirrored.Filled.ReceiptLong),
     Screen("calendar", R.string.calendar, Icons.Default.CalendarMonth)
 )
 

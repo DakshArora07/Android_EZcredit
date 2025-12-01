@@ -126,7 +126,6 @@ fun ReceiptScreen(
 
             // Search Field
             val focusRequester = remember { FocusRequester() }
-            LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
             OutlinedTextField(
                 value = receiptSearchQuery,
