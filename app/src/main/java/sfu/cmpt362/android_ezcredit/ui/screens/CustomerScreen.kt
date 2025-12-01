@@ -2,42 +2,32 @@ package sfu.cmpt362.android_ezcredit.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
 import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
-import sfu.cmpt362.android_ezcredit.ui.theme.Red
 import sfu.cmpt362.android_ezcredit.utils.CreditScoreCalculator
-import sfu.cmpt362.android_ezcredit.workers.InvoiceReminderWorker
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import sfu.cmpt362.android_ezcredit.data.entity.Customer
 
 @Composable
 fun CustomerScreen(
@@ -45,14 +35,29 @@ fun CustomerScreen(
     onAddCustomer: (id:Long) -> Unit
 ) {
     var sortCustomersByName by rememberSaveable { mutableStateOf(false) }
+    var sortCustomersByCreditScore by rememberSaveable { mutableStateOf(false) }
+    var sortCustomersByTimeCreated by rememberSaveable { mutableStateOf(true) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     val customers by viewModel.customersLiveData.observeAsState(emptyList())
     val context = LocalContext.current
     var filterListExpanded by rememberSaveable { mutableStateOf(false) }
 
-    viewModel.defCustomersOrSorted = if (sortCustomersByName) {
-        customers.sortedBy { it.name } // apply sort
+    // Apply search filter
+    val searchedCustomers = if (searchQuery.isNotEmpty()) {
+        customers.filter { customer ->
+            customer.name.contains(searchQuery, ignoreCase = true) ||
+                    customer.email.contains(searchQuery, ignoreCase = true)
+        }
     } else {
-        customers // original list
+        customers
+    }
+
+    // Apply sort
+    viewModel.defCustomersOrSorted = when {
+        sortCustomersByName -> searchedCustomers.sortedBy { it.name }
+        sortCustomersByCreditScore -> searchedCustomers.sortedByDescending { it.creditScore }
+        sortCustomersByTimeCreated -> searchedCustomers.sortedBy { it.id }
+        else -> searchedCustomers
     }
 
     Column(
@@ -77,33 +82,85 @@ fun CustomerScreen(
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
-            Box {
-                FloatingActionButton(onClick = { filterListExpanded = true }) {
-                    Icon(
-                        Icons.Default.FilterAlt,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                DropdownMenu(
-                    expanded = filterListExpanded,
-                    onDismissRequest = { filterListExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Sort by Name") },
-                        onClick = {
-                            sortCustomersByName = !sortCustomersByName
-//
-                            filterListExpanded = false
-                        }
-                    )
-                }
-            }
 
-            FloatingActionButton(onClick = {onAddCustomer(-1)}) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Customer")
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box {
+                    FloatingActionButton(onClick = { filterListExpanded = true }) {
+                        Icon(
+                            Icons.Default.FilterAlt,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = filterListExpanded,
+                        onDismissRequest = { filterListExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Sort by Time Created") },
+                            onClick = {
+                                sortCustomersByTimeCreated = true
+                                sortCustomersByName = false
+                                sortCustomersByCreditScore = false
+                                filterListExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Sort by Name") },
+                            onClick = {
+                                sortCustomersByName = true
+                                sortCustomersByTimeCreated = false
+                                sortCustomersByCreditScore = false
+                                filterListExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Sort by Credit Score") },
+                            onClick = {
+                                sortCustomersByCreditScore = true
+                                sortCustomersByTimeCreated = false
+                                sortCustomersByName = false
+                                filterListExpanded = false
+                            }
+                        )
+                    }
+                }
+
+                FloatingActionButton(onClick = {onAddCustomer(-1)}) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Customer")
+                }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Search bar
+        val focusRequester = remember { FocusRequester() }
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = { Text("Search Customers") },
+            placeholder = { Text("Search by name or email") },
+            leadingIcon = {
+                Icon(Icons.Default.Search, contentDescription = "Search")
+            },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = {
+                        searchQuery = ""
+                        focusRequester.requestFocus()
+                    }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Clear")
+                    }
+                }
+            },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester)
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -124,12 +181,12 @@ fun CustomerScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "No customers yet",
+                        text = if (searchQuery.isNotEmpty()) "No customers found" else "No customers yet",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Add your first customer to get started",
+                        text = if (searchQuery.isNotEmpty()) "Try a different search" else "Add your first customer to get started",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

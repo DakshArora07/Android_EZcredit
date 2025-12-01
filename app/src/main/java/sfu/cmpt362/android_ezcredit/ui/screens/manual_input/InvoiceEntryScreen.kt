@@ -325,25 +325,39 @@ private fun SetupUIViews(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(title, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
-                Button(onClick = onEditToggle, shape = MaterialTheme.shapes.medium) {
-                    Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = {
+                            PdfUtils.generateInvoicePdf(
+                                context = context,
+                                invoiceNumber = invoiceNumber,
+                                customerName = selectedCustomer?.name ?: "Unknown",
+                                amount = amountText,
+                                issueDate = localIssueDate.time.toString(),
+                                dueDate = localDueDate.time.toString(),
+                                status = selectedStatus.name
+                            )
+                        },
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Generate PDF")
+                    }
+
+                    Button(
+                        onClick = onEditToggle,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null)
+                    }
                 }
             }
+
         } else {
             Text(title, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
-        }
-        Button(onClick = {
-            PdfUtils.generateInvoicePdf(
-                context = context,
-                invoiceNumber = invoiceNumber,
-                customerName = selectedCustomer?.name ?: "Unknown",
-                amount = amountText,
-                issueDate = localIssueDate.time.toString(),
-                dueDate = localDueDate.time.toString(),
-                status = selectedStatus.name
-            )
-        }){
-            Text("Generate PDF", style = MaterialTheme.typography.titleMedium)
         }
 
         Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -526,15 +540,21 @@ private fun DatePickerDialog(
         confirmButton = {
             TextButton(onClick = {
                 state.selectedDateMillis?.let { millis ->
-                    val selectedCalender =millisUtcToLocalDate(millis).toLocalMidnightCalendar()
-                    if(forIssueDate){
-                        onDateChange(selectedCalender)
-                    }
-                    if(!forIssueDate && localIssueDate!=null){
-                        if(selectedCalender.before(localIssueDate)){
+                    val selectedCalender = millisUtcToLocalDate(millis).toLocalMidnightCalendar()
+
+                    if (forIssueDate) {
+                        if (selectedCalender.after(Calendar.getInstance())) {
+                            Toast.makeText(context, "Issue date cannot be in the future", Toast.LENGTH_SHORT).show()
+                            state.selectedDateMillis = Calendar.getInstance().toUtcStartOfDayMillis()
+                        } else {
+                            onDateChange(selectedCalender)
+                        }
+
+                    } else if (localIssueDate != null) {
+                        if (selectedCalender.before(localIssueDate)) {
                             Toast.makeText(context, "Due date cannot be earlier than issue date", Toast.LENGTH_SHORT).show()
                             state.selectedDateMillis = localIssueDate.toUtcStartOfDayMillis()
-                        }else{
+                        } else {
                             onDateChange(selectedCalender)
                         }
                     }
@@ -543,7 +563,8 @@ private fun DatePickerDialog(
             }) {
                 Text("OK")
             }
-        },
+        }
+        ,
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Cancel")

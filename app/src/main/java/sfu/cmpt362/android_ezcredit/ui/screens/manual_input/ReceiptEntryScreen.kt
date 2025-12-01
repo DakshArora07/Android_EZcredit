@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -275,25 +276,36 @@ private fun SetupUI(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                title,
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
 
-        Text(
-            title,
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.primary
-        )
-        if(title == "Receipt Information" && selectedInvoice != null) {
-            Button(onClick = {
-                PdfUtils.generateReceiptPdf(
-                    context = context,
-                    receiptNumber = receiptNumber,
-                    invoiceNumber = selectedInvoice.invoiceNumber,
-                    amount = amountText,
-                    issueDate = localIssueDate.time.toString(),
-                )
-            }) {
-                Text("Generate PDF", style = MaterialTheme.typography.titleMedium)
+            if (title == "Receipt Information" && selectedInvoice != null) {
+                Button(
+                    onClick = {
+                        PdfUtils.generateReceiptPdf(
+                            context = context,
+                            receiptNumber = receiptNumber,
+                            invoiceNumber = selectedInvoice.invoiceNumber,
+                            amount = amountText,
+                            issueDate = localIssueDate.time.toString()
+                        )
+                    },
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = "Generate PDF")
+                }
             }
         }
+
+        Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(8.dp))
 
         // Invoice Number
