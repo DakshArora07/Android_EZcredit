@@ -36,7 +36,7 @@ class ReceiptRepository (private val receiptDao: ReceiptDao) {
         }
     }
 
-    fun getById(id: Long): Receipt{
+    suspend fun getById(id: Long): Receipt{
         return receiptDao.getReceiptById(id)
     }
 
