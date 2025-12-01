@@ -11,6 +11,7 @@ import sfu.cmpt362.android_ezcredit.data.repository.ReceiptRepository
 import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 import android.icu.util.Calendar
 import android.util.Log
+import sfu.cmpt362.android_ezcredit.data.repository.CustomerRepository
 
 class PaidInvoiceStatusWorker (context: Context, params: WorkerParameters) : CoroutineWorker(context, params){
 
@@ -22,30 +23,40 @@ class PaidInvoiceStatusWorker (context: Context, params: WorkerParameters) : Cor
         val database = AppDatabase.getInstance(applicationContext)
         val receiptRepository = ReceiptRepository(database.receiptDao)
         val invoiceRepository = InvoiceRepository(database.invoiceDao)
+        val customerRepository = CustomerRepository(database.customerDao)
 
         val allReceipts = receiptRepository.receipts.first()
+        Log.d(TAG, "Processing ${allReceipts.size} receipts")
 
         var paidCount = 0
         var lateCount = 0
 
         allReceipts.forEach { receipt ->
-            val invoice = receiptRepository.getInvoiceByReceiptId(receipt.id)
-
-            if (invoice.status == InvoiceStatus.Unpaid && invoice.status == InvoiceStatus.PastDue) {
+            val invoice = invoiceRepository.getById(receipt.invoiceId)
+            Log.d(TAG, "invoice status = ${invoice.status}")
+            if (invoice.status == InvoiceStatus.Unpaid || invoice.status == InvoiceStatus.PastDue) {
                 val today = Calendar.getInstance()
                 val dueDate = invoice.dueDate
-
+                Log.d(TAG, "today = ${today.time}, dueDate = ${dueDate.time}")
                 if (dueDate.after(today)) {
+                    Log.d(TAG, "invoice paid")
                     invoiceRepository.update(invoice.copy(
                         status = InvoiceStatus.Paid
                     ))
                     paidCount++
                 } else {
+                    Log.d(TAG, "invoice late")
                     invoiceRepository.update(invoice.copy(
                         status = InvoiceStatus.LatePayment
                     ))
                     lateCount ++
                 }
+
+                val customer = customerRepository.getById(invoice.customerId)
+                val newCredit = customer.credit - invoice.amount
+                customerRepository.update(customer.copy(
+                    credit = newCredit
+                ))
             }
         }
 

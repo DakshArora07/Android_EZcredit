@@ -278,8 +278,8 @@ private fun SetupUI(
 
         Text(
             title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.primary
         )
         if(title == "Receipt Information" && selectedInvoice != null) {
             Button(onClick = {
@@ -402,7 +402,7 @@ private fun SetupUI(
         // Buttons
         if (isEditable) {
             Button(onClick = onSave, modifier = Modifier.fillMaxWidth().height(56.dp)) {
-                Text("Save Invoice", style = MaterialTheme.typography.titleMedium)
+                Text("Save Receipt", style = MaterialTheme.typography.titleMedium)
             }
         }
         OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().height(56.dp)) {
