@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import sfu.cmpt362.android_ezcredit.data.FirebaseRefs
 import sfu.cmpt362.android_ezcredit.data.dao.ReceiptDao
+import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.entity.Receipt
 
 class ReceiptRepository (
@@ -33,6 +34,10 @@ class ReceiptRepository (
 
     fun getById(id: Long): Receipt{
         return receiptDao.getReceiptById(id)
+    }
+
+    fun getInvoiceByReceiptId(id: Long): Invoice {
+        return receiptDao.getInvoiceByReceiptId(id)
     }
 
     fun getAmountByReceiptId(id: Long): Double{
