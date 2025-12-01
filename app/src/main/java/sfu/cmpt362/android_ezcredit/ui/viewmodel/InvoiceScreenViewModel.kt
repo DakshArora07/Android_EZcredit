@@ -78,7 +78,6 @@ class InvoiceScreenViewModel : ViewModel() {
                         issueDate = Regex("Issue Date:\\s*(\\d{4}-\\d{2}-\\d{2})").find(raw)?.groupValues?.get(1),
                         dueDate = Regex("Due Date:\\s*(\\d{4}-\\d{2}-\\d{2})").find(raw)?.groupValues?.get(1),
                         customerName = Regex("Customer Name:\\s*(.*)").find(raw)?.groupValues?.get(1),
-                        status = Regex("Status:\\s*(.*)").find(raw)?.groupValues?.get(1)
                     )
 
 
