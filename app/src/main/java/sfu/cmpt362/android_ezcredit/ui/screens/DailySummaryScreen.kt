@@ -1,6 +1,5 @@
 package sfu.cmpt362.android_ezcredit.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import sfu.cmpt362.android_ezcredit.R
+import sfu.cmpt362.android_ezcredit.ui.theme.Green
+import sfu.cmpt362.android_ezcredit.ui.theme.Red
+import sfu.cmpt362.android_ezcredit.ui.theme.VeryLightGray
 import sfu.cmpt362.android_ezcredit.workers.DailySummaryWorker
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -136,13 +138,13 @@ fun HeaderStatsCard(data: SummaryData) {
                 StatBox(
                     value = data.totalIssues.toString(),
                     label = "Issues",
-                    color = Color(0xFFF44336)
+                    color = Red
                 )
 
                 StatBox(
                     value = data.successRate,
                     label = "Success Rate",
-                    color = Color(0xFF4CAF50)
+                    color = Green
                 )
             }
         }
@@ -236,7 +238,7 @@ fun SummaryCard(
                             .fillMaxWidth()
                             .padding(top = 8.dp),
                         shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFEEEEEE)
+                        color = VeryLightGray
                     ) {
                         Text(
                             text = details,
@@ -269,7 +271,7 @@ fun StatRow(stat: StatItem) {
             text = stat.value,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = if (stat.isPositive) Color(0xFF4CAF50) else Color(0xFFF44336)
+            color = if (stat.isPositive) Green else Red
         )
     }
 }

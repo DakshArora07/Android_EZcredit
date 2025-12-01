@@ -35,7 +35,7 @@ class InvoiceRepository(
         return invoiceDao.getInvoiceById(id)
     }
 
-    fun getCustomerNameByInvoiceId(id: Long): String{
+    suspend fun getCustomerNameByInvoiceId(id: Long): String{
         return invoiceDao.getCustomerNameByInvoiceId(id)
     }
 

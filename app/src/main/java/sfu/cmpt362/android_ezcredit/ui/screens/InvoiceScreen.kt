@@ -33,7 +33,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import sfu.cmpt362.android_ezcredit.data.entity.Customer
+import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
@@ -637,11 +639,17 @@ fun InvoiceScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(invoiceViewModel.defInvoicesOrSorted) { invoice ->
+
+                        var customerName by remember { mutableStateOf("Loading..") }
+                        LaunchedEffect(invoice.id) {
+                            customerName = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                                invoiceViewModel.getCustomerNameByInvoiceId(invoice.id)
+                            }
+                        }
                         InvoiceCard(
                             invoice = invoice,
-                            onClick = {
-                                onAddInvoice(invoice.id)
-                            }
+                            customerName = customerName,
+                            onClick = { onAddInvoice(invoice.id) }
                         )
                     }
                 }
@@ -651,7 +659,7 @@ fun InvoiceScreen(
 }
 
 @Composable
-fun InvoiceCard(invoice: sfu.cmpt362.android_ezcredit.data.entity.Invoice, onClick: () -> Unit) {
+fun InvoiceCard(invoice: Invoice, customerName: String = "Unknown", onClick: () -> Unit) {
     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
 
     Card(
@@ -688,6 +696,12 @@ fun InvoiceCard(invoice: sfu.cmpt362.android_ezcredit.data.entity.Invoice, onCli
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Billed To: $customerName",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
                 Text(
                     text = "Amount: $${String.format("%.2f", invoice.amount)}",

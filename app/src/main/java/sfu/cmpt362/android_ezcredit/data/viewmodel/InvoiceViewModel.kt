@@ -73,7 +73,7 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
         return repository.getById(id)
     }
 
-    fun getCustomerNameByInvoiceId(id: Long): String{
+    suspend fun getCustomerNameByInvoiceId(id: Long): String{
         return repository.getCustomerNameByInvoiceId(id)
     }
 

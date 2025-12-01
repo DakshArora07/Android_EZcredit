@@ -16,7 +16,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.SettingsScreenViewModel
-import sfu.cmpt362.android_ezcredit.utils.PreferenceManager
 
 @Composable
 fun SettingsScreen(
@@ -28,6 +27,7 @@ fun SettingsScreen(
     val invoiceRemindersEnabled by settingsScreenViewModel.invoiceRemindersEnabled.collectAsState()
     LaunchedEffect(Unit) {
         settingsScreenViewModel.loadInvoiceReminderState(context)
+        settingsScreenViewModel.loadSummaryReminderState(context)
     }
 
     Column(
@@ -43,7 +43,12 @@ fun SettingsScreen(
         ReminderSettingsCard(
             context = context,
             enabled = invoiceRemindersEnabled,
-            hour = PreferenceManager.getInvoiceReminderHour(context),
+            hour = settingsScreenViewModel.reminderHour.collectAsState().value,
+            settingsScreenViewModel = settingsScreenViewModel
+        )
+        SummaryReminderCard(
+            context = context,
+            hour = settingsScreenViewModel.summaryHour.collectAsState().value,
             settingsScreenViewModel = settingsScreenViewModel
         )
         Spacer(modifier = Modifier.weight(1f))
@@ -117,8 +122,8 @@ fun ReminderSettingsCard(
     if (showPicker) {
         TimePickerDialog(
             context,
-            { _, selectedHour, _ ->
-                settingsScreenViewModel.updateReminderHour(context, selectedHour)
+            { _, selectedHour, selectedMinute ->
+                settingsScreenViewModel.updateReminderTime(context, selectedHour, selectedMinute)
                 showPicker = false
             },
             hour,
@@ -172,7 +177,7 @@ fun ReminderSettingsCard(
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Reminder Time", style = MaterialTheme.typography.bodyLarge)
                         Text(
-                            "${hour}:00",
+                            String.format("%02d:%02d", hour, settingsScreenViewModel.reminderMinute.collectAsState().value),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -182,6 +187,60 @@ fun ReminderSettingsCard(
                         contentDescription = null
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun SummaryReminderCard(
+    context: Context,
+    hour: Int,
+    settingsScreenViewModel: SettingsScreenViewModel
+) {
+    var showPicker by remember { mutableStateOf(false) }
+
+    if (showPicker) {
+        TimePickerDialog(
+            context,
+            { _, selectedHour, selectedMinute ->
+                settingsScreenViewModel.updateSummaryTime(context, selectedHour, selectedMinute)
+                showPicker = false
+            },
+            hour,
+            0,
+            false
+        ).apply {
+            setOnDismissListener { showPicker = false }
+            show()
+        }
+    }
+
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showPicker = true },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Summary Time", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        String.format("%02d:%02d", hour, settingsScreenViewModel.summaryMinute.collectAsState().value)
+                        ,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null
+                )
             }
         }
     }
