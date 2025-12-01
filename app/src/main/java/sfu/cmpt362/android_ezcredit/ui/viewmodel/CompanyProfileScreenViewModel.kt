@@ -30,7 +30,6 @@ class CompanyProfileScreenViewModel : ViewModel() {
     }
 
     fun updatePhone(phone: String) {
-        // Only allow digits and limit to 10 characters
         val filtered = phone.filter { it.isDigit() }.take(10)
         _state.value = _state.value.copy(phone = filtered)
     }

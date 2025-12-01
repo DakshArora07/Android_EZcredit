@@ -41,7 +41,6 @@ class LoginScreenViewModel : ViewModel() {
         _state.value = _state.value.copy(isLoading = true, errorMessage = null)
 
         // TODO: Implement actual login logic
-        // For now, just simulate success
         onSuccess()
     }
 

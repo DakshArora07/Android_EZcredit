@@ -11,6 +11,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import sfu.cmpt362.android_ezcredit.ui.NavigationDrawerScreen
@@ -52,8 +53,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             Android_EZCreditTheme {
-                var isLoggedIn by remember { mutableStateOf(false) }
-                var showCompanyProfile by remember { mutableStateOf(false)}
+                var isLoggedIn by rememberSaveable { mutableStateOf(false) }
+                var showCompanyProfile by rememberSaveable { mutableStateOf(false)}
 
                 when {
                     isLoggedIn -> {
