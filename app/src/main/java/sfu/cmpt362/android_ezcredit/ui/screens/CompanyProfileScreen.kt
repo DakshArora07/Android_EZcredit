@@ -1,0 +1,644 @@
+package sfu.cmpt362.android_ezcredit.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import sfu.cmpt362.android_ezcredit.ui.theme.*
+import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModel
+
+data class User(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val name: String,
+    val email: String,
+    val role: UserRole
+)
+
+enum class UserRole(val displayName: String) {
+    ADMIN("Admin"),
+    SALES("Sales"),
+    RECEIPTS("Receipts")
+}
+
+@Composable
+fun CompanyProfileScreen(
+    onCancel: () -> Unit = {},
+    onSave: () -> Unit = {},
+    onAddUser: () -> Unit = {},
+    modifier: Modifier = Modifier,
+    viewModel: CompanyProfileScreenViewModel = viewModel()
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val focusManager = LocalFocusManager.current
+
+    val isValidPhone = state.phone.isEmpty() || state.phone.length == 10
+    val isValidEmail = state.email.isEmpty() || android.util.Patterns.EMAIL_ADDRESS.matcher(state.email).matches()
+
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val isVertical = maxWidth < 800.dp
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(WhiteSmoke)
+        ) {
+            // Header
+            CompanyProfileHeader()
+
+            if (isVertical) {
+                CompanyProfileContentVertical(
+                    companyName = state.companyName,
+                    address = state.address,
+                    phone = state.phone,
+                    email = state.email,
+                    users = state.users,
+                    isValidPhone = isValidPhone,
+                    isValidEmail = isValidEmail,
+                    showError = state.showError,
+                    errorMessage = state.errorMessage,
+                    onCompanyNameChange = { viewModel.updateCompanyName(it) },
+                    onAddressChange = { viewModel.updateAddress(it) },
+                    onPhoneChange = { viewModel.updatePhone(it) },
+                    onEmailChange = { viewModel.updateEmail(it) },
+                    onAddUser = onAddUser,
+                    onRemoveUser = { user -> viewModel.removeUser(user.id) },
+                    onCancel = onCancel,
+                    onSave = { viewModel.validateAndSave(onSave) },
+                    focusManager = focusManager
+                )
+            } else {
+                CompanyProfileContentHorizontal(
+                    companyName = state.companyName,
+                    address = state.address,
+                    phone = state.phone,
+                    email = state.email,
+                    users = state.users,
+                    isValidPhone = isValidPhone,
+                    isValidEmail = isValidEmail,
+                    showError = state.showError,
+                    errorMessage = state.errorMessage,
+                    onCompanyNameChange = { viewModel.updateCompanyName(it) },
+                    onAddressChange = { viewModel.updateAddress(it) },
+                    onPhoneChange = { viewModel.updatePhone(it) },
+                    onEmailChange = { viewModel.updateEmail(it) },
+                    onAddUser = onAddUser,
+                    onRemoveUser = { user -> viewModel.removeUser(user.id) },
+                    onCancel = onCancel,
+                    onSave = { viewModel.validateAndSave(onSave) },
+                    focusManager = focusManager
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompanyProfileHeader() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(24.dp)
+    ) {
+        Text(
+            text = "Create Company",
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = "Set up your company profile",
+            style = MaterialTheme.typography.bodyLarge,
+            color = Grey
+        )
+    }
+}
+
+@Composable
+private fun CompanyProfileContentVertical(
+    companyName: String,
+    address: String,
+    phone: String,
+    email: String,
+    users: List<User>,
+    isValidPhone: Boolean,
+    isValidEmail: Boolean,
+    showError: Boolean,
+    errorMessage: String,
+    onCompanyNameChange: (String) -> Unit,
+    onAddressChange: (String) -> Unit,
+    onPhoneChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onAddUser: () -> Unit,
+    onRemoveUser: (User) -> Unit,
+    onCancel: () -> Unit,
+    onSave: () -> Unit,
+    focusManager: FocusManager
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        CompanyDetailsCard(
+            companyName = companyName,
+            address = address,
+            phone = phone,
+            email = email,
+            isValidPhone = isValidPhone,
+            isValidEmail = isValidEmail,
+            onCompanyNameChange = onCompanyNameChange,
+            onAddressChange = onAddressChange,
+            onPhoneChange = onPhoneChange,
+            onEmailChange = onEmailChange,
+            focusManager = focusManager
+        )
+
+        UsersCard(
+            users = users,
+            onAddUser = onAddUser,
+            onRemoveUser = onRemoveUser
+        )
+
+        if (showError) {
+            ErrorMessage(errorMessage)
+        }
+
+        ActionButtons(
+            onCancel = onCancel,
+            onSave = onSave
+        )
+    }
+}
+
+@Composable
+private fun CompanyProfileContentHorizontal(
+    companyName: String,
+    address: String,
+    phone: String,
+    email: String,
+    users: List<User>,
+    isValidPhone: Boolean,
+    isValidEmail: Boolean,
+    showError: Boolean,
+    errorMessage: String,
+    onCompanyNameChange: (String) -> Unit,
+    onAddressChange: (String) -> Unit,
+    onPhoneChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onAddUser: () -> Unit,
+    onRemoveUser: (User) -> Unit,
+    onCancel: () -> Unit,
+    onSave: () -> Unit,
+    focusManager: FocusManager
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            CompanyDetailsCard(
+                companyName = companyName,
+                address = address,
+                phone = phone,
+                email = email,
+                isValidPhone = isValidPhone,
+                isValidEmail = isValidEmail,
+                onCompanyNameChange = onCompanyNameChange,
+                onAddressChange = onAddressChange,
+                onPhoneChange = onPhoneChange,
+                onEmailChange = onEmailChange,
+                focusManager = focusManager,
+                modifier = Modifier.weight(1f)
+            )
+
+            UsersCard(
+                users = users,
+                onAddUser = onAddUser,
+                onRemoveUser = onRemoveUser,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        if (showError) {
+            ErrorMessage(errorMessage)
+        }
+
+        ActionButtons(
+            onCancel = onCancel,
+            onSave = onSave
+        )
+    }
+}
+
+@Composable
+private fun CompanyDetailsCard(
+    companyName: String,
+    address: String,
+    phone: String,
+    email: String,
+    isValidPhone: Boolean,
+    isValidEmail: Boolean,
+    onCompanyNameChange: (String) -> Unit,
+    onAddressChange: (String) -> Unit,
+    onPhoneChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    focusManager: FocusManager,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Company Details",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+
+            // Company Name
+            OutlinedTextField(
+                value = companyName,
+                onValueChange = onCompanyNameChange,
+                label = { Text("Company Name *") },
+                leadingIcon = {
+                    Icon(Icons.Default.Business, contentDescription = null, tint = Grey)
+                },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                ),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = LightGray
+                )
+            )
+
+            // Address
+            OutlinedTextField(
+                value = address,
+                onValueChange = onAddressChange,
+                label = { Text("Address *") },
+                leadingIcon = {
+                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = Grey)
+                },
+                minLines = 2,
+                maxLines = 3,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                ),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = LightGray
+                )
+            )
+
+            // Phone
+            OutlinedTextField(
+                value = phone,
+                onValueChange = onPhoneChange,
+                label = { Text("Phone *") },
+                leadingIcon = {
+                    Icon(Icons.Default.Phone, contentDescription = null, tint = Grey)
+                },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Phone,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                ),
+                isError = phone.isNotEmpty() && !isValidPhone,
+                supportingText = if (phone.isNotEmpty() && !isValidPhone) {
+                    { Text("Phone number must be 10 digits", color = Red) }
+                } else null,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = LightGray
+                )
+            )
+
+            // Email
+            OutlinedTextField(
+                value = email,
+                onValueChange = onEmailChange,
+                label = { Text("Email *") },
+                leadingIcon = {
+                    Icon(Icons.Default.Email, contentDescription = null, tint = Grey)
+                },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                    onDone = { focusManager.clearFocus() }
+                ),
+                isError = email.isNotEmpty() && !isValidEmail,
+                supportingText = if (email.isNotEmpty() && !isValidEmail) {
+                    { Text("Invalid email address", color = Red) }
+                } else null,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = LightGray
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun UsersCard(
+    users: List<User>,
+    onAddUser: () -> Unit,
+    onRemoveUser: (User) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Users *",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Text(
+                    text = "(${users.size})",
+                    fontSize = 14.sp,
+                    color = Grey
+                )
+            }
+
+            if (users.isEmpty()) {
+                EmptyUsersPlaceholder(onAddUser)
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    users.forEach { user ->
+                        UserItem(
+                            user = user,
+                            onRemove = { onRemoveUser(user) }
+                        )
+                    }
+                }
+            }
+
+            // Add User Button
+            OutlinedButton(
+                onClick = onAddUser,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Add User")
+            }
+
+            if (users.isEmpty()) {
+                Text(
+                    text = "At least one user is required",
+                    fontSize = 12.sp,
+                    color = Orange,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyUsersPlaceholder(onAddUser: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(2.dp, LightGray, RoundedCornerShape(12.dp))
+            .clickable { onAddUser() }
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.PersonAdd,
+                contentDescription = null,
+                tint = Grey,
+                modifier = Modifier.size(48.dp)
+            )
+            Text(
+                text = "No users added yet",
+                color = Grey,
+                fontSize = 14.sp
+            )
+            Text(
+                text = "Click + Add User to get started",
+                color = Grey,
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun UserItem(
+    user: User,
+    onRemove: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = WhiteSmoke)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+
+                Column {
+                    Text(
+                        text = user.name,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = user.email,
+                        fontSize = 12.sp,
+                        color = Grey
+                    )
+                }
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Role Badge
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = when (user.role) {
+                        UserRole.ADMIN -> MaterialTheme.colorScheme.primaryContainer
+                        UserRole.SALES -> MaterialTheme.colorScheme.secondaryContainer
+                        UserRole.RECEIPTS -> MaterialTheme.colorScheme.tertiaryContainer
+                    }
+                ) {
+                    Text(
+                        text = user.role.displayName,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = when (user.role) {
+                            UserRole.ADMIN -> MaterialTheme.colorScheme.onPrimaryContainer
+                            UserRole.SALES -> MaterialTheme.colorScheme.onSecondaryContainer
+                            UserRole.RECEIPTS -> MaterialTheme.colorScheme.onTertiaryContainer
+                        }
+                    )
+                }
+
+                // Remove Button
+                IconButton(onClick = onRemove) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Remove user",
+                        tint = Red
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ErrorMessage(message: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Red.copy(alpha = 0.1f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Error,
+                contentDescription = null,
+                tint = Red
+            )
+            Text(
+                text = message,
+                color = Red,
+                fontSize = 14.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActionButtons(
+    onCancel: () -> Unit,
+    onSave: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        OutlinedButton(
+            onClick = onCancel,
+            modifier = Modifier.weight(1f).height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Grey
+            )
+        ) {
+            Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        }
+
+        Button(
+            onClick = onSave,
+            modifier = Modifier.weight(1f).height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Text("Save", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}

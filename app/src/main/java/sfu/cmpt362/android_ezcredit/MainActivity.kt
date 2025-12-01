@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import sfu.cmpt362.android_ezcredit.ui.NavigationDrawerScreen
+import sfu.cmpt362.android_ezcredit.ui.screens.CompanyProfileScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.LoginScreen
 import sfu.cmpt362.android_ezcredit.ui.theme.Android_EZCreditTheme
 import sfu.cmpt362.android_ezcredit.utils.BackgroundTaskSchedular
@@ -52,15 +53,26 @@ class MainActivity : ComponentActivity() {
         setContent {
             Android_EZCreditTheme {
                 var isLoggedIn by remember { mutableStateOf(false) }
+                var showCompanyProfile by remember { mutableStateOf(false)}
 
-                if (isLoggedIn) {
-                    NavigationDrawerScreen()
-                } else {
-                    LoginScreen(
-                        onLoginSuccess = { isLoggedIn = true }
-                    )
+                when {
+                    isLoggedIn -> {
+                        NavigationDrawerScreen()
+                    }
+                    showCompanyProfile -> {
+                        CompanyProfileScreen(
+                            onCancel = { showCompanyProfile = false },
+                            onSave = { showCompanyProfile = false
+                            isLoggedIn = true},
+                        )
+                    }
+                    else -> {
+                        LoginScreen(
+                            onLoginSuccess = { isLoggedIn = true },
+                            onCreateCompany = { showCompanyProfile = true }
+                        )
+                    }
                 }
-
             }
         }
     }

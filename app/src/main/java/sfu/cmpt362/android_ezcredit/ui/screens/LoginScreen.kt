@@ -33,58 +33,51 @@ import androidx.compose.ui.unit.sp
 import sfu.cmpt362.android_ezcredit.R
 import androidx.compose.ui.focus.FocusManager
 import sfu.cmpt362.android_ezcredit.ui.theme.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import sfu.cmpt362.android_ezcredit.ui.viewmodel.LoginScreenViewModel
 
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit = {},
     onCreateCompany: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: LoginScreenViewModel = viewModel()
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-
     val focusManager = LocalFocusManager.current
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val isVertical = maxWidth < 600.dp
 
         if (isVertical) {
             LoginContentVertical(
-                email = email,
-                password = password,
-                passwordVisible = passwordVisible,
-                isLoading = isLoading,
-                errorMessage = errorMessage,
-                onEmailChange = { email = it },
-                onPasswordChange = { password = it },
-                onPasswordVisibilityToggle = { passwordVisible = !passwordVisible },
+                email = state.email,
+                password = state.password,
+                passwordVisible = state.passwordVisible,
+                isLoading = state.isLoading,
+                errorMessage = state.errorMessage,
+                onEmailChange = { viewModel.updateEmail(it) },
+                onPasswordChange = {viewModel.updatePassword(it) },
+                onPasswordVisibilityToggle = { viewModel.togglePasswordVisibility() },
                 onLogin = {
-                    isLoading = true
-                    // Simulate login
-                    errorMessage = null
-                    // For now, just navigate on success
-                    onLoginSuccess()
+                    viewModel.login { onLoginSuccess }
                 },
                 onCreateCompany = onCreateCompany,
                 focusManager = focusManager
             )
         } else {
             LoginContentHorizontal(
-                email = email,
-                password = password,
-                passwordVisible = passwordVisible,
-                isLoading = isLoading,
-                errorMessage = errorMessage,
-                onEmailChange = { email = it },
-                onPasswordChange = { password = it },
-                onPasswordVisibilityToggle = { passwordVisible = !passwordVisible },
+                email = state.email,
+                password = state.password,
+                passwordVisible = state.passwordVisible,
+                isLoading = state.isLoading,
+                errorMessage = state.errorMessage,
+                onEmailChange = { viewModel.updateEmail(it) },
+                onPasswordChange = { viewModel.updatePassword(it) },
+                onPasswordVisibilityToggle = { viewModel.togglePasswordVisibility() },
                 onLogin = {
-                    isLoading = true
-                    errorMessage = null
-                    onLoginSuccess()
+                    viewModel.login { onLoginSuccess }
                 },
                 onCreateCompany = onCreateCompany,
                 focusManager = focusManager
@@ -116,12 +109,10 @@ private fun LoginContentVertical(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Logo
         LogoSection()
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Login Form
         LoginForm(
             email = email,
             password = password,
@@ -138,7 +129,6 @@ private fun LoginContentVertical(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Signup Link
         SignupSection(onCreateCompany = onCreateCompany)
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -165,7 +155,6 @@ private fun LoginContentHorizontal(
             .background(WhiteSmoke),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left side - Logo
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -176,7 +165,6 @@ private fun LoginContentHorizontal(
             LogoSection()
         }
 
-        // Right side - Login Form
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -264,7 +252,6 @@ private fun LoginForm(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Email Input
             EmailTextField(
                 email = email,
                 onEmailChange = onEmailChange,
@@ -274,7 +261,6 @@ private fun LoginForm(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Password Input
             PasswordTextField(
                 password = password,
                 passwordVisible = passwordVisible,
@@ -289,7 +275,6 @@ private fun LoginForm(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Error Message
             if (errorMessage != null) {
                 Text(
                     text = errorMessage,
@@ -300,7 +285,6 @@ private fun LoginForm(
                 )
             }
 
-            // Login Button
             LoginButton(
                 onClick = onLogin,
                 enabled = email.isNotBlank() && password.isNotBlank() && !isLoading,
