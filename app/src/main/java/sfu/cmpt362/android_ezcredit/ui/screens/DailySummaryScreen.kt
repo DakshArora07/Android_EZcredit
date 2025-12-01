@@ -23,6 +23,8 @@ import sfu.cmpt362.android_ezcredit.ui.theme.Green
 import sfu.cmpt362.android_ezcredit.ui.theme.Red
 import sfu.cmpt362.android_ezcredit.ui.theme.VeryLightGray
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.DailySummaryScreenViewModel
+import sfu.cmpt362.android_ezcredit.utils.DailySummaryUiState
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -119,7 +121,7 @@ fun DailySummaryScreen(
 }
 
 @Composable
-private fun HeaderStatsCard(state: sfu.cmpt362.android_ezcredit.ui.viewmodel.DailySummaryUiState) {
+private fun HeaderStatsCard(state: DailySummaryUiState) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
