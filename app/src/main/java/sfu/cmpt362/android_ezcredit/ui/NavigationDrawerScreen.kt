@@ -23,18 +23,23 @@ import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.data.AppDatabase
 import sfu.cmpt362.android_ezcredit.data.repository.CustomerRepository
 import sfu.cmpt362.android_ezcredit.data.repository.InvoiceRepository
+import sfu.cmpt362.android_ezcredit.data.repository.ReceiptRepository
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModelFactory
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModelFactory
+import sfu.cmpt362.android_ezcredit.data.viewmodel.ReceiptViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.ReceiptViewModelFactory
 import sfu.cmpt362.android_ezcredit.ui.screens.CustomerScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.InvoiceScreen
+import sfu.cmpt362.android_ezcredit.ui.screens.ReceiptScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.CalendarScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.AnalyticsScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.DailySummaryScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.SettingsScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.manual_input.CustomerEntryScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.manual_input.InvoiceEntryScreen
+import sfu.cmpt362.android_ezcredit.ui.screens.manual_input.ReceiptEntryScreen
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceScreenViewModel
 import android.Manifest
 import android.content.pm.PackageManager
@@ -53,6 +58,9 @@ val screens = listOf(
     Screen("analytics", R.string.analytics, Icons.Default.Analytics),
     Screen("customers", R.string.customers, Icons.Default.People),
     Screen("invoices", R.string.invoices, Icons.Default.Receipt),
+    Screen("receipts", R.string.receipts, Icons.Default.ReceiptLong),
+    Screen("calendar", R.string.calendar, Icons.Default.CalendarMonth),
+    Screen("analytics", R.string.analytics, Icons.Default.Analytics),
     Screen("calendar", R.string.calendar, Icons.Default.CalendarMonth)
 )
 
@@ -65,6 +73,7 @@ fun NavigationDrawerScreen() {
     val scope = rememberCoroutineScope()
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
+    // --- Database and ViewModel setup --- //
     val context = LocalContext.current
 
     val requestNotificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -111,6 +120,14 @@ fun NavigationDrawerScreen() {
     }
     val invoiceViewModel: InvoiceViewModel = viewModel(
         factory = InvoiceViewModelFactory(invoiceRepository)
+    )
+    val receiptRepository = remember {
+        val database = AppDatabase.getInstance(context)
+        ReceiptRepository(database.receiptDao)
+    }
+
+    val receiptViewModel: ReceiptViewModel = viewModel(
+        factory = ReceiptViewModelFactory(receiptRepository)
     )
 
     ModalNavigationDrawer(
@@ -206,6 +223,7 @@ fun NavigationDrawerScreen() {
                 navController = navController,
                 customerViewModel = customerViewModel,
                 invoiceViewModel = invoiceViewModel,
+                receiptViewModel = receiptViewModel,
                 modifier = Modifier.padding(padding)
             )
         }
@@ -218,6 +236,7 @@ fun NavigationHost(
     navController: NavHostController,
     customerViewModel: CustomerViewModel,
     invoiceViewModel: InvoiceViewModel,
+    receiptViewModel: ReceiptViewModel,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -320,6 +339,50 @@ fun NavigationHost(
                 onBack = { navController.popBackStack() }
             )
         }
+
+
+        composable("receipts") {
+            val invoiceScreenViewModel: InvoiceScreenViewModel = viewModel()
+            ReceiptScreen(
+                invoiceViewModel = invoiceViewModel,
+                invoiceScreenViewModel = invoiceScreenViewModel,
+                customerViewModel,
+                receiptViewModel,
+                onViewAddReceipt = { receiptId: Long ->
+                    if (receiptId >= 0L) {
+                        navController.navigate("viewReceipt?receiptId=$receiptId")
+                    } else {
+                        navController.navigate("addReceipt")
+                    }
+                }
+            )
+        }
+
+
+        composable("addReceipt") {
+            ReceiptEntryScreen(
+                invoiceViewModel = invoiceViewModel,
+                customerViewModel = customerViewModel,
+                receiptViewModel = receiptViewModel,
+                receiptId = null,
+                isViewing = false,
+                onBack = {navController.popBackStack()}
+            )
+        }
+
+        composable("viewReceipt?receiptId={receiptId}") {
+            val receiptId = it.arguments?.getString("receiptId")?.toLongOrNull()
+            ReceiptEntryScreen(
+                invoiceViewModel = invoiceViewModel,
+                customerViewModel = customerViewModel,
+                receiptViewModel = receiptViewModel,
+                receiptId = receiptId,
+                isViewing = true,
+                onBack = {navController.popBackStack()}
+            )
+        }
+
+
         composable("calendar") { CalendarScreen(invoiceViewModel = invoiceViewModel,
             onNavigateToInvoice = { invoiceId ->
                 navController.navigate("addInvoice?invoiceId=$invoiceId")

@@ -32,7 +32,7 @@ class ReceiptRepository (
         }
     }
 
-    fun getById(id: Long): Receipt{
+    suspend fun getById(id: Long): Receipt{
         return receiptDao.getReceiptById(id)
     }
 
