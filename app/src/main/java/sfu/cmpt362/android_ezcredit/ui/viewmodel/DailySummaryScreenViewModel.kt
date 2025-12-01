@@ -10,18 +10,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import sfu.cmpt362.android_ezcredit.utils.DailySummaryUiState
 import sfu.cmpt362.android_ezcredit.workers.DailySummaryWorker
-class DailySummaryScreenViewModel (application: Application): ViewModel() {
 
-    private val context = application.applicationContext
+
+class DailySummaryScreenViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(DailySummaryUiState())
     val uiState: StateFlow<DailySummaryUiState> = _uiState.asStateFlow()
 
-    init {
-        loadSummaryData()
-    }
-
-    fun loadSummaryData() {
+    fun loadSummaryData(context: Context) {
         viewModelScope.launch {
             val prefs = context.getSharedPreferences(
                 DailySummaryWorker.PREFS_NAME,
@@ -61,7 +57,7 @@ class DailySummaryScreenViewModel (application: Application): ViewModel() {
         }
     }
 
-    fun refresh() {
-        loadSummaryData()
+    fun refresh(context: Context) {
+        loadSummaryData(context)
     }
 }

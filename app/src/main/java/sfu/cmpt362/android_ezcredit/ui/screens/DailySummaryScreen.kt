@@ -11,12 +11,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.ui.theme.Green
@@ -26,18 +28,18 @@ import sfu.cmpt362.android_ezcredit.ui.viewmodel.DailySummaryScreenViewModel
 import sfu.cmpt362.android_ezcredit.utils.DailySummaryUiState
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DailySummaryScreen(
     viewModel: DailySummaryScreenViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refresh()
+                viewModel.refresh(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -69,11 +71,8 @@ fun DailySummaryScreen(
                 }
             }
 
-            item {
-                HeaderStatsCard(uiState)
-            }
+            item { HeaderStatsCard(uiState) }
 
-            // Email Summary
             item {
                 SummaryCard(
                     title = "Email Reminders",
@@ -89,7 +88,6 @@ fun DailySummaryScreen(
                 )
             }
 
-            // Credit Score Updates
             item {
                 SummaryCard(
                     title = "Credit Score Updates",
@@ -102,7 +100,6 @@ fun DailySummaryScreen(
                 )
             }
 
-            // Invoice Status Updates
             item {
                 SummaryCard(
                     title = "Invoice Status Updates",
