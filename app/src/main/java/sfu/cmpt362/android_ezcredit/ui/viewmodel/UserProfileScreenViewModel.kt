@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import sfu.cmpt362.android_ezcredit.ui.screens.User
 import sfu.cmpt362.android_ezcredit.ui.screens.UserRole
 
-data class UserProfileState(
+data class UserProfileScreenState(
     val name: String = "",
     val email: String = "",
     val password: String = "",
@@ -16,104 +18,153 @@ data class UserProfileState(
 )
 
 class UserProfileScreenViewModel : ViewModel() {
-    private val _state = MutableStateFlow(UserProfileState())
-    val state: StateFlow<UserProfileState> = _state.asStateFlow()
+
+    private val _state = MutableStateFlow(UserProfileScreenState())
+    val state: StateFlow<UserProfileScreenState> = _state.asStateFlow()
 
     fun updateName(name: String) {
-        _state.value = _state.value.copy(name = name)
+        _state.update { it.copy(name = name, showError = false) }
     }
 
     fun updateEmail(email: String) {
-        _state.value = _state.value.copy(email = email)
+        _state.update { it.copy(email = email, showError = false) }
     }
 
     fun updatePassword(password: String) {
-        _state.value = _state.value.copy(password = password)
+        _state.update { it.copy(password = password, showError = false) }
     }
 
     fun updateRole(role: UserRole) {
-        _state.value = _state.value.copy(selectedRole = role)
+        _state.update { it.copy(selectedRole = role, showError = false) }
     }
 
     fun isValidEmail(): Boolean {
-        val email = _state.value.email
-        return email.isEmpty() || android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+        val currentState = _state.value
+        val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+"
+        return currentState.email.matches(emailPattern.toRegex())
     }
 
-    fun canSave(existingUsers: List<sfu.cmpt362.android_ezcredit.ui.screens.User>): Boolean {
-        val state = _state.value
+    fun canSave(existingUsers: List<User>): Boolean {
+        val currentState = _state.value
 
-        // Basic validation
-        if (state.name.isBlank() || state.email.isBlank() || state.password.isBlank()) {
+        // Check if all fields are filled
+        if (currentState.name.isBlank() ||
+            currentState.email.isBlank() ||
+            currentState.password.isBlank()) {
             return false
         }
 
+        // Check email format
         if (!isValidEmail()) {
             return false
         }
 
-        // Check if trying to add Admin when one already exists
-        if (state.selectedRole == UserRole.ADMIN) {
-            val hasAdmin = existingUsers.any { it.role == UserRole.ADMIN }
-            if (hasAdmin) {
-                return false
-            }
+        // Check password length
+        if (currentState.password.length < 6) {
+            return false
+        }
+
+        // Check if admin already exists when trying to add admin
+        val hasAdmin = existingUsers.any { it.role == UserRole.ADMIN }
+        if (hasAdmin && currentState.selectedRole == UserRole.ADMIN) {
+            return false
         }
 
         return true
     }
 
     fun validateAndSave(
-        existingUsers: List<sfu.cmpt362.android_ezcredit.ui.screens.User>,
+        existingUsers: List<User>,
         onSuccess: (name: String, email: String, password: String, role: UserRole) -> Unit
     ) {
-        val state = _state.value
+        val currentState = _state.value
 
-        when {
-            state.name.isBlank() -> {
-                _state.value = _state.value.copy(
+        // Validate name
+        if (currentState.name.isBlank()) {
+            _state.update {
+                it.copy(
                     showError = true,
                     errorMessage = "Name is required"
                 )
             }
-            state.email.isBlank() -> {
-                _state.value = _state.value.copy(
+            return
+        }
+
+        // Validate email
+        if (currentState.email.isBlank()) {
+            _state.update {
+                it.copy(
                     showError = true,
                     errorMessage = "Email is required"
                 )
             }
-            !isValidEmail() -> {
-                _state.value = _state.value.copy(
+            return
+        }
+
+        if (!isValidEmail()) {
+            _state.update {
+                it.copy(
                     showError = true,
                     errorMessage = "Invalid email address"
                 )
             }
-            state.password.isBlank() -> {
-                _state.value = _state.value.copy(
+            return
+        }
+
+        // Check for duplicate email
+        if (existingUsers.any { it.email == currentState.email }) {
+            _state.update {
+                it.copy(
+                    showError = true,
+                    errorMessage = "Email already exists"
+                )
+            }
+            return
+        }
+
+        // Validate password
+        if (currentState.password.isBlank()) {
+            _state.update {
+                it.copy(
                     showError = true,
                     errorMessage = "Password is required"
                 )
             }
-            state.password.length < 6 -> {
-                _state.value = _state.value.copy(
+            return
+        }
+
+        if (currentState.password.length < 6) {
+            _state.update {
+                it.copy(
                     showError = true,
                     errorMessage = "Password must be at least 6 characters"
                 )
             }
-            state.selectedRole == UserRole.ADMIN && existingUsers.any { it.role == UserRole.ADMIN } -> {
-                _state.value = _state.value.copy(
+            return
+        }
+
+        // Check if admin already exists
+        val hasAdmin = existingUsers.any { it.role == UserRole.ADMIN }
+        if (hasAdmin && currentState.selectedRole == UserRole.ADMIN) {
+            _state.update {
+                it.copy(
                     showError = true,
                     errorMessage = "Only one Admin user is allowed"
                 )
             }
-            else -> {
-                _state.value = _state.value.copy(showError = false, errorMessage = "")
-                onSuccess(state.name, state.email, state.password, state.selectedRole)
-            }
+            return
         }
+
+        // All validations passed, call success callback
+        onSuccess(
+            currentState.name,
+            currentState.email,
+            currentState.password,
+            currentState.selectedRole
+        )
     }
 
     fun clearState() {
-        _state.value = UserProfileState()
+        _state.value = UserProfileScreenState()
     }
 }

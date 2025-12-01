@@ -21,7 +21,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -34,9 +33,9 @@ fun UserProfileScreen(
     existingUsers: List<User>,
     onCancel: () -> Unit = {},
     onSave: (User) -> Unit = {},
-    modifier: Modifier = Modifier,
-    viewModel: UserProfileScreenViewModel = viewModel()
+    modifier: Modifier = Modifier
 ) {
+    val viewModel: UserProfileScreenViewModel = viewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
 

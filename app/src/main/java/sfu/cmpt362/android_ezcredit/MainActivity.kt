@@ -1,5 +1,6 @@
 package sfu.cmpt362.android_ezcredit
 
+import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -15,43 +16,82 @@ import sfu.cmpt362.android_ezcredit.ui.screens.CompanyProfileScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.LoginScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.UserProfileScreen
 import sfu.cmpt362.android_ezcredit.ui.theme.Android_EZCreditTheme
-import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
+import sfu.cmpt362.android_ezcredit.data.AppDatabase
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
+import sfu.cmpt362.android_ezcredit.data.repository.CompanyRepository
+import sfu.cmpt362.android_ezcredit.data.repository.UserRepository
+import sfu.cmpt362.android_ezcredit.data.viewmodel.CompanyViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModel
+import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModel
+import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModelFactory
 
 class MainActivity : ComponentActivity() {
 
+    @SuppressLint("ViewModelConstructorInComposable")
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Initialize CompanyContext
+        CompanyContext.init(this)
+
         setContent {
             Android_EZCreditTheme {
                 var isLoggedIn by rememberSaveable { mutableStateOf(false) }
-                var showCompanyProfile by rememberSaveable { mutableStateOf(false)}
+                var showCompanyProfile by rememberSaveable { mutableStateOf(false) }
                 var showUserProfile by rememberSaveable { mutableStateOf(false) }
-                val companyViewModel : CompanyProfileScreenViewModel = viewModel()
+
+                val context = LocalContext.current
+
+                // Get EZCreditApplication instance
+                val application = context.applicationContext as EZCreditApplication
+
+                // Get database instance
+                val database = AppDatabase.getInstance(context)
+
+                // Create repositories from database DAOs
+                val companyRepository = CompanyRepository(database.companyDao)
+                val userRepository = UserRepository(database.userDao)
+
+                // Create database ViewModels
+                val companyViewModel = CompanyViewModel(companyRepository)
+                val userViewModel = UserViewModel(userRepository)
+
+                // Create UI ViewModel with factory
+                val companyProfileViewModel: CompanyProfileScreenViewModel = viewModel(
+                    factory = CompanyProfileScreenViewModelFactory(
+                        companyViewModel = companyViewModel,
+                        userViewModel = userViewModel
+                    )
+                )
+
                 when {
                     isLoggedIn -> {
                         NavigationDrawerScreen()
                     }
                     showUserProfile -> {
-                        val existingUsers = companyViewModel.state.collectAsState().value.users
+                        val state by companyProfileViewModel.state.collectAsState()
+                        val existingUsers = state.users
+
                         UserProfileScreen(
                             existingUsers = existingUsers,
                             onCancel = { showUserProfile = false },
                             onSave = { newUser ->
-                                companyViewModel.addUser(newUser)
+                                companyProfileViewModel.addUser(newUser)
                                 showUserProfile = false
                             }
-
                         )
                     }
                     showCompanyProfile -> {
                         CompanyProfileScreen(
+                            viewModel = companyProfileViewModel,
                             onCancel = { showCompanyProfile = false },
-                            onSave = { showCompanyProfile = false
-                                isLoggedIn = true },
+                            onSave = {
+                                showCompanyProfile = false
+                                isLoggedIn = true
+                            },
                             onAddUser = { showUserProfile = true }
                         )
                     }
@@ -59,7 +99,7 @@ class MainActivity : ComponentActivity() {
                         LoginScreen(
                             onLoginSuccess = { isLoggedIn = true },
                             onCreateCompany = { showCompanyProfile = true },
-                            application = LocalContext.current.applicationContext as EZCreditApplication
+                            application = application
                         )
                     }
                 }

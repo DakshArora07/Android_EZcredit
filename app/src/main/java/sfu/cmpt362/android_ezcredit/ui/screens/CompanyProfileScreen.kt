@@ -24,7 +24,6 @@ import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import sfu.cmpt362.android_ezcredit.ui.theme.*
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModel
 
@@ -43,11 +42,11 @@ enum class UserRole(val displayName: String) {
 
 @Composable
 fun CompanyProfileScreen(
+    viewModel: CompanyProfileScreenViewModel,
     onCancel: () -> Unit = {},
     onSave: () -> Unit = {},
     onAddUser: () -> Unit = {},
-    modifier: Modifier = Modifier,
-    viewModel: CompanyProfileScreenViewModel = viewModel()
+    modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
