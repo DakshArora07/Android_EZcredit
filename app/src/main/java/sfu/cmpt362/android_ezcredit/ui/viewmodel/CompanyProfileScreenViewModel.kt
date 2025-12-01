@@ -89,7 +89,7 @@ class CompanyProfileScreenViewModel : ViewModel() {
     }
 
     fun clearError() {
-        _state.value = _state.value.copy(showError = false, errorMessage = "")
+        _state.value = _state.value.copy(showError = false, errorMessage = "Email or Password invalid")
     }
 
     fun clearState() {

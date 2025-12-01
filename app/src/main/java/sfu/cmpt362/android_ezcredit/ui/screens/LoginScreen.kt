@@ -61,7 +61,7 @@ fun LoginScreen(
                 onPasswordChange = {viewModel.updatePassword(it) },
                 onPasswordVisibilityToggle = { viewModel.togglePasswordVisibility() },
                 onLogin = {
-                    viewModel.login { onLoginSuccess }
+                    viewModel.login(onLoginSuccess)
                 },
                 onCreateCompany = onCreateCompany,
                 focusManager = focusManager
@@ -77,7 +77,7 @@ fun LoginScreen(
                 onPasswordChange = { viewModel.updatePassword(it) },
                 onPasswordVisibilityToggle = { viewModel.togglePasswordVisibility() },
                 onLogin = {
-                    viewModel.login { onLoginSuccess }
+                    viewModel.login(onLoginSuccess)
                 },
                 onCreateCompany = onCreateCompany,
                 focusManager = focusManager
@@ -159,7 +159,7 @@ private fun LoginContentHorizontal(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxSize()
-                .background(Color.White),
+                .background(color = WhiteSmoke),
             contentAlignment = Alignment.Center
         ) {
             LogoSection()

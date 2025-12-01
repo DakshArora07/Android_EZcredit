@@ -22,34 +22,9 @@ import sfu.cmpt362.android_ezcredit.utils.BackgroundTaskSchedular
 
 class MainActivity : ComponentActivity() {
 
-    private val requestNotificationPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
-                BackgroundTaskSchedular.initializeAllTasks(this)
-            } else {
-                // Permission denied: optionally notify user or proceed without reminders
-            }
-        }
-
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            when {
-                ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED -> {
-                    BackgroundTaskSchedular.initializeAllTasks(this)
-                }
-                else -> {
-                    requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            }
-        } else {
-            BackgroundTaskSchedular.initializeAllTasks(this)
-        }
 
         setContent {
             Android_EZCreditTheme {
@@ -64,7 +39,7 @@ class MainActivity : ComponentActivity() {
                         CompanyProfileScreen(
                             onCancel = { showCompanyProfile = false },
                             onSave = { showCompanyProfile = false
-                            isLoggedIn = true},
+                                isLoggedIn = true },
                         )
                     }
                     else -> {
