@@ -74,7 +74,7 @@ fun AnalyticsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(WhiteSmoke)
+                .background(MaterialTheme.colorScheme.surface)
                 .verticalScroll(rememberScrollState())
         ) {
             AnalyticsHeader()
@@ -179,7 +179,7 @@ fun AnalyticsHeader() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(24.dp)
     ) {
         Text(
@@ -202,7 +202,6 @@ fun PeriodSelector(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
             .padding(horizontal = 18.dp)
             .padding(bottom = 24.dp)
             .padding(top = 12.dp),
