@@ -21,12 +21,13 @@ class CreditScoreUpdateWorker (context: Context, params: WorkerParameters) : Cor
         val customerRepository = CustomerRepository(database.customerDao)
         val invoiceRepository = InvoiceRepository(database.invoiceDao)
 
-
         val customers = customerRepository.customers.first()
         if (customers.isEmpty()) {
             Log.d("CreditScoreWorker", "No customers in DB, skipping update")
             return@withContext Result.success()
         }
+
+        var updateCount = 0
 
         val customerList = customerRepository.customers.first()
 
@@ -39,6 +40,7 @@ class CreditScoreUpdateWorker (context: Context, params: WorkerParameters) : Cor
                 if (customer.creditScore != newCreditScore) {
                     val updatedCustomer = customer.copy(creditScore = newCreditScore)
                     customerRepository.update(updatedCustomer)
+                    updateCount ++
                     Log.d("CreditScoreWorker",
                         "Updated ${customer.name}: ${customer.creditScore} → $newCreditScore")
                 }
@@ -47,8 +49,20 @@ class CreditScoreUpdateWorker (context: Context, params: WorkerParameters) : Cor
             }
         }
 
-        Log.d("CreditScoreWorker", "Credit score update completed")
+        saveSummaryData(updateCount)
+
+        Log.d("CreditScoreWorker", "Credit score update completed - $updateCount customers updated")
         Result.success()
     }
 
+    private fun saveSummaryData(updateCount: Int) {
+        val prefs = applicationContext.getSharedPreferences(
+            DailySummaryWorker.PREFS_NAME,
+            Context.MODE_PRIVATE
+        )
+        prefs.edit()
+            .putInt(DailySummaryWorker.KEY_CREDIT_SCORE_UPDATES, updateCount)
+            .apply()
+        Log.d("CreditScoreWorker", "Credit score summary saved - Updates: $updateCount")
+    }
 }

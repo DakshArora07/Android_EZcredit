@@ -10,4 +10,6 @@
     <string name="customerScreenSubHeading">Manage all your customers</string>
     <string name="calendarSubHeading">Track invoice due dates by status</string>
     <string name="analyticsScreenSubHeading">View all analytics</string>
+    <string name="dailySummary">Daily Summary</string>
+    <string name="dialySummaryScreenSubHeading">Automated system generated report</string>
 </resources>

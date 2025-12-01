@@ -31,6 +31,7 @@ import sfu.cmpt362.android_ezcredit.ui.screens.CustomerScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.InvoiceScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.CalendarScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.AnalyticsScreen
+import sfu.cmpt362.android_ezcredit.ui.screens.DailySummaryScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.SettingsScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.manual_input.CustomerEntryScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.manual_input.InvoiceEntryScreen
@@ -43,10 +44,10 @@ data class Screen(
 )
 
 val screens = listOf(
+    Screen("analytics", R.string.analytics, Icons.Default.Analytics),
     Screen("customers", R.string.customers, Icons.Default.People),
     Screen("invoices", R.string.invoices, Icons.Default.Receipt),
-    Screen("calendar", R.string.calendar, Icons.Default.CalendarMonth),
-    Screen("analytics", R.string.analytics, Icons.Default.Analytics)
+    Screen("calendar", R.string.calendar, Icons.Default.CalendarMonth)
 )
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -83,52 +84,17 @@ fun NavigationDrawerScreen() {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(vertical = 12.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
+                        .padding(vertical = 24.dp)
                 ) {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.app_name),
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                        HorizontalDivider(
-                            Modifier,
-                            DividerDefaults.Thickness,
-                            DividerDefaults.color
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        screens.forEach { screen ->
-                            NavigationDrawerItem(
-                                icon = { Icon(screen.icon, contentDescription = null) },
-                                label = { Text(stringResource(screen.title)) },
-                                selected = currentRoute == screen.route,
-                                onClick = {
-                                    if (currentRoute != screen.route) {
-                                        navController.navigate(screen.route) {
-                                            popUpTo("customers") {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    }
-                                    scope.launch { drawerState.close() }
-                                },
-                                modifier = Modifier.padding(horizontal = 12.dp)
-                            )
-                        }
-                    }
+
                     NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                        label = { Text(stringResource(R.string.settings)) },
-                        selected = currentRoute == "settings",
+                        icon = { Icon(Icons.Default.Summarize, contentDescription = null) },
+                        label = { Text("Daily Summary") },
+                        selected = currentRoute == "summary",
                         onClick = {
-                            if (currentRoute != "settings") {
-                                navController.navigate("settings") {
-                                    popUpTo("customers") {
-                                        saveState = true
-                                    }
+                            if (currentRoute != "summary") {
+                                navController.navigate("summary") {
+                                    popUpTo("customers") { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
@@ -137,8 +103,52 @@ fun NavigationDrawerScreen() {
                         },
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
+
+                    Spacer(Modifier.height(16.dp))
+                    HorizontalDivider()
+
+                    screens.forEach { screen ->
+                        NavigationDrawerItem(
+                            icon = { Icon(screen.icon, contentDescription = null) },
+                            label = { Text(stringResource(screen.title)) },
+                            selected = currentRoute == screen.route,
+                            onClick = {
+                                if (currentRoute != screen.route) {
+                                    navController.navigate(screen.route) {
+                                        popUpTo("customers") { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                                scope.launch { drawerState.close() }
+                            },
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+                    HorizontalDivider()
+
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                        label = { Text(stringResource(R.string.settings)) },
+                        selected = currentRoute == "settings",
+                        onClick = {
+                            if (currentRoute != "settings") {
+                                navController.navigate("settings") {
+                                    popUpTo("customers") { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
                 }
             }
+
         }
     ) {
         Scaffold(
@@ -280,6 +290,9 @@ fun NavigationHost(
             }) }
         composable("analytics") { AnalyticsScreen(invoiceViewModel = invoiceViewModel,
             customerViewModel = customerViewModel) }
+        composable("summary") {
+            DailySummaryScreen()
+        }
         composable("settings") { SettingsScreen() }
     }
 }

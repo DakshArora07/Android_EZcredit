@@ -49,6 +49,19 @@ class OverdueInvoiceStatusWorker (context: Context, params: WorkerParameters) : 
             invoiceRepository.update(invoice)
         }
 
+        saveSummaryData(overdueInvoices.size)
+
         return Result.success()
+    }
+
+    private fun saveSummaryData(overdueCount: Int) {
+        val prefs = applicationContext.getSharedPreferences(
+            DailySummaryWorker.PREFS_NAME,
+            Context.MODE_PRIVATE
+        )
+        prefs.edit()
+            .putInt(DailySummaryWorker.KEY_INVOICES_MARKED_OVERDUE, overdueCount)
+            .apply()
+        Log.d("OverdueInvoiceStatusWorker", "Overdue invoice summary saved - Count: $overdueCount")
     }
 }
