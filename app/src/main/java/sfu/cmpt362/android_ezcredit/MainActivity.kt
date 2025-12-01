@@ -17,6 +17,7 @@ import sfu.cmpt362.android_ezcredit.ui.screens.UserProfileScreen
 import sfu.cmpt362.android_ezcredit.ui.theme.Android_EZCreditTheme
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModel
 import androidx.compose.runtime.collectAsState
+import sfu.cmpt362.android_ezcredit.utils.BackgroundTaskSchedular
 
 class MainActivity : ComponentActivity() {
 
@@ -27,9 +28,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             Android_EZCreditTheme {
                 var isLoggedIn by rememberSaveable { mutableStateOf(false) }
-                var showCompanyProfile by rememberSaveable { mutableStateOf(false)}
+                var showCompanyProfile by rememberSaveable { mutableStateOf(false) }
                 var showUserProfile by rememberSaveable { mutableStateOf(false) }
-                val companyViewModel : CompanyProfileScreenViewModel = viewModel()
+                val companyViewModel: CompanyProfileScreenViewModel = viewModel()
                 when {
                     isLoggedIn -> {
                         NavigationDrawerScreen()
@@ -43,20 +44,27 @@ class MainActivity : ComponentActivity() {
                                 companyViewModel.addUser(newUser)
                                 showUserProfile = false
                             }
-
                         )
                     }
                     showCompanyProfile -> {
                         CompanyProfileScreen(
                             onCancel = { showCompanyProfile = false },
                             onSave = { showCompanyProfile = false
-                                isLoggedIn = true },
+                                isLoggedIn = true
+                            },
                             onAddUser = { showUserProfile = true }
                         )
                     }
                     else -> {
                         LoginScreen(
-                            onLoginSuccess = { isLoggedIn = true },
+                            onLoginSuccess = {
+                                isLoggedIn = true
+
+                                BackgroundTaskSchedular.scheduleOverdueInvoiceWorker(this)
+                                BackgroundTaskSchedular.schedulePaidInvoiceWorker(this)
+                                BackgroundTaskSchedular.scheduleCreditScoreUpdate(this)
+                                BackgroundTaskSchedular.rescheduleAllEnabledTasks(this)
+                            },
                             onCreateCompany = { showCompanyProfile = true }
                         )
                     }

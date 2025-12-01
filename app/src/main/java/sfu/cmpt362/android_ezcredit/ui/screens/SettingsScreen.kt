@@ -2,6 +2,9 @@ package sfu.cmpt362.android_ezcredit.ui.screens
 
 import android.app.TimePickerDialog
 import android.content.Context
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -24,7 +27,19 @@ fun SettingsScreen(
     settingsScreenViewModel: SettingsScreenViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val dailySummaryEnabled by settingsScreenViewModel.dailySummaryEnabled.collectAsState()
     val invoiceRemindersEnabled by settingsScreenViewModel.invoiceRemindersEnabled.collectAsState()
+
+    // Permission launcher for notifications (Android 13+)
+    val requestNotificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            // Optionally show a snackbar or dialog explaining that notifications won't work
+        }
+    }
+
+    // Load settings on first composition
     LaunchedEffect(Unit) {
         settingsScreenViewModel.loadInvoiceReminderState(context)
         settingsScreenViewModel.loadSummaryReminderState(context)
@@ -37,42 +52,53 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(28.dp)
     ) {
         ScreenTitle()
+
         SectionTitles("Account")
         UserProfile(onProfileClick)
+
         SectionTitles("Background Tasks")
         ReminderSettingsCard(
             context = context,
             enabled = invoiceRemindersEnabled,
             hour = settingsScreenViewModel.reminderHour.collectAsState().value,
+            minute = settingsScreenViewModel.reminderMinute.collectAsState().value,
             settingsScreenViewModel = settingsScreenViewModel
         )
-        SummaryReminderCard(
+
+        SummarySettingsCard(
             context = context,
+            enabled = dailySummaryEnabled,
             hour = settingsScreenViewModel.summaryHour.collectAsState().value,
-            settingsScreenViewModel = settingsScreenViewModel
+            minute = settingsScreenViewModel.summaryMinute.collectAsState().value,
+            settingsScreenViewModel = settingsScreenViewModel,
+            requestNotificationPermissionLauncher = requestNotificationPermissionLauncher
         )
+
         Spacer(modifier = Modifier.weight(1f))
         Logout(onLogout)
     }
 }
+
 @Composable
-private fun ScreenTitle(){
+private fun ScreenTitle() {
     Text(
         text = "Settings",
         style = MaterialTheme.typography.headlineLarge,
         color = MaterialTheme.colorScheme.primary
     )
 }
+
 @Composable
-private fun SectionTitles (title: String) {
+private fun SectionTitles(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.primary
     )
 }
+
 @Composable
-private fun UserProfile(onProfileClick: ()-> Unit){
+private fun UserProfile(onProfileClick: () -> Unit) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large
@@ -110,11 +136,13 @@ private fun UserProfile(onProfileClick: ()-> Unit){
         }
     }
 }
+
 @Composable
 fun ReminderSettingsCard(
     context: Context,
     enabled: Boolean,
     hour: Int,
+    minute: Int,
     settingsScreenViewModel: SettingsScreenViewModel
 ) {
     var showPicker by remember { mutableStateOf(false) }
@@ -127,7 +155,7 @@ fun ReminderSettingsCard(
                 showPicker = false
             },
             hour,
-            0,
+            minute,
             false
         ).apply {
             setOnDismissListener { showPicker = false }
@@ -140,7 +168,6 @@ fun ReminderSettingsCard(
         shape = MaterialTheme.shapes.large
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
-
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -177,7 +204,7 @@ fun ReminderSettingsCard(
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Reminder Time", style = MaterialTheme.typography.bodyLarge)
                         Text(
-                            String.format("%02d:%02d", hour, settingsScreenViewModel.reminderMinute.collectAsState().value),
+                            String.format("%02d:%02d", hour, minute),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -193,10 +220,13 @@ fun ReminderSettingsCard(
 }
 
 @Composable
-fun SummaryReminderCard(
+fun SummarySettingsCard(
     context: Context,
+    enabled: Boolean,
     hour: Int,
-    settingsScreenViewModel: SettingsScreenViewModel
+    minute: Int,
+    settingsScreenViewModel: SettingsScreenViewModel,
+    requestNotificationPermissionLauncher: androidx.activity.result.ActivityResultLauncher<String>
 ) {
     var showPicker by remember { mutableStateOf(false) }
 
@@ -204,11 +234,12 @@ fun SummaryReminderCard(
         TimePickerDialog(
             context,
             { _, selectedHour, selectedMinute ->
+                // FIXED: Now calls updateSummaryTime instead of updateReminderTime
                 settingsScreenViewModel.updateSummaryTime(context, selectedHour, selectedMinute)
                 showPicker = false
             },
             hour,
-            0,
+            minute,
             false
         ).apply {
             setOnDismissListener { showPicker = false }
@@ -221,33 +252,65 @@ fun SummaryReminderCard(
         shape = MaterialTheme.shapes.large
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
-
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showPicker = true },
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Summary Time", style = MaterialTheme.typography.bodyLarge)
+                    Text("Daily Summary", style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        String.format("%02d:%02d", hour, settingsScreenViewModel.summaryMinute.collectAsState().value)
-                        ,
+                        if (enabled)
+                            "Daily Summary Notification is ON"
+                        else
+                            "Enable Daily Summary Notification",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null
+
+                Switch(
+                    checked = enabled,
+                    onCheckedChange = { on ->
+                        // FIXED: Request permission only when turning ON and on Android 13+
+                        if (on && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            requestNotificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        }
+
+                        // Toggle happens in ViewModel - scheduling happens only once
+                        settingsScreenViewModel.toggleDailySummary(context, on)
+                    }
                 )
+            }
+
+            if (enabled) {
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showPicker = true },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Notification Time", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            String.format("%02d:%02d", hour, minute),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun Logout(onLogout: () -> Unit){
+private fun Logout(onLogout: () -> Unit) {
     Button(
         onClick = onLogout,
         modifier = Modifier

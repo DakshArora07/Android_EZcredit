@@ -40,13 +40,8 @@ import sfu.cmpt362.android_ezcredit.ui.screens.manual_input.CustomerEntryScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.manual_input.InvoiceEntryScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.manual_input.ReceiptEntryScreen
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceScreenViewModel
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
-import androidx.core.content.ContextCompat
 import sfu.cmpt362.android_ezcredit.utils.BackgroundTaskSchedular
 
 data class Screen(
@@ -71,37 +66,7 @@ fun NavigationDrawerScreen() {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-
     val context = LocalContext.current
-
-    val requestNotificationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            BackgroundTaskSchedular.initializeAllTasks(context)
-        } else {
-            // Permission denied: optionally notify user or proceed without reminders
-        }
-    }
-
-    // Check and request permission when screen is first composed
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            when {
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED -> {
-                    BackgroundTaskSchedular.initializeAllTasks(context)
-                }
-                else -> {
-                    requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            }
-        } else {
-            BackgroundTaskSchedular.initializeAllTasks(context)
-        }
-    }
 
     // --- Database and ViewModel setup --- //
     val customerRepository = remember {
