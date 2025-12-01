@@ -29,9 +29,9 @@ class PaidInvoiceStatusWorker (context: Context, params: WorkerParameters) : Cor
         var lateCount = 0
 
         allReceipts.forEach { receipt ->
-            val invoice = Invoice() // call getInvoiceByReceiptId(receipt.invoiceID)
+            val invoice = receiptRepository.getInvoiceByReceiptId(receipt.id)
 
-            if (invoice != null && invoice.status == InvoiceStatus.Unpaid && invoice.status == InvoiceStatus.PastDue) {
+            if (invoice.status == InvoiceStatus.Unpaid && invoice.status == InvoiceStatus.PastDue) {
                 val today = Calendar.getInstance()
                 val dueDate = invoice.dueDate
 
@@ -47,9 +47,9 @@ class PaidInvoiceStatusWorker (context: Context, params: WorkerParameters) : Cor
                     lateCount ++
                 }
             }
-
-            saveSummaryData(paidCount, lateCount)
         }
+
+        saveSummaryData(paidCount, lateCount)
 
         return Result.success()
     }

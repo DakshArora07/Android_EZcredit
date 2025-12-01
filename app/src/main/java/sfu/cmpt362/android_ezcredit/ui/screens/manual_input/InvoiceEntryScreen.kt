@@ -43,6 +43,7 @@ fun InvoiceEntryScreen(
     ocrResult: InvoiceScreenViewModel.OcrInvoiceResult? = null,
     onBack: () -> Unit) {
     val context = LocalContext.current
+
     // Check for the modes:
     // Add mode: id == -1
     // View/Edit mode: id >= 0
@@ -85,6 +86,7 @@ fun AddInvoiceScreen(
     }
 
     SetupUIViews(
+        isEditMode = false,
         context = context,
         title = "Add New Invoice",
         subtitle = "Fill in the invoice details below",
@@ -195,6 +197,7 @@ fun ViewEditInvoiceScreen(
     }
 
     SetupUIViews(
+        isEditMode = true,
         context = context,
         title = "Update Invoice",
         subtitle = "Edit the invoice details below",
@@ -264,6 +267,7 @@ fun ViewEditInvoiceScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SetupUIViews(
+    isEditMode: Boolean,
     context: Context,
     title: String,
     subtitle: String,
@@ -420,42 +424,44 @@ private fun SetupUIViews(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
-        // Status Dropdown
-        ExposedDropdownMenuBox(
-            expanded = expandedStatus,
-            onExpandedChange = { expandedStatus = it }
-        ) {
-            OutlinedTextField(
-                value = selectedStatus.name,
-                onValueChange = {},
-                enabled = isEditable,
-                readOnly = true,
-                label = { Text("Status") },
-                leadingIcon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
-                trailingIcon = {
-                    IconButton(onClick = { expandedStatus = !expandedStatus }) {
-                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().menuAnchor()
-            )
-            ExposedDropdownMenu(
+        if (!isEditMode){
+            // Status Dropdown
+            ExposedDropdownMenuBox(
                 expanded = expandedStatus,
-                onDismissRequest = { expandedStatus = false }
+                onExpandedChange = { expandedStatus = it }
             ) {
-                InvoiceStatus.entries.forEach { status ->
-                    DropdownMenuItem(
-                        text = { Text(status.name) },
-                        onClick = {
-                            onStatusChange(status)
-                            expandedStatus = false
+                OutlinedTextField(
+                    value = selectedStatus.name,
+                    onValueChange = {},
+                    enabled = isEditable,
+                    readOnly = true,
+                    label = { Text("Status") },
+                    leadingIcon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
+                    trailingIcon = {
+                        IconButton(onClick = { expandedStatus = !expandedStatus }) {
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                         }
-                    )
+                    },
+                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedStatus,
+                    onDismissRequest = { expandedStatus = false }
+                ) {
+                    InvoiceStatus.entries.forEach { status ->
+                        DropdownMenuItem(
+                            text = { Text(status.name) },
+                            onClick = {
+                                onStatusChange(status)
+                                expandedStatus = false
+                            }
+                        )
+                    }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+        }
 
         // Buttons
         Button(onClick = onSave, modifier = Modifier.fillMaxWidth().height(56.dp)) {

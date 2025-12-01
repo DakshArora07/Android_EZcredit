@@ -29,7 +29,7 @@ interface InvoiceDao {
     suspend fun getInvoiceByIdOrNull(key: Long): Invoice?
 
     @Query("SELECT customer_name FROM invoice_list AS i JOIN customer_list AS c ON i.customer_id = c.id WHERE i.id = :key")
-    fun getCustomerNameByInvoiceId(key: Long): String
+    suspend fun getCustomerNameByInvoiceId(key: Long): String
 
     @Query("SELECT * FROM invoice_list WHERE customer_id = :key")
     suspend fun getInvoicesByCustomerId(key: Long): List<Invoice>
