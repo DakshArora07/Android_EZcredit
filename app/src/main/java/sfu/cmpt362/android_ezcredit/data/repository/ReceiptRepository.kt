@@ -5,14 +5,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.FirebaseRefs
 import sfu.cmpt362.android_ezcredit.data.dao.ReceiptDao
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.entity.Receipt
 
-class ReceiptRepository (
-    private val receiptDao: ReceiptDao,
-    private val receiptsRef: DatabaseReference = FirebaseRefs.receiptsRef) {
+class ReceiptRepository (private val receiptDao: ReceiptDao) {
+    private val companyId: Long get() = CompanyContext.currentCompanyId!!
+    private val receiptsRef: DatabaseReference
+        get() = FirebaseRefs.receiptsRef(companyId)
+
     val receipts: Flow<List<Receipt>> = receiptDao.getReceipts()
 
     fun insert(receipt: Receipt){
@@ -24,6 +27,7 @@ class ReceiptRepository (
             pushToFirebase(finalReceipt)
         }
     }
+
     fun update(receipt: Receipt){
         CoroutineScope(IO).launch{
             val updated = receipt.copy(lastModified = System.currentTimeMillis())
@@ -61,7 +65,7 @@ class ReceiptRepository (
             "id" to receipt.id,
             "receiptNumber" to receipt.receiptNumber,
             "receiptDate" to receipt.receiptDate.timeInMillis,
-            "invoiceID" to receipt.invoiceID,
+            "invoiceID" to receipt.invoiceId,
             "lastModified" to receipt.lastModified,
             "isDeleted" to receipt.isDeleted
         )

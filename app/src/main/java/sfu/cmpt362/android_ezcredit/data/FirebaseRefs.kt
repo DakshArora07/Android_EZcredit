@@ -6,12 +6,14 @@ import com.google.firebase.database.FirebaseDatabase
 object FirebaseRefs {
     private val db = FirebaseDatabase.getInstance()
 
-    val customersRef: DatabaseReference
-        get() = db.getReference("ezcredit").child("customers")
+    // Global collections (scan all companies)
+    fun companiesRef(): DatabaseReference = db.getReference("companies")
 
-    val invoicesRef: DatabaseReference
-        get() = db.getReference("ezcredit").child("invoices")
-
-    val receiptsRef: DatabaseReference
-        get() = db.getReference("ezcredit").child("receipts")
+    // Company-specific
+    fun companyRef(companyId: Long): DatabaseReference = companiesRef().child(companyId.toString())
+    fun usersRef(companyId: Long): DatabaseReference = companyRef(companyId).child("users")
+    fun dataRef(companyId: Long): DatabaseReference = companyRef(companyId).child("data")
+    fun customersRef(companyId: Long): DatabaseReference = dataRef(companyId).child("customers")
+    fun invoicesRef(companyId: Long): DatabaseReference = dataRef(companyId).child("invoices")
+    fun receiptsRef(companyId: Long): DatabaseReference = dataRef(companyId).child("receipts")
 }
