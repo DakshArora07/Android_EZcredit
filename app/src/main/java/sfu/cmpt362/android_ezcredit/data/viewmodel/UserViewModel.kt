@@ -49,9 +49,10 @@ class UserViewModel(private val repository: UserRepository) : ViewModel() {
         repository.update(user)
     }
 
-    fun insert() {
-        repository.insert(user)
+    suspend fun insert(): Long {
+        val id = repository.insert(user)
         user = User()
+        return id
     }
 
     suspend fun getUserById(id: Long): User {

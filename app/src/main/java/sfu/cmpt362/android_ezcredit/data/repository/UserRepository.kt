@@ -14,14 +14,13 @@ class UserRepository(private val userDao: UserDao) {
     fun getUsersByCompanyId(companyId: Long): Flow<List<User>> =
         userDao.getUsersByCompanyId(companyId)
 
-    fun insert(user: User) {
-        CoroutineScope(IO).launch {
-            val ts = System.currentTimeMillis()
-            val toInsert = user.copy(lastModified = ts, isDeleted = false)
-            val newId = userDao.insertUser(toInsert) // Add this to DAO
-            val finalUser = toInsert.copy(id = newId)
-            pushToFirebase(finalUser)
-        }
+    suspend fun insert(user: User): Long {
+        val ts = System.currentTimeMillis()
+        val toInsert = user.copy(lastModified = ts, isDeleted = false)
+        val newId = userDao.insertUser(toInsert)
+        val finalUser = toInsert.copy(id = newId)
+        pushToFirebase(finalUser)
+        return newId
     }
 
     fun update(user: User) {
