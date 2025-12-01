@@ -31,7 +31,6 @@ import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModel
 data class User(
     val id: String = java.util.UUID.randomUUID().toString(),
     val name: String,
-    val email: String,
     val role: UserRole
 )
 
@@ -53,7 +52,6 @@ fun CompanyProfileScreen(
     val focusManager = LocalFocusManager.current
 
     val isValidPhone = state.phone.isEmpty() || state.phone.length == 10
-    val isValidEmail = state.email.isEmpty() || android.util.Patterns.EMAIL_ADDRESS.matcher(state.email).matches()
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val isVertical = maxWidth < 800.dp
@@ -71,16 +69,13 @@ fun CompanyProfileScreen(
                     companyName = state.companyName,
                     address = state.address,
                     phone = state.phone,
-                    email = state.email,
                     users = state.users,
                     isValidPhone = isValidPhone,
-                    isValidEmail = isValidEmail,
                     showError = state.showError,
                     errorMessage = state.errorMessage,
                     onCompanyNameChange = { viewModel.updateCompanyName(it) },
                     onAddressChange = { viewModel.updateAddress(it) },
                     onPhoneChange = { viewModel.updatePhone(it) },
-                    onEmailChange = { viewModel.updateEmail(it) },
                     onAddUser = onAddUser,
                     onRemoveUser = { user -> viewModel.removeUser(user.id) },
                     onCancel = onCancel,
@@ -92,16 +87,13 @@ fun CompanyProfileScreen(
                     companyName = state.companyName,
                     address = state.address,
                     phone = state.phone,
-                    email = state.email,
                     users = state.users,
                     isValidPhone = isValidPhone,
-                    isValidEmail = isValidEmail,
                     showError = state.showError,
                     errorMessage = state.errorMessage,
                     onCompanyNameChange = { viewModel.updateCompanyName(it) },
                     onAddressChange = { viewModel.updateAddress(it) },
                     onPhoneChange = { viewModel.updatePhone(it) },
-                    onEmailChange = { viewModel.updateEmail(it) },
                     onAddUser = onAddUser,
                     onRemoveUser = { user -> viewModel.removeUser(user.id) },
                     onCancel = onCancel,
@@ -139,16 +131,13 @@ private fun CompanyProfileContentVertical(
     companyName: String,
     address: String,
     phone: String,
-    email: String,
     users: List<User>,
     isValidPhone: Boolean,
-    isValidEmail: Boolean,
     showError: Boolean,
     errorMessage: String,
     onCompanyNameChange: (String) -> Unit,
     onAddressChange: (String) -> Unit,
     onPhoneChange: (String) -> Unit,
-    onEmailChange: (String) -> Unit,
     onAddUser: () -> Unit,
     onRemoveUser: (User) -> Unit,
     onCancel: () -> Unit,
@@ -166,13 +155,10 @@ private fun CompanyProfileContentVertical(
             companyName = companyName,
             address = address,
             phone = phone,
-            email = email,
             isValidPhone = isValidPhone,
-            isValidEmail = isValidEmail,
             onCompanyNameChange = onCompanyNameChange,
             onAddressChange = onAddressChange,
             onPhoneChange = onPhoneChange,
-            onEmailChange = onEmailChange,
             focusManager = focusManager
         )
 
@@ -198,16 +184,13 @@ private fun CompanyProfileContentHorizontal(
     companyName: String,
     address: String,
     phone: String,
-    email: String,
     users: List<User>,
     isValidPhone: Boolean,
-    isValidEmail: Boolean,
     showError: Boolean,
     errorMessage: String,
     onCompanyNameChange: (String) -> Unit,
     onAddressChange: (String) -> Unit,
     onPhoneChange: (String) -> Unit,
-    onEmailChange: (String) -> Unit,
     onAddUser: () -> Unit,
     onRemoveUser: (User) -> Unit,
     onCancel: () -> Unit,
@@ -229,13 +212,10 @@ private fun CompanyProfileContentHorizontal(
                 companyName = companyName,
                 address = address,
                 phone = phone,
-                email = email,
                 isValidPhone = isValidPhone,
-                isValidEmail = isValidEmail,
                 onCompanyNameChange = onCompanyNameChange,
                 onAddressChange = onAddressChange,
                 onPhoneChange = onPhoneChange,
-                onEmailChange = onEmailChange,
                 focusManager = focusManager,
                 modifier = Modifier.weight(1f)
             )
@@ -264,13 +244,10 @@ private fun CompanyDetailsCard(
     companyName: String,
     address: String,
     phone: String,
-    email: String,
     isValidPhone: Boolean,
-    isValidEmail: Boolean,
     onCompanyNameChange: (String) -> Unit,
     onAddressChange: (String) -> Unit,
     onPhoneChange: (String) -> Unit,
-    onEmailChange: (String) -> Unit,
     focusManager: FocusManager,
     modifier: Modifier = Modifier
 ) {
@@ -354,34 +331,6 @@ private fun CompanyDetailsCard(
                 isError = phone.isNotEmpty() && !isValidPhone,
                 supportingText = if (phone.isNotEmpty() && !isValidPhone) {
                     { Text("Phone number must be 10 digits", color = Red) }
-                } else null,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = LightGray
-                )
-            )
-
-            // Email
-            OutlinedTextField(
-                value = email,
-                onValueChange = onEmailChange,
-                label = { Text("Email *") },
-                leadingIcon = {
-                    Icon(Icons.Default.Email, contentDescription = null, tint = Grey)
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                    onDone = { focusManager.clearFocus() }
-                ),
-                isError = email.isNotEmpty() && !isValidEmail,
-                supportingText = if (email.isNotEmpty() && !isValidEmail) {
-                    { Text("Invalid email address", color = Red) }
                 } else null,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -534,11 +483,6 @@ private fun UserItem(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 16.sp,
                         color = Color.Black
-                    )
-                    Text(
-                        text = user.email,
-                        fontSize = 12.sp,
-                        color = Grey
                     )
                 }
             }

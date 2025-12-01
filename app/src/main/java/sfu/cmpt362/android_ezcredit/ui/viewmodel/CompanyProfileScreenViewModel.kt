@@ -5,13 +5,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import sfu.cmpt362.android_ezcredit.ui.screens.User
-import sfu.cmpt362.android_ezcredit.ui.screens.UserRole
 
 data class CompanyProfileState(
     val companyName: String = "",
     val address: String = "",
     val phone: String = "",
-    val email: String = "",
     val users: List<User> = emptyList(),
     val showError: Boolean = false,
     val errorMessage: String = ""
@@ -34,16 +32,6 @@ class CompanyProfileScreenViewModel : ViewModel() {
         _state.value = _state.value.copy(phone = filtered)
     }
 
-    fun updateEmail(email: String) {
-        _state.value = _state.value.copy(email = email)
-    }
-
-    fun addUser(user: User) {
-        val currentUsers = _state.value.users.toMutableList()
-        currentUsers.add(user)
-        _state.value = _state.value.copy(users = currentUsers)
-    }
-
     fun removeUser(userId: String) {
         val updatedUsers = _state.value.users.filter { it.id != userId }
         _state.value = _state.value.copy(users = updatedUsers)
@@ -54,18 +42,12 @@ class CompanyProfileScreenViewModel : ViewModel() {
         return phone.isEmpty() || (phone.length == 10 && phone.all { it.isDigit() })
     }
 
-    fun isValidEmail(): Boolean {
-        val email = _state.value.email
-        return email.isEmpty() || android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-    }
 
     fun canSave(): Boolean {
         return _state.value.companyName.isNotBlank() &&
                 _state.value.address.isNotBlank() &&
                 _state.value.phone.isNotBlank() &&
-                _state.value.email.isNotBlank() &&
                 isValidPhone() &&
-                isValidEmail() &&
                 _state.value.users.isNotEmpty()
     }
 
@@ -78,7 +60,6 @@ class CompanyProfileScreenViewModel : ViewModel() {
             val errorMsg = when {
                 _state.value.users.isEmpty() -> "At least one user is required"
                 !isValidPhone() -> "Phone number must be exactly 10 digits"
-                !isValidEmail() -> "Invalid email address"
                 else -> "Please fill all required fields"
             }
             _state.value = _state.value.copy(
@@ -88,11 +69,4 @@ class CompanyProfileScreenViewModel : ViewModel() {
         }
     }
 
-    fun clearError() {
-        _state.value = _state.value.copy(showError = false, errorMessage = "Email or Password invalid")
-    }
-
-    fun clearState() {
-        _state.value = CompanyProfileState()
-    }
 }
