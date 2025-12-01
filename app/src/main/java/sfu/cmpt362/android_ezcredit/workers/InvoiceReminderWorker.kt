@@ -29,18 +29,16 @@ class InvoiceReminderWorker(
 ) : CoroutineWorker(context, params) {
 
     companion object {
-        private const val CHANNEL_ID = "invoice_reminders"
-        private const val CHANNEL_NAME = "Invoice Reminders"
-        private const val NOTIFICATION_ID_BASE = 1000
         private const val TAG = "InvoiceReminderWorker"
     }
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
             Log.d("InvoiceReminderWorker", "Worker started")
+            resetDailySummary()
+
             Log.d("InvoiceReminderWorker", "initialining the MailgunEmailService()")
             val emailService = MailgunEmailService()
             Log.d("InvoiceReminderWorker", "DONE initialining the MailgunEmailService()")
-            createNotificationChannel()
 
             val database = AppDatabase.getInstance(applicationContext)
             val invoiceRepository = InvoiceRepository(database.invoiceDao)
@@ -113,21 +111,10 @@ class InvoiceReminderWorker(
                         failedEmails.add("${customer.name} : ${customer.email}")
                         Log.e(TAG, "✗ Failed to send email to ${customer.email}: ${result.exceptionOrNull()?.message}")
                     }
-                    // Show summary notification
-                    if (emailsSent > 0 || emailsFailed > 0) {
-                        showSummaryNotification(applicationContext, emailsSent, emailsFailed, failedEmails,invoice.id.toInt())
-                    }
-
-//                    sendEmailIntentNotification(
-//                        applicationContext,
-//                        customer.email,
-//                        "Invoice #${invoice.invoiceNumber} Payment Reminder",
-//                        message,
-//                        invoice.id.toInt()
-//                    )
                 }
             }
 
+            saveSummaryData(emailsSent, emailsFailed, failedEmails)
             Log.d("InvoiceReminderWorker", "Worker finished successfully")
             Result.success()
         } catch (e: Exception) {
@@ -136,71 +123,33 @@ class InvoiceReminderWorker(
         }
     }
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Notifications for invoice payment reminders"
-            }
-            val notificationManager = applicationContext
-                .getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
+    private fun resetDailySummary() {
+        val prefs = applicationContext.getSharedPreferences(
+            DailySummaryWorker.PREFS_NAME,
+            Context.MODE_PRIVATE
+        )
+        prefs.edit().apply {
+            putInt(DailySummaryWorker.KEY_EMAILS_SENT, 0)
+            putInt(DailySummaryWorker.KEY_EMAILS_FAILED, 0)
+            putString(DailySummaryWorker.KEY_FAILED_EMAIL_LIST, "")
+            putInt(DailySummaryWorker.KEY_CREDIT_SCORE_UPDATES, 0)
+            putInt(DailySummaryWorker.KEY_INVOICES_MARKED_OVERDUE, 0)
+            putInt(DailySummaryWorker.KEY_INVOICES_MARKED_PAID, 0)
+            putInt(DailySummaryWorker.KEY_INVOICES_MARKED_LATE, 0)
+        }.apply()
+        Log.d(TAG, "Daily summary counters reset")
     }
 
-    private fun showSummaryNotification(
-        context: Context,
-        sent: Int,
-        failed: Int,
-        failedEmails: List<String>,
-        notificationId: Int
-    ) {
-        val message = buildString {
-            if (sent > 0) append("✓ $sent email(s) sent successfully")
-            if (sent > 0 && failed > 0) append("\n")
-            if (failed > 0) {
-                append("✗ $failed email(s) failed")
-                if (failedEmails.isNotEmpty()) {
-                    append(": ${failedEmails.joinToString(", ")}")
-                }
-            }
-        }
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Invoice Reminders Sent")
-            .setContentText(if (sent > 0) "$sent reminder(s) sent" else "Failed to send reminders")
-            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-            .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .build()
-//        val intent = Intent(Intent.ACTION_SEND).apply {
-//            type = "message/rfc822"
-//            putExtra(Intent.EXTRA_EMAIL, arrayOf(email))
-//            putExtra(Intent.EXTRA_SUBJECT, subject)
-//            putExtra(Intent.EXTRA_TEXT, body)
-//        }
-//
-//        val pendingIntent = PendingIntent.getActivity(
-//            context,
-//            notificationId,
-//            Intent.createChooser(intent, "Send Email"),
-//            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-//        )
-
-//        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-//            .setSmallIcon(R.drawable.ic_launcher_foreground)
-//            .setContentTitle("Send Email: $subject")
-//            .setContentText("Tap to send this invoice reminder via email")
-//            .setContentIntent(pendingIntent)
-//            .setAutoCancel(true)
-//            .setPriority(NotificationCompat.PRIORITY_HIGH)
-//            .build()
-
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(NOTIFICATION_ID_BASE + notificationId, notification)
+    private fun saveSummaryData(sent: Int, failed: Int, failedList: List<String>) {
+        val prefs = applicationContext.getSharedPreferences(
+            DailySummaryWorker.PREFS_NAME,
+            Context.MODE_PRIVATE
+        )
+        prefs.edit().apply {
+            putInt(DailySummaryWorker.KEY_EMAILS_SENT, sent)
+            putInt(DailySummaryWorker.KEY_EMAILS_FAILED, failed)
+            putString(DailySummaryWorker.KEY_FAILED_EMAIL_LIST, failedList.joinToString("\n"))
+        }.apply()
+        Log.d(TAG, "Email summary saved - Sent: $sent, Failed: $failed")
     }
-
 }

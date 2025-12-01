@@ -29,22 +29,11 @@ class LoginScreenViewModel : ViewModel() {
         _state.value = _state.value.copy(passwordVisible = !_state.value.passwordVisible)
     }
 
-    fun setLoading(isLoading: Boolean) {
-        _state.value = _state.value.copy(isLoading = isLoading)
-    }
-
-    fun setError(message: String?) {
-        _state.value = _state.value.copy(errorMessage = message)
-    }
-
     fun login(onSuccess: () -> Unit) {
         _state.value = _state.value.copy(isLoading = true, errorMessage = null)
 
-        // TODO: Implement actual login logic
+        // TODO: Implement actual login
         onSuccess()
     }
 
-    fun clearState() {
-        _state.value = LoginState()
-    }
 }
