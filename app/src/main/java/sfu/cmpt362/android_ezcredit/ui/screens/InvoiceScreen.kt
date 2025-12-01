@@ -91,7 +91,7 @@ fun InvoiceScreen(
 
     // Customer filter
     if (selectedCustomer != null) {
-        filteredInvoices = filteredInvoices.filter { it.customerID == selectedCustomer!!.id }
+        filteredInvoices = filteredInvoices.filter { it.customerId == selectedCustomer!!.id }
     }
 
     // Status filter

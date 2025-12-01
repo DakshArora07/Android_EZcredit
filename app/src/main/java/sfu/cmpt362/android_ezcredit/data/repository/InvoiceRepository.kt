@@ -63,7 +63,7 @@ class InvoiceRepository(private val invoiceDao: InvoiceDao) {
         val map = mapOf(
             "id" to inv.id,
             "invoiceNumber" to inv.invoiceNumber,
-            "customerID" to inv.customerId,
+            "customerId" to inv.customerId,
             "invDate" to inv.invDate.timeInMillis,
             "dueDate" to inv.dueDate.timeInMillis,
             "amount" to inv.amount,

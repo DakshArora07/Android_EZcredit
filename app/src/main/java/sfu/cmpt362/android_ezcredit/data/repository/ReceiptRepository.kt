@@ -65,7 +65,7 @@ class ReceiptRepository (private val receiptDao: ReceiptDao) {
             "id" to receipt.id,
             "receiptNumber" to receipt.receiptNumber,
             "receiptDate" to receipt.receiptDate.timeInMillis,
-            "invoiceID" to receipt.invoiceId,
+            "invoiceId" to receipt.invoiceId,
             "lastModified" to receipt.lastModified,
             "isDeleted" to receipt.isDeleted
         )
