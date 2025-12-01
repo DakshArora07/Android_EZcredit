@@ -11,24 +11,40 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.viewmodel.compose.viewModel
 import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.ui.theme.Green
 import sfu.cmpt362.android_ezcredit.ui.theme.Red
 import sfu.cmpt362.android_ezcredit.ui.theme.VeryLightGray
-import sfu.cmpt362.android_ezcredit.workers.DailySummaryWorker
+import sfu.cmpt362.android_ezcredit.ui.viewmodel.DailySummaryScreenViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DailySummaryScreen() {
-    val context = LocalContext.current
-    val summaryData = remember { loadSummaryData(context) }
+fun DailySummaryScreen(
+    viewModel: DailySummaryScreenViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
-    Scaffold{ padding ->
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    Scaffold { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -51,9 +67,8 @@ fun DailySummaryScreen() {
                 }
             }
 
-            // Header Stats Card
             item {
-                HeaderStatsCard(summaryData)
+                HeaderStatsCard(uiState)
             }
 
             // Email Summary
@@ -63,11 +78,11 @@ fun DailySummaryScreen() {
                     icon = Icons.Default.Email,
                     iconTint = MaterialTheme.colorScheme.primary,
                     stats = listOf(
-                        StatItem("Sent Successfully", summaryData.emailsSent.toString(), true),
-                        StatItem("Failed", summaryData.emailsFailed.toString(), summaryData.emailsFailed == 0)
+                        StatItem("Sent Successfully", uiState.emailsSent.toString(), true),
+                        StatItem("Failed", uiState.emailsFailed.toString(), uiState.emailsFailed == 0)
                     ),
-                    details = if (summaryData.failedEmailList.isNotEmpty()) {
-                        "Failed emails:\n${summaryData.failedEmailList}"
+                    details = if (uiState.failedEmailList.isNotEmpty()) {
+                        "Failed emails:\n${uiState.failedEmailList}"
                     } else null
                 )
             }
@@ -79,7 +94,7 @@ fun DailySummaryScreen() {
                     icon = Icons.Default.TrendingUp,
                     iconTint = MaterialTheme.colorScheme.primary,
                     stats = listOf(
-                        StatItem("Customers Updated", summaryData.creditScoreUpdates.toString(), true)
+                        StatItem("Customers Updated", uiState.creditScoreUpdates.toString(), true)
                     ),
                     details = null
                 )
@@ -92,9 +107,9 @@ fun DailySummaryScreen() {
                     icon = Icons.Default.Receipt,
                     iconTint = MaterialTheme.colorScheme.primary,
                     stats = listOf(
-                        StatItem("Marked Overdue", summaryData.invoicesOverdue.toString(), summaryData.invoicesOverdue == 0),
-                        StatItem("Marked Paid", summaryData.invoicesPaid.toString(), true),
-                        StatItem("Late Payments", summaryData.invoicesLate.toString(), summaryData.invoicesLate == 0)
+                        StatItem("Marked Overdue", uiState.invoicesOverdue.toString(), uiState.invoicesOverdue == 0),
+                        StatItem("Marked Paid", uiState.invoicesPaid.toString(), true),
+                        StatItem("Late Payments", uiState.invoicesLate.toString(), uiState.invoicesLate == 0)
                     ),
                     details = null
                 )
@@ -104,7 +119,7 @@ fun DailySummaryScreen() {
 }
 
 @Composable
-fun HeaderStatsCard(data: SummaryData) {
+private fun HeaderStatsCard(state: sfu.cmpt362.android_ezcredit.ui.viewmodel.DailySummaryUiState) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -119,7 +134,7 @@ fun HeaderStatsCard(data: SummaryData) {
                 .padding(16.dp)
         ) {
             Text(
-                text = "Last run: ${data.lastRunDate}",
+                text = "Last run: ${state.lastRunDate}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -130,19 +145,19 @@ fun HeaderStatsCard(data: SummaryData) {
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 StatBox(
-                    value = data.totalActions.toString(),
+                    value = state.totalActions.toString(),
                     label = "Total Actions",
                     color = MaterialTheme.colorScheme.primary
                 )
 
                 StatBox(
-                    value = data.totalIssues.toString(),
+                    value = state.totalIssues.toString(),
                     label = "Issues",
                     color = Red
                 )
 
                 StatBox(
-                    value = data.successRate,
+                    value = state.successRate,
                     label = "Success Rate",
                     color = Green
                 )
@@ -152,7 +167,7 @@ fun HeaderStatsCard(data: SummaryData) {
 }
 
 @Composable
-fun StatBox(value: String, label: String, color: Color) {
+private fun StatBox(value: String, label: String, color: Color) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -171,7 +186,7 @@ fun StatBox(value: String, label: String, color: Color) {
 }
 
 @Composable
-fun SummaryCard(
+private fun SummaryCard(
     title: String,
     icon: ImageVector,
     iconTint: Color,
@@ -254,7 +269,7 @@ fun SummaryCard(
 }
 
 @Composable
-fun StatRow(stat: StatItem) {
+private fun StatRow(stat: StatItem) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -276,62 +291,9 @@ fun StatRow(stat: StatItem) {
     }
 }
 
-// Data classes
-data class SummaryData(
-    val emailsSent: Int,
-    val emailsFailed: Int,
-    val failedEmailList: String,
-    val creditScoreUpdates: Int,
-    val invoicesOverdue: Int,
-    val invoicesPaid: Int,
-    val invoicesLate: Int,
-    val lastRunDate: String,
-    val totalActions: Int,
-    val totalIssues: Int,
-    val successRate: String
-)
-
+// Data class for individual stats
 data class StatItem(
     val label: String,
     val value: String,
     val isPositive: Boolean
 )
-
-// Helper function to load data
-private fun loadSummaryData(context: android.content.Context): SummaryData {
-    val prefs = context.getSharedPreferences(
-        DailySummaryWorker.PREFS_NAME,
-        android.content.Context.MODE_PRIVATE
-    )
-
-    val emailsSent = prefs.getInt(DailySummaryWorker.KEY_EMAILS_SENT, 0)
-    val emailsFailed = prefs.getInt(DailySummaryWorker.KEY_EMAILS_FAILED, 0)
-    val failedEmailList = prefs.getString(DailySummaryWorker.KEY_FAILED_EMAIL_LIST, "") ?: ""
-    val creditScoreUpdates = prefs.getInt(DailySummaryWorker.KEY_CREDIT_SCORE_UPDATES, 0)
-    val invoicesOverdue = prefs.getInt(DailySummaryWorker.KEY_INVOICES_MARKED_OVERDUE, 0)
-    val invoicesPaid = prefs.getInt(DailySummaryWorker.KEY_INVOICES_MARKED_PAID, 0)
-    val invoicesLate = prefs.getInt(DailySummaryWorker.KEY_INVOICES_MARKED_LATE, 0)
-    val lastRunDate = prefs.getString(DailySummaryWorker.KEY_LAST_RUN_DATE, "Never") ?: "Never"
-
-    val totalActions = emailsSent + creditScoreUpdates + invoicesOverdue + invoicesPaid + invoicesLate
-    val totalIssues = emailsFailed + invoicesOverdue + invoicesLate
-    val successRate = if (totalActions > 0) {
-        "${((totalActions - totalIssues) * 100 / totalActions)}%"
-    } else {
-        "N/A"
-    }
-
-    return SummaryData(
-        emailsSent = emailsSent,
-        emailsFailed = emailsFailed,
-        failedEmailList = failedEmailList,
-        creditScoreUpdates = creditScoreUpdates,
-        invoicesOverdue = invoicesOverdue,
-        invoicesPaid = invoicesPaid,
-        invoicesLate = invoicesLate,
-        lastRunDate = lastRunDate,
-        totalActions = totalActions,
-        totalIssues = totalIssues,
-        successRate = successRate
-    )
-}
