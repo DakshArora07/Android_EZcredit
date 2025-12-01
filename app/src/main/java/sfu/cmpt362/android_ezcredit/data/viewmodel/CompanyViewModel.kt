@@ -42,9 +42,10 @@ class CompanyViewModel(private val repository: CompanyRepository) : ViewModel() 
         repository.update(company)
     }
 
-    fun insert() {
-        repository.insert(company)
-        company = Company()
+    suspend fun insert(): Long {
+        val id = repository.insert(company)
+        company = company.copy(id = id)
+        return id
     }
 
     suspend fun getCompanyById(id: Long): Company {

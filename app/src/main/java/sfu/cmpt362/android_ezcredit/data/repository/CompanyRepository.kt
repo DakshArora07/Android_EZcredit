@@ -11,14 +11,13 @@ import sfu.cmpt362.android_ezcredit.data.entity.Company
 class CompanyRepository(private val companyDao: CompanyDao) {
     val companies: Flow<List<Company>> = companyDao.getCompanies()
 
-    fun insert(company: Company) {
-        CoroutineScope(IO).launch {
-            val ts = System.currentTimeMillis()
-            val toInsert = company.copy(lastModified = ts, isDeleted = false)
-            val newId = companyDao.insertCompany(toInsert) // Add this to DAO
-            val finalCompany = toInsert.copy(id = newId)
-            pushToFirebase(finalCompany)
-        }
+    suspend fun insert(company: Company): Long {
+        val ts = System.currentTimeMillis()
+        val toInsert = company.copy(lastModified = ts, isDeleted = false)
+        val newId = companyDao.insertCompany(toInsert)
+        val finalCompany = toInsert.copy(id = newId)
+        pushToFirebase(finalCompany)
+        return newId
     }
 
     fun update(company: Company) {
