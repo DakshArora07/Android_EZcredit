@@ -43,7 +43,7 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
         if(invoiceId==-1L){
             invoice = invoice.copy(
                 invoiceNumber = invoiceNumber,
-                customerID = customerId,
+                customerId = customerId,
                 invDate = issueDate,
                 dueDate = dueDate,
                 amount = amount,
@@ -53,7 +53,7 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
             invoice = invoice.copy(
                 id = invoiceId,
                 invoiceNumber = invoiceNumber,
-                customerID = customerId,
+                customerId = customerId,
                 invDate = issueDate,
                 dueDate = dueDate,
                 amount = amount,

@@ -188,7 +188,7 @@ fun ViewEditInvoiceScreen(
             localIssueDate = fetchedInvoice.invDate
             localDueDate = fetchedInvoice.dueDate
 
-            val fetchedCustomer = customerViewModel.getCustomerById(fetchedInvoice.customerID)
+            val fetchedCustomer = customerViewModel.getCustomerById(fetchedInvoice.customerId)
             customerViewModel.customerFromDB = fetchedCustomer
             customerSearchQuery = fetchedCustomer.name
 

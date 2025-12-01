@@ -5,13 +5,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.FirebaseRefs
 import sfu.cmpt362.android_ezcredit.data.dao.CustomerDao
 import sfu.cmpt362.android_ezcredit.data.entity.Customer
 
-class CustomerRepository(
-    private val customerDao: CustomerDao,
-    private val customersRef: DatabaseReference = FirebaseRefs.customersRef) {
+class CustomerRepository(private val customerDao: CustomerDao) {
+    private val companyId: Long get() = CompanyContext.currentCompanyId
+        ?: error("No company selected")
+    private val customersRef: DatabaseReference
+        get() = FirebaseRefs.customersRef(companyId)
+
     val customers: Flow<List<Customer>> = customerDao.getCustomers()
 
     fun insert(customer: Customer){

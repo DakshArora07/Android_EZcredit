@@ -24,7 +24,7 @@ data class Invoice (
     var invoiceNumber: String = "",
 
     @ColumnInfo(name = "customer_id")
-    var customerID: Long = 0,
+    var customerId: Long = 0,
 
     @ColumnInfo(name = "invoice_date")
     var invDate: Calendar = Calendar.getInstance(),
