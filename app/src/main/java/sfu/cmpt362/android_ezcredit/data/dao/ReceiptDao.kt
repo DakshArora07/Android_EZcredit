@@ -24,7 +24,7 @@ interface ReceiptDao {
     fun getReceipts(): Flow<List<Receipt>>
 
     @Query("SELECT * FROM receipt_list WHERE id = :key")
-    fun getReceiptById(key: Long): Receipt
+    suspend fun getReceiptById(key: Long): Receipt
 
     @Query("SELECT * FROM receipt_list WHERE id = :key")
     fun getReceiptByIdOrNull(key: Long): Receipt?

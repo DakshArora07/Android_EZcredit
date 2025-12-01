@@ -73,11 +73,11 @@ class InvoiceScreenViewModel : ViewModel() {
                     Log.d("OCR_DEBUG", "Raw OCR text:\n$raw")
 
                     val result = OcrInvoiceResult(
-                        invoiceNumber = Regex("Invoice\\s*#?\\s*(\\w+)").find(raw)?.groupValues?.get(1),
-                        amount = Regex("\\$?\\s*(\\d+\\.\\d{2})").find(raw)?.groupValues?.get(1),
-                        issueDate = Regex("(\\d{4}-\\d{2}-\\d{2})").find(raw)?.groupValues?.get(1),
-                        dueDate = Regex("Due\\s*:?\\s*(\\d{4}-\\d{2}-\\d{2})").find(raw)?.groupValues?.get(1),
-                        customerName = Regex("Bill To:\\s*(.*)").find(raw)?.groupValues?.get(1)
+                        invoiceNumber = Regex("Invoice Number:\\s*(\\w+)").find(raw)?.groupValues?.get(1),
+                        amount = Regex("Amount:\\s*\\$?(\\d+\\.\\d{2})").find(raw)?.groupValues?.get(1),
+                        issueDate = Regex("Issue Date:\\s*(\\d{4}-\\d{2}-\\d{2})").find(raw)?.groupValues?.get(1),
+                        dueDate = Regex("Due Date:\\s*(\\d{4}-\\d{2}-\\d{2})").find(raw)?.groupValues?.get(1),
+                        customerName = Regex("Customer Name:\\s*(.*)").find(raw)?.groupValues?.get(1)
                     )
 
                     _ocrResult.value = result

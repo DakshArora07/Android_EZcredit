@@ -9,6 +9,8 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
@@ -24,6 +26,11 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
         private set
 
     val invoicesLiveData: LiveData<List<Invoice>> = repository.invoices.asLiveData()
+
+    var selectedInvoice by mutableStateOf<Invoice?>(null)
+
+    private val _customerName = MutableStateFlow<String?>(null)
+    val customerName = _customerName.asStateFlow()
 
     fun updateInvoice(
         invoiceId:Long,
@@ -80,6 +87,19 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
     suspend fun getInvoicesByCustomerId(id: Long): List<Invoice> {
         return repository.getInvoicesByCustomerId(id)
     }
+
+    // Have to add this since getCustomerNameByInvoiceId cannot be be ran in a UI thread
+    fun loadCustomerName(invoiceId: Long) {
+        viewModelScope.launch {
+            val name = repository.getCustomerNameByInvoiceId(invoiceId)
+            _customerName.value = name
+        }
+    }
+
+    fun clearCustomerName() {
+        _customerName.value = null
+    }
+
 
     fun delete(id: Long) {
         val invoiceList = invoicesLiveData.value
