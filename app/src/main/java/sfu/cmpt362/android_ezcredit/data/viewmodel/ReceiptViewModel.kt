@@ -45,14 +45,14 @@ class ReceiptViewModel(private val repository: ReceiptRepository) : ViewModel() 
             receipt = receipt.copy(
                 receiptNumber = receiptNumber,
                 receiptDate = receiptDate,
-                invoiceID = invoiceId
+                invoiceId = invoiceId
             )
         }else{
             receipt = receipt.copy(
                 id = receiptId,
                 receiptNumber = receiptNumber,
                 receiptDate = receiptDate,
-                invoiceID = invoiceId
+                invoiceId = invoiceId
             )
         }
     }

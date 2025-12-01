@@ -5,13 +5,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.FirebaseRefs
 import sfu.cmpt362.android_ezcredit.data.dao.InvoiceDao
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 
-class InvoiceRepository(
-    private val invoiceDao: InvoiceDao,
-    private val invoicesRef: DatabaseReference = FirebaseRefs.invoicesRef) {
+class InvoiceRepository(private val invoiceDao: InvoiceDao) {
+    private val companyId: Long get() = CompanyContext.currentCompanyId!!
+    private val invoicesRef: DatabaseReference
+        get() = FirebaseRefs.invoicesRef(companyId)
+
     val invoices: Flow<List<Invoice>> = invoiceDao.getInvoices()
 
     fun insert(invoice: Invoice){
@@ -23,6 +26,7 @@ class InvoiceRepository(
             pushToFirebase(finalInv)
         }
     }
+
     fun update(invoice: Invoice){
         CoroutineScope(IO).launch{
             val updated = invoice.copy(lastModified = System.currentTimeMillis())
@@ -59,7 +63,7 @@ class InvoiceRepository(
         val map = mapOf(
             "id" to inv.id,
             "invoiceNumber" to inv.invoiceNumber,
-            "customerID" to inv.customerID,
+            "customerId" to inv.customerId,
             "invDate" to inv.invDate.timeInMillis,
             "dueDate" to inv.dueDate.timeInMillis,
             "amount" to inv.amount,

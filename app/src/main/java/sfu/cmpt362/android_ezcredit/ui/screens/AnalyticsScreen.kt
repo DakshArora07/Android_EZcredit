@@ -680,7 +680,7 @@ private fun calculateTopCustomersByRevenue(
     val customerRevenueMap = mutableMapOf<String, Double>()
 
     invoices.forEach { invoice ->
-        val customerName = customerMap[invoice.customerID]?.name ?: "Unknown"
+        val customerName = customerMap[invoice.customerId]?.name ?: "Unknown"
         customerRevenueMap[customerName] = customerRevenueMap.getOrDefault(customerName, 0.0) + invoice.amount
     }
 

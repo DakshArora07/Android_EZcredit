@@ -83,7 +83,7 @@ class InvoiceReminderWorker(
                 if (shouldSendReminder) {
                     Log.d("InvoiceReminderWorker", "Preparing email intent for invoice #${invoice.invoiceNumber}")
 
-                    val customer = customerRepository.getById(invoice.customerID)
+                    val customer = customerRepository.getById(invoice.customerId)
                     Log.d("InvoiceReminderWorker", "Customer found: ${customer.name}, email: ${customer.email}")
 
                     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())

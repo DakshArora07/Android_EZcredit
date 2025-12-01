@@ -25,7 +25,7 @@ data class Receipt (
     var receiptDate: Calendar = Calendar.getInstance(),
 
     @ColumnInfo(name = "invoice_id")
-    var invoiceID: Long = 0,
+    var invoiceId: Long = 0,
 
     var lastModified: Long = 0L,
 
