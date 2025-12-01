@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import sfu.cmpt362.android_ezcredit.ui.screens.User
+import sfu.cmpt362.android_ezcredit.ui.screens.UserRole
 
 data class CompanyProfileState(
     val companyName: String = "",
@@ -12,7 +13,8 @@ data class CompanyProfileState(
     val phone: String = "",
     val users: List<User> = emptyList(),
     val showError: Boolean = false,
-    val errorMessage: String = ""
+    val errorMessage: String = "",
+    val isCompanyDetailsSaved: Boolean = false
 )
 
 class CompanyProfileScreenViewModel : ViewModel() {
@@ -20,16 +22,23 @@ class CompanyProfileScreenViewModel : ViewModel() {
     val state: StateFlow<CompanyProfileState> = _state.asStateFlow()
 
     fun updateCompanyName(name: String) {
-        _state.value = _state.value.copy(companyName = name)
+        if (!_state.value.isCompanyDetailsSaved) {
+            _state.value = _state.value.copy(companyName = name)
+        }
     }
 
     fun updateAddress(address: String) {
-        _state.value = _state.value.copy(address = address)
+        if (!_state.value.isCompanyDetailsSaved) {
+            _state.value = _state.value.copy(address = address)
+        }
     }
 
     fun updatePhone(phone: String) {
-        val filtered = phone.filter { it.isDigit() }.take(10)
-        _state.value = _state.value.copy(phone = filtered)
+        if (!_state.value.isCompanyDetailsSaved) {
+            // Only allow digits and limit to 10 characters
+            val filtered = phone.filter { it.isDigit() }.take(10)
+            _state.value = _state.value.copy(phone = filtered)
+        }
     }
 
     fun removeUser(userId: String) {
@@ -42,23 +51,23 @@ class CompanyProfileScreenViewModel : ViewModel() {
         return phone.isEmpty() || (phone.length == 10 && phone.all { it.isDigit() })
     }
 
-
-    fun canSave(): Boolean {
+    fun canSaveCompanyDetails(): Boolean {
         return _state.value.companyName.isNotBlank() &&
                 _state.value.address.isNotBlank() &&
                 _state.value.phone.isNotBlank() &&
-                isValidPhone() &&
-                _state.value.users.isNotEmpty()
+                isValidPhone()
     }
 
-    fun validateAndSave(onSuccess: () -> Unit) {
-        if (canSave()) {
-            // TODO: Implement actual save logic
-            _state.value = _state.value.copy(showError = false)
-            onSuccess()
+    fun saveCompanyDetails(): Boolean {
+        if (canSaveCompanyDetails()) {
+            _state.value = _state.value.copy(
+                isCompanyDetailsSaved = true,
+                showError = false,
+                errorMessage = ""
+            )
+            return true
         } else {
             val errorMsg = when {
-                _state.value.users.isEmpty() -> "At least one user is required"
                 !isValidPhone() -> "Phone number must be exactly 10 digits"
                 else -> "Please fill all required fields"
             }
@@ -66,7 +75,42 @@ class CompanyProfileScreenViewModel : ViewModel() {
                 showError = true,
                 errorMessage = errorMsg
             )
+            return false
         }
     }
 
+    fun canGoToDashboard(): Boolean {
+        val hasAdmin = _state.value.users.any { it.role == UserRole.ADMIN }
+        return _state.value.isCompanyDetailsSaved && _state.value.users.isNotEmpty() && hasAdmin
+    }
+
+    fun goToDashboard(onSuccess: () -> Unit) {
+        val hasAdmin = _state.value.users.any { it.role == UserRole.ADMIN }
+
+        if (canGoToDashboard()) {
+            // TODO: Save company and users to database
+            _state.value = _state.value.copy(showError = false)
+            onSuccess()
+        } else {
+            val errorMsg = when {
+                !_state.value.isCompanyDetailsSaved -> "Please save company details first"
+                _state.value.users.isEmpty() -> "At least one user is required"
+                !hasAdmin -> "At least one Admin user is required"
+                else -> "Cannot proceed to dashboard"
+            }
+            _state.value = _state.value.copy(
+                showError = true,
+                errorMessage = errorMsg
+            )
+        }
+    }
+    fun resetCompanyDetails() {
+        _state.value = CompanyProfileState()
+    }
+
+    fun addUser(user: User) {
+        val currentUsers = _state.value.users.toMutableList()
+        currentUsers.add(user)
+        _state.value = _state.value.copy(users = currentUsers)
+    }
 }

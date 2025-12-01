@@ -31,6 +31,7 @@ import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModel
 data class User(
     val id: String = java.util.UUID.randomUUID().toString(),
     val name: String,
+    val email: String,
     val role: UserRole
 )
 
@@ -73,13 +74,18 @@ fun CompanyProfileScreen(
                     isValidPhone = isValidPhone,
                     showError = state.showError,
                     errorMessage = state.errorMessage,
+                    isCompanyDetailsSaved = state.isCompanyDetailsSaved,
                     onCompanyNameChange = { viewModel.updateCompanyName(it) },
                     onAddressChange = { viewModel.updateAddress(it) },
                     onPhoneChange = { viewModel.updatePhone(it) },
                     onAddUser = onAddUser,
                     onRemoveUser = { user -> viewModel.removeUser(user.id) },
-                    onCancel = onCancel,
-                    onSave = { viewModel.validateAndSave(onSave) },
+                    onCancelCompanyDetails = {
+                        viewModel.resetCompanyDetails()
+                        onCancel()
+                    },
+                    onSaveCompanyDetails = { viewModel.saveCompanyDetails() },
+                    onGoToDashboard = { viewModel.goToDashboard(onSave) },
                     focusManager = focusManager
                 )
             } else {
@@ -91,13 +97,18 @@ fun CompanyProfileScreen(
                     isValidPhone = isValidPhone,
                     showError = state.showError,
                     errorMessage = state.errorMessage,
+                    isCompanyDetailsSaved = state.isCompanyDetailsSaved,
                     onCompanyNameChange = { viewModel.updateCompanyName(it) },
                     onAddressChange = { viewModel.updateAddress(it) },
                     onPhoneChange = { viewModel.updatePhone(it) },
                     onAddUser = onAddUser,
                     onRemoveUser = { user -> viewModel.removeUser(user.id) },
-                    onCancel = onCancel,
-                    onSave = { viewModel.validateAndSave(onSave) },
+                    onCancelCompanyDetails = {
+                        viewModel.resetCompanyDetails()
+                        onCancel()
+                    },
+                    onSaveCompanyDetails = { viewModel.saveCompanyDetails() },
+                    onGoToDashboard = { viewModel.goToDashboard(onSave) },
                     focusManager = focusManager
                 )
             }
@@ -135,13 +146,15 @@ private fun CompanyProfileContentVertical(
     isValidPhone: Boolean,
     showError: Boolean,
     errorMessage: String,
+    isCompanyDetailsSaved: Boolean,
     onCompanyNameChange: (String) -> Unit,
     onAddressChange: (String) -> Unit,
     onPhoneChange: (String) -> Unit,
     onAddUser: () -> Unit,
     onRemoveUser: (User) -> Unit,
-    onCancel: () -> Unit,
-    onSave: () -> Unit,
+    onCancelCompanyDetails: () -> Unit,
+    onSaveCompanyDetails: () -> Unit,
+    onGoToDashboard: () -> Unit,
     focusManager: FocusManager
 ) {
     Column(
@@ -151,31 +164,49 @@ private fun CompanyProfileContentVertical(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Company Details Card
         CompanyDetailsCard(
             companyName = companyName,
             address = address,
             phone = phone,
             isValidPhone = isValidPhone,
+            isLocked = isCompanyDetailsSaved,
             onCompanyNameChange = onCompanyNameChange,
             onAddressChange = onAddressChange,
             onPhoneChange = onPhoneChange,
             focusManager = focusManager
         )
 
-        UsersCard(
-            users = users,
-            onAddUser = onAddUser,
-            onRemoveUser = onRemoveUser
-        )
+        // Cancel/Save buttons for Company Details (only show if not saved yet)
+        if (!isCompanyDetailsSaved) {
+            if (showError) {
+                ErrorMessage(errorMessage)
+            }
 
-        if (showError) {
-            ErrorMessage(errorMessage)
+            CompanyDetailsButtons(
+                onCancel = onCancelCompanyDetails,
+                onSave = onSaveCompanyDetails
+            )
         }
 
-        ActionButtons(
-            onCancel = onCancel,
-            onSave = onSave
-        )
+        // Users section (only show after company details are saved)
+        if (isCompanyDetailsSaved) {
+            UsersCard(
+                users = users,
+                onAddUser = onAddUser,
+                onRemoveUser = onRemoveUser
+            )
+
+            if (showError) {
+                ErrorMessage(errorMessage)
+            }
+
+            // Go to Dashboard button
+            DashboardButton(
+                enabled = users.isNotEmpty(),
+                onClick = onGoToDashboard
+            )
+        }
     }
 }
 
@@ -188,13 +219,15 @@ private fun CompanyProfileContentHorizontal(
     isValidPhone: Boolean,
     showError: Boolean,
     errorMessage: String,
+    isCompanyDetailsSaved: Boolean,
     onCompanyNameChange: (String) -> Unit,
     onAddressChange: (String) -> Unit,
     onPhoneChange: (String) -> Unit,
     onAddUser: () -> Unit,
     onRemoveUser: (User) -> Unit,
-    onCancel: () -> Unit,
-    onSave: () -> Unit,
+    onCancelCompanyDetails: () -> Unit,
+    onSaveCompanyDetails: () -> Unit,
+    onGoToDashboard: () -> Unit,
     focusManager: FocusManager
 ) {
     Column(
@@ -204,38 +237,64 @@ private fun CompanyProfileContentHorizontal(
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
+        if (!isCompanyDetailsSaved) {
+            // Step 1: Company Details only
             CompanyDetailsCard(
                 companyName = companyName,
                 address = address,
                 phone = phone,
                 isValidPhone = isValidPhone,
+                isLocked = isCompanyDetailsSaved,
                 onCompanyNameChange = onCompanyNameChange,
                 onAddressChange = onAddressChange,
                 onPhoneChange = onPhoneChange,
-                focusManager = focusManager,
-                modifier = Modifier.weight(1f)
+                focusManager = focusManager
             )
 
-            UsersCard(
-                users = users,
-                onAddUser = onAddUser,
-                onRemoveUser = onRemoveUser,
-                modifier = Modifier.weight(1f)
+            if (showError) {
+                ErrorMessage(errorMessage)
+            }
+
+            CompanyDetailsButtons(
+                onCancel = onCancelCompanyDetails,
+                onSave = onSaveCompanyDetails
+            )
+        } else {
+            // Step 2: Show both Company Details (locked) and Users side by side
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                CompanyDetailsCard(
+                    companyName = companyName,
+                    address = address,
+                    phone = phone,
+                    isValidPhone = isValidPhone,
+                    isLocked = isCompanyDetailsSaved,
+                    onCompanyNameChange = onCompanyNameChange,
+                    onAddressChange = onAddressChange,
+                    onPhoneChange = onPhoneChange,
+                    focusManager = focusManager,
+                    modifier = Modifier.weight(1f)
+                )
+
+                UsersCard(
+                    users = users,
+                    onAddUser = onAddUser,
+                    onRemoveUser = onRemoveUser,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            if (showError) {
+                ErrorMessage(errorMessage)
+            }
+
+            DashboardButton(
+                enabled = users.isNotEmpty(),
+                onClick = onGoToDashboard
             )
         }
-
-        if (showError) {
-            ErrorMessage(errorMessage)
-        }
-
-        ActionButtons(
-            onCancel = onCancel,
-            onSave = onSave
-        )
     }
 }
 
@@ -245,6 +304,7 @@ private fun CompanyDetailsCard(
     address: String,
     phone: String,
     isValidPhone: Boolean,
+    isLocked: Boolean,
     onCompanyNameChange: (String) -> Unit,
     onAddressChange: (String) -> Unit,
     onPhoneChange: (String) -> Unit,
@@ -254,18 +314,35 @@ private fun CompanyDetailsCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(
+            containerColor = if (isLocked) LightGray.copy(alpha = 0.3f) else Color.White
+        )
     ) {
         Column(
             modifier = Modifier.padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = "Company Details",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Company Details",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                if (isLocked) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Locked",
+                        tint = Grey,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
 
             // Company Name
             OutlinedTextField(
@@ -276,6 +353,7 @@ private fun CompanyDetailsCard(
                     Icon(Icons.Default.Business, contentDescription = null, tint = Grey)
                 },
                 singleLine = true,
+                enabled = !isLocked,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -284,7 +362,9 @@ private fun CompanyDetailsCard(
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = LightGray
+                    unfocusedBorderColor = LightGray,
+                    disabledBorderColor = LightGray,
+                    disabledTextColor = Color.Black
                 )
             )
 
@@ -298,6 +378,7 @@ private fun CompanyDetailsCard(
                 },
                 minLines = 2,
                 maxLines = 3,
+                enabled = !isLocked,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -306,7 +387,9 @@ private fun CompanyDetailsCard(
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = LightGray
+                    unfocusedBorderColor = LightGray,
+                    disabledBorderColor = LightGray,
+                    disabledTextColor = Color.Black
                 )
             )
 
@@ -319,24 +402,60 @@ private fun CompanyDetailsCard(
                     Icon(Icons.Default.Phone, contentDescription = null, tint = Grey)
                 },
                 singleLine = true,
+                enabled = !isLocked,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Phone,
-                    imeAction = ImeAction.Next
+                    imeAction = ImeAction.Done
                 ),
                 keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    onDone = { focusManager.clearFocus() }
                 ),
-                isError = phone.isNotEmpty() && !isValidPhone,
-                supportingText = if (phone.isNotEmpty() && !isValidPhone) {
+                isError = phone.isNotEmpty() && !isValidPhone && !isLocked,
+                supportingText = if (phone.isNotEmpty() && !isValidPhone && !isLocked) {
                     { Text("Phone number must be 10 digits", color = Red) }
                 } else null,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = LightGray
+                    unfocusedBorderColor = LightGray,
+                    disabledBorderColor = LightGray,
+                    disabledTextColor = Color.Black
                 )
             )
+        }
+    }
+}
+
+@Composable
+private fun CompanyDetailsButtons(
+    onCancel: () -> Unit,
+    onSave: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        OutlinedButton(
+            onClick = onCancel,
+            modifier = Modifier.weight(1f).height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Grey
+            )
+        ) {
+            Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        }
+
+        Button(
+            onClick = onSave,
+            modifier = Modifier.weight(1f).height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Text("Save", fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -405,13 +524,44 @@ private fun UsersCard(
 
             if (users.isEmpty()) {
                 Text(
-                    text = "At least one user is required",
+                    text = "At least one Admin user is required",
                     fontSize = 12.sp,
                     color = Orange,
                     modifier = Modifier.padding(start = 4.dp)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun DashboardButton(
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            disabledContainerColor = LightGray
+        )
+    ) {
+        Icon(
+            imageVector = Icons.Default.Dashboard,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "Go to Company Dashboard",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -484,6 +634,11 @@ private fun UserItem(
                         fontSize = 16.sp,
                         color = Color.Black
                     )
+                    Text(
+                        text = user.email,
+                        fontSize = 12.sp,
+                        color = Grey
+                    )
                 }
             }
 
@@ -550,39 +705,6 @@ private fun ErrorMessage(message: String) {
                 color = Red,
                 fontSize = 14.sp
             )
-        }
-    }
-}
-
-@Composable
-private fun ActionButtons(
-    onCancel: () -> Unit,
-    onSave: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        OutlinedButton(
-            onClick = onCancel,
-            modifier = Modifier.weight(1f).height(56.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Grey
-            )
-        ) {
-            Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        }
-
-        Button(
-            onClick = onSave,
-            modifier = Modifier.weight(1f).height(56.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            )
-        ) {
-            Text("Save", fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
