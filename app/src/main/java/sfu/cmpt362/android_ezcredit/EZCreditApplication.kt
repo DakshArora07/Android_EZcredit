@@ -28,7 +28,7 @@ class EZCreditApplication : Application() {
             database.receiptDao,
             applicationScope
         )
-        //syncManager!!.start() // Downloads: Companies→Users→Customers→Invoices→Receipts
+        syncManager!!.start() // Downloads: Companies→Users→Customers→Invoices→Receipts
     }
 
     // Call this to restart sync after login (keeps live listeners active)

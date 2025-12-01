@@ -17,6 +17,7 @@ import sfu.cmpt362.android_ezcredit.ui.screens.UserProfileScreen
 import sfu.cmpt362.android_ezcredit.ui.theme.Android_EZCreditTheme
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModel
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity() {
 
@@ -57,7 +58,8 @@ class MainActivity : ComponentActivity() {
                     else -> {
                         LoginScreen(
                             onLoginSuccess = { isLoggedIn = true },
-                            onCreateCompany = { showCompanyProfile = true }
+                            onCreateCompany = { showCompanyProfile = true },
+                            application = LocalContext.current.applicationContext as EZCreditApplication
                         )
                     }
                 }
