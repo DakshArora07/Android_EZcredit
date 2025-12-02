@@ -39,15 +39,23 @@ class LoginScreenViewModel() : ViewModel() {
         _state.value = _state.value.copy(passwordVisible = !_state.value.passwordVisible)
     }
 
+    fun resetLoginState() {
+        _state.value = state.value.copy(
+            isLoading = false,
+            errorMessage = null
+        )
+    }
+
     fun login(email: String, password: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+            _state.value = state.value.copy(isLoading = true, errorMessage = null)
             val companyId = authManager.loginAndSetCompanyContext(email, password)
+            _state.value = state.value.copy(isLoading = false)
 
             if (companyId != null) {
                 onSuccess()
             } else {
-                _state.value = _state.value.copy(isLoading = false, errorMessage = "Invalid credentials")
+                _state.value = state.value.copy(errorMessage = "Invalid credentials")
             }
         }
     }

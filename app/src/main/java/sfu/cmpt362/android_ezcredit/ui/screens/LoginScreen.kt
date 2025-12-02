@@ -49,6 +49,10 @@ fun LoginScreen(
     val focusManager = LocalFocusManager.current
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        viewModel.resetLoginState()
+    }
+
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val isVertical = maxWidth < 600.dp
 

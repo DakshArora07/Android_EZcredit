@@ -394,14 +394,23 @@ class SyncManager(
         timeInMillis = this@toCalendar
     }
 
-    // Synchronous clear method for use before syncing
     fun clearCompanyDataSync() {
         try {
-            Log.d(TAG, "Clearing all company-specific data synchronously")
+            Log.d(TAG, "Clearing company data in correct FK order")
+
+            // 1. Delete LEAF tables first (no dependencies)
+            receiptDao.deleteAll()      // receipts → invoices FK
+            Log.d(TAG, "Receipts cleared")
+
+            // 2. Delete middle tables
+            invoiceDao.deleteAll()      // invoices → customers FK
+            Log.d(TAG, "Invoices cleared")
+
+            // 3. Delete root tables last
             customerDao.deleteAll()
-            invoiceDao.deleteAll()
-            receiptDao.deleteAll()
-            Log.d(TAG, "Company data cleared successfully")
+            Log.d(TAG, "Customers cleared")
+
+            Log.d(TAG, "✅ Company data cleared successfully (FK safe)")
         } catch (e: Exception) {
             Log.e(TAG, "Error clearing company data", e)
         }
