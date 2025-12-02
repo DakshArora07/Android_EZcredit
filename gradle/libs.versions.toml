@@ -16,6 +16,7 @@ visionCommon = "17.3.0"
 runtimeLivedata = "1.9.5"
 uiUnit = "1.9.5"
 ui = "1.9.5"
+firebaseFunctionsKtx = "22.1.0"
 
 [libraries]
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
@@ -41,6 +42,7 @@ vision-common = { group = "com.google.mlkit", name = "vision-common", version.re
 androidx-compose-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
 androidx-compose-ui-unit = { group = "androidx.compose.ui", name = "ui-unit", version.ref = "uiUnit" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
+firebase-functions-ktx = { group = "com.google.firebase", name = "firebase-functions-ktx", version.ref = "firebaseFunctionsKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

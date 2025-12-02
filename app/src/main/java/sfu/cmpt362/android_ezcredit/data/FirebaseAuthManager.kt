@@ -38,6 +38,7 @@ class FirebaseAuthManager {
                 val userEmail = userSnap.child("email").getValue(String::class.java)
                 if (userEmail == email) {
                     CompanyContext.currentCompanyId = companyId
+                    CompanyContext.currentUserId = userSnap.child("id").getValue(Long::class.java)
                     return companyId
                 }
             }

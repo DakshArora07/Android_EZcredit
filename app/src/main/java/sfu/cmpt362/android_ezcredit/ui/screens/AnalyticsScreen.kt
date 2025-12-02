@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -13,14 +15,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import sfu.cmpt362.android_ezcredit.data.AppDatabase
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
+import sfu.cmpt362.android_ezcredit.data.repository.UserRepository
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModelFactory
 import sfu.cmpt362.android_ezcredit.ui.theme.*
+import sfu.cmpt362.android_ezcredit.ui.viewmodel.DailySummaryScreenViewModel
+import sfu.cmpt362.android_ezcredit.utils.AccessMode
 import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 import java.text.NumberFormat
 import java.util.*
@@ -60,6 +72,88 @@ fun AnalyticsScreen(
     customerViewModel: CustomerViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val userRepository = remember {
+        val database = AppDatabase.getInstance(context)
+        UserRepository(database.userDao)
+    }
+    val userViewModel: UserViewModel = viewModel(
+        factory = UserViewModelFactory(userRepository)
+    )
+    var isAdmin by remember { mutableStateOf<Boolean?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        val currentUserId = CompanyContext.currentUserId
+        if (currentUserId != null) {
+            try {
+                val user = userViewModel.getUserById(currentUserId)
+                isAdmin = user.accessLevel == AccessMode.Admin
+            } catch (e: Exception) {
+                isAdmin = false
+            }
+        } else {
+            isAdmin = false
+        }
+        isLoading = false
+    }
+
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (isAdmin == false) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "Access Denied",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "This screen is only accessible to administrators.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        }
+        return
+    }
+
     val invoices by invoiceViewModel.invoicesLiveData.observeAsState(emptyList())
     val customers by customerViewModel.customersLiveData.observeAsState(emptyList())
     var selectedPeriod by remember { mutableStateOf("Month") }

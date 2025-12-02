@@ -62,8 +62,12 @@ class ReceiptViewModel(private val repository: ReceiptRepository) : ViewModel() 
         repository.update(receipt)
     }
 
-    fun insert() {
-        repository.insert(receipt)
+    fun insert(onError: (String) -> Unit) {
+        repository.insert(receipt, onError = {
+            onError(it)
+            return@insert
+        })
+
         receipt = Receipt()
     }
 
@@ -79,10 +83,17 @@ class ReceiptViewModel(private val repository: ReceiptRepository) : ViewModel() 
         return repository.getAmountByReceiptId(id)
     }
 
-    fun delete(id: Long) {
+    fun delete(
+        id: Long,
+        onError: (String) -> Unit = {},
+        onSuccess: () -> Unit = {}
+    ) {
         val receiptList = receiptsLiveData.value
         if (receiptList != null && receiptList.isNotEmpty()) {
-            repository.deleteById(id)
+            repository.deleteById(id, onError, onSuccess)
+        } else {
+            onError("No receipts available to delete")
         }
     }
+
 }

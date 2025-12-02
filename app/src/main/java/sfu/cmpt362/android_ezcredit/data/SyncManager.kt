@@ -283,6 +283,7 @@ class SyncManager(
                 } catch (e: Exception) {
                     InvoiceStatus.Unpaid
                 }
+                val url = snap.child("url").getValue(String::class.java) ?: ""
                 val lastModified = snap.child("lastModified").getValue(Long::class.java) ?: 0L
                 val isDeleted = snap.child("isDeleted").getValue(Boolean::class.java) ?: false
 
@@ -311,6 +312,7 @@ class SyncManager(
                                 invDate = invDateMillis.toCalendar(),
                                 dueDate = dueDateMillis.toCalendar(),
                                 amount = amount,
+                                url = url,
                                 status = status,
                                 lastModified = lastModified,
                                 isDeleted = isDeleted

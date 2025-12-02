@@ -7,7 +7,6 @@ object PreferenceManager {
 
     private const val PREF_NAME = "app_settings"
     private const val KEY_INVOICE_REMINDER = "invoice_reminder_enabled"
-
     private const val KEY_DAILY_SUMMARY = "daily_summary_enabled"
     private const val KEY_REMINDER_TIME_HOUR = "invoice_reminder_hour"
     private const val KEY_SUMMARY_TIME_HOUR = "summary_time_hour"
@@ -72,5 +71,16 @@ object PreferenceManager {
         return prefs(context).getInt(KEY_SUMMARY_TIME_MIN, 0)
     }
 
+    fun resetBackgroundSettingsPreferences(context: Context) {
+        prefs(context).edit {
+            remove(KEY_INVOICE_REMINDER)
+            remove(KEY_DAILY_SUMMARY)
+            remove(KEY_REMINDER_TIME_HOUR)
+            remove(KEY_SUMMARY_TIME_HOUR)
+            remove(KEY_REMINDER_TIME_MIN)
+            remove(KEY_SUMMARY_TIME_MIN)
+        }
+
+    }
 
 }
