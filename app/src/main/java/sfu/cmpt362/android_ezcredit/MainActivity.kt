@@ -72,15 +72,6 @@ class MainActivity : ComponentActivity() {
 
                 LaunchedEffect(networkState) {
                     hasInternet = networkState
-
-                    if (!networkState && isCheckingNetwork) {
-                        Toast.makeText(
-                            context,
-                            "No internet connection. Please connect to the internet.",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-
                     isCheckingNetwork = false
                 }
 
@@ -90,12 +81,6 @@ class MainActivity : ComponentActivity() {
                         if (NetworkUtils.isNetworkAvailable(context)) {
                             isLoggedIn = true
                             application.checkAndSyncOnStartup()
-                        } else {
-                            Toast.makeText(
-                                context,
-                                "No internet connection. Please connect to continue.",
-                                Toast.LENGTH_LONG
-                            ).show()
                         }
                     }
                     isCheckingNetwork = false
@@ -127,11 +112,11 @@ class MainActivity : ComponentActivity() {
                     }
 
                     LaunchedEffect(Unit) {
-                        kotlinx.coroutines.delay(5000)
+                        kotlinx.coroutines.delay(2000)
                         if (!hasInternet) {
                             Toast.makeText(
                                 context,
-                                "Still waiting for internet connection...",
+                                "Waiting for internet connection...",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
