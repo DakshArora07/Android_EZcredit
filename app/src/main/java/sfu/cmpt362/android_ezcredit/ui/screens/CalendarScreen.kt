@@ -50,8 +50,20 @@ fun CalendarScreen(
     val selectedDate = calendarScreenViewModel.selectedDate
     val allInvoices by invoiceViewModel.invoicesLiveData.observeAsState(emptyList())
 
-    val invoicesByDate = remember(allInvoices, currentDate) {
-        allInvoices.filter { invoice ->
+    // Filter state
+    var selectedFilters by remember { mutableStateOf(setOf<InvoiceStatus>()) }
+
+    // Filter invoices based on selected statuses
+    val filteredInvoices = remember(allInvoices, selectedFilters) {
+        if (selectedFilters.isEmpty()) {
+            allInvoices
+        } else {
+            allInvoices.filter { it.status in selectedFilters }
+        }
+    }
+
+    val invoicesByDate = remember(filteredInvoices, currentDate) {
+        filteredInvoices.filter { invoice ->
             val dueDate = invoice.dueDate
             dueDate.get(Calendar.MONTH) == currentDate.get(Calendar.MONTH) &&
                     dueDate.get(Calendar.YEAR) == currentDate.get(Calendar.YEAR)
@@ -60,9 +72,9 @@ fun CalendarScreen(
         }
     }
 
-    val selectedInvoices = remember(selectedDate, allInvoices) {
+    val selectedInvoices = remember(selectedDate, filteredInvoices) {
         if (selectedDate != null) {
-            allInvoices.filter { invoice ->
+            filteredInvoices.filter { invoice ->
                 val dueDate = invoice.dueDate
                 dueDate.get(Calendar.DAY_OF_MONTH) == selectedDate.date &&
                         dueDate.get(Calendar.MONTH) == selectedDate.month &&
@@ -83,6 +95,14 @@ fun CalendarScreen(
                 today = today,
                 invoicesByDate = invoicesByDate,
                 selectedInvoices = selectedInvoices,
+                selectedFilters = selectedFilters,
+                onFilterChange = { status ->
+                    selectedFilters = if (status in selectedFilters) {
+                        selectedFilters - status
+                    } else {
+                        selectedFilters + status
+                    }
+                },
                 onDateChange = calendarScreenViewModel::updateCurrentDate,
                 onDayClick = { day ->
                     calendarScreenViewModel.updateSelectedDate(
@@ -98,6 +118,14 @@ fun CalendarScreen(
                 today = today,
                 invoicesByDate = invoicesByDate,
                 selectedInvoices = selectedInvoices,
+                selectedFilters = selectedFilters,
+                onFilterChange = { status ->
+                    selectedFilters = if (status in selectedFilters) {
+                        selectedFilters - status
+                    } else {
+                        selectedFilters + status
+                    }
+                },
                 onDateChange = calendarScreenViewModel::updateCurrentDate,
                 onDayClick = { day ->
                     calendarScreenViewModel.updateSelectedDate(
@@ -117,6 +145,8 @@ private fun CalendarScreenVerticalLayout(
     today: Calendar,
     invoicesByDate: Map<Int, List<Invoice>>,
     selectedInvoices: List<Invoice>,
+    selectedFilters: Set<InvoiceStatus>,
+    onFilterChange: (InvoiceStatus) -> Unit,
     onDateChange: (Calendar) -> Unit,
     onDayClick: (Int) -> Unit,
     onNavigateToInvoice: (Long) -> Unit
@@ -129,6 +159,10 @@ private fun CalendarScreenVerticalLayout(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Header()
+        StatusFilterRow(
+            selectedFilters = selectedFilters,
+            onFilterChange = onFilterChange
+        )
         CalendarCard(
             currentDate = currentDate,
             selectedDate = selectedDate,
@@ -154,6 +188,8 @@ private fun CalendarScreenHorizontalLayout(
     today: Calendar,
     invoicesByDate: Map<Int, List<Invoice>>,
     selectedInvoices: List<Invoice>,
+    selectedFilters: Set<InvoiceStatus>,
+    onFilterChange: (InvoiceStatus) -> Unit,
     onDateChange: (Calendar) -> Unit,
     onDayClick: (Int) -> Unit,
     onNavigateToInvoice: (Long) -> Unit
@@ -166,6 +202,10 @@ private fun CalendarScreenHorizontalLayout(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Header()
+        StatusFilterRow(
+            selectedFilters = selectedFilters,
+            onFilterChange = onFilterChange
+        )
         Row(
             modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -185,6 +225,113 @@ private fun CalendarScreenHorizontalLayout(
                 selectedDate = selectedDate,
                 invoices = selectedInvoices,
                 onInvoiceClick = onNavigateToInvoice
+            )
+        }
+    }
+}
+
+@Composable
+fun StatusFilterRow(
+    selectedFilters: Set<InvoiceStatus>,
+    onFilterChange: (InvoiceStatus) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Filter by Status",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    status = InvoiceStatus.Paid,
+                    isSelected = InvoiceStatus.Paid in selectedFilters,
+                    onClick = { onFilterChange(InvoiceStatus.Paid) },
+                    modifier = Modifier.weight(1f)
+                )
+                FilterChip(
+                    status = InvoiceStatus.Unpaid,
+                    isSelected = InvoiceStatus.Unpaid in selectedFilters,
+                    onClick = { onFilterChange(InvoiceStatus.Unpaid) },
+                    modifier = Modifier.weight(1f)
+                )
+                FilterChip(
+                    status = InvoiceStatus.PastDue,
+                    isSelected = InvoiceStatus.PastDue in selectedFilters,
+                    onClick = { onFilterChange(InvoiceStatus.PastDue) },
+                    modifier = Modifier.weight(1f)
+                )
+                FilterChip(
+                    status = InvoiceStatus.LatePayment,
+                    isSelected = InvoiceStatus.LatePayment in selectedFilters,
+                    onClick = { onFilterChange(InvoiceStatus.LatePayment) },
+                    displayText = "Late",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun FilterChip(
+    status: InvoiceStatus,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    displayText: String? = null,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = if (isSelected) {
+        when (status) {
+            InvoiceStatus.Paid -> Green
+            InvoiceStatus.Unpaid -> Amber
+            InvoiceStatus.PastDue -> Red
+            InvoiceStatus.LatePayment -> Red
+        }
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
+
+    val textColor = if (isSelected) {
+        MaterialTheme.colorScheme.surface
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        color = backgroundColor
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp, horizontal = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = displayText ?: when (status) {
+                    InvoiceStatus.PastDue -> "Past Due"
+                    else -> status.name
+                },
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                color = textColor,
+                textAlign = TextAlign.Center
             )
         }
     }
@@ -356,7 +503,7 @@ private fun InvoiceStatusBadge(status: InvoiceStatus, modifier: Modifier = Modif
             InvoiceStatus.Paid -> MaterialTheme.colorScheme.primaryContainer
             InvoiceStatus.Unpaid -> MaterialTheme.colorScheme.secondaryContainer
             InvoiceStatus.PastDue -> MaterialTheme.colorScheme.errorContainer
-            else -> MaterialTheme.colorScheme.surfaceVariant
+            InvoiceStatus.LatePayment-> MaterialTheme.colorScheme.errorContainer
         },
         modifier = modifier
     ) {
@@ -499,6 +646,7 @@ fun CalendarCard(
                 Legend(color = Green, label = InvoiceStatus.Paid.name)
                 Legend(color = Amber, label = InvoiceStatus.Unpaid.name)
                 Legend(color = Red, label = InvoiceStatus.PastDue.name)
+                Legend(color = Red, label = "Late")
             }
         }
     }
@@ -620,31 +768,18 @@ fun CalendarDay(
 
                 if (invoices.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(0.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val statusColors = invoices.map { invoice ->
-                            when (invoice.status) {
-                                InvoiceStatus.Paid  -> Green
-                                InvoiceStatus.Unpaid -> Amber
-                                InvoiceStatus.PastDue -> Red
-                                else -> Color.Gray
-                            }
-                        }.distinct().take(3)
 
-                        statusColors.forEachIndexed { index, color ->
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(color)
-                            )
-                            if (index < statusColors.size - 1) {
-                                Spacer(modifier = Modifier.width(3.dp))
-                            }
-                        }
+                    val mostSignificantColor = when {
+                        invoices.any { it.status == InvoiceStatus.PastDue || it.status == InvoiceStatus.LatePayment } -> Red
+                        invoices.any { it.status == InvoiceStatus.Unpaid } -> Amber
+                        else -> Green
                     }
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(mostSignificantColor)
+                    )
                 }
             }
         }
