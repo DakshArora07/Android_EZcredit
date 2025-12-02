@@ -23,8 +23,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.selects.select
+import sfu.cmpt362.android_ezcredit.data.AppDatabase
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
+import sfu.cmpt362.android_ezcredit.data.repository.CompanyRepository
+import sfu.cmpt362.android_ezcredit.data.viewmodel.CompanyViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.CompanyViewModelFactory
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.ReceiptViewModel
@@ -288,6 +294,24 @@ private fun SetupUI(
             )
 
             if (title == "Receipt Information" && selectedInvoice != null) {
+
+                val companyRepository = remember {
+                    val db = AppDatabase.getInstance(context)
+                    CompanyRepository(db.companyDao)
+                }
+                val companyViewModel: CompanyViewModel = viewModel(
+                    factory = CompanyViewModelFactory(companyRepository)
+                )
+
+                var companyName by remember { mutableStateOf("EZCredit") }
+
+                LaunchedEffect(Unit) {
+                    val companyId = CompanyContext.currentCompanyId
+                    if (companyId != null) {
+                        val company = companyViewModel.getCompanyById(companyId)
+                        companyName = company.name
+                    }
+                }
                 Button(
                     onClick = {
                         PdfUtils.generateReceiptPdf(
@@ -295,7 +319,8 @@ private fun SetupUI(
                             receiptNumber = receiptNumber,
                             invoiceNumber = selectedInvoice.invoiceNumber,
                             amount = amountText,
-                            issueDate = localIssueDate.time.toString()
+                            issueDate = localIssueDate.time.toString(),
+                            companyName = companyName
                         )
                     },
                     shape = MaterialTheme.shapes.medium

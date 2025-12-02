@@ -22,8 +22,14 @@ import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import sfu.cmpt362.android_ezcredit.data.AppDatabase
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.entity.Customer
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
+import sfu.cmpt362.android_ezcredit.data.repository.CompanyRepository
+import sfu.cmpt362.android_ezcredit.data.viewmodel.CompanyViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.CompanyViewModelFactory
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceScreenViewModel
@@ -336,6 +342,24 @@ private fun SetupUIViews(
     ) {
         // Header
         if (showEditButton) {
+
+            val companyRepository = remember {
+                val db = AppDatabase.getInstance(context)
+                CompanyRepository(db.companyDao)
+            }
+            val companyViewModel: CompanyViewModel = viewModel(
+                factory = CompanyViewModelFactory(companyRepository)
+            )
+
+            var companyName by remember { mutableStateOf("EZCredit") }
+
+            LaunchedEffect(Unit) {
+                val companyId = CompanyContext.currentCompanyId
+                if (companyId != null) {
+                    val company = companyViewModel.getCompanyById(companyId)
+                    companyName = company.name
+                }
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -360,6 +384,7 @@ private fun SetupUIViews(
                             } else {
                                 InvoiceStatus.Unpaid
                             }
+
                             PdfUtils.generateInvoicePdf(
                                 context = context,
                                 invoiceNumber = invoiceNumber,
@@ -367,7 +392,8 @@ private fun SetupUIViews(
                                 amount = amountText,
                                 issueDate = localIssueDate.time.toString(),
                                 dueDate = localDueDate.time.toString(),
-                                status = displayStatus.name
+                                status = displayStatus.name,
+                                companyName = companyName
                             )
                         },
                         shape = MaterialTheme.shapes.medium

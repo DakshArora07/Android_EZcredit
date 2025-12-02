@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.data.AppDatabase
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
+import sfu.cmpt362.android_ezcredit.data.repository.CompanyRepository
 import sfu.cmpt362.android_ezcredit.data.repository.CustomerRepository
 import sfu.cmpt362.android_ezcredit.data.repository.InvoiceRepository
 import sfu.cmpt362.android_ezcredit.utils.GeminiHelper
@@ -43,6 +45,7 @@ class InvoiceReminderWorker(
             val database = AppDatabase.getInstance(applicationContext)
             val invoiceRepository = InvoiceRepository(database.invoiceDao)
             val customerRepository = CustomerRepository(database.customerDao)
+            val companyRepository = CompanyRepository(database.companyDao)
 
             val allInvoices = invoiceRepository.invoices.first()
             if (allInvoices.isEmpty()) {
@@ -89,13 +92,16 @@ class InvoiceReminderWorker(
                     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
                     val dueDateStr = dateFormat.format(invoice.dueDate.time)
 
+                    val companyName = companyRepository.getById(CompanyContext.currentCompanyId!!).name
+
                     val message = GeminiHelper.generateReminderMessage(
                         customerName = customer.name,
                         invoiceNumber = invoice.invoiceNumber,
                         amount = invoice.amount,
                         dueDate = dueDateStr,
                         status = invoice.status,
-                        daysOffset = daysDifference
+                        daysOffset = daysDifference,
+                        companyName = companyName
                     )
 
                     val result = emailService.sendEmail(
