@@ -174,7 +174,7 @@ class CompanyProfileScreenViewModel(
                         accessLevel = accessMode
                     )
 
-                    CompanyContext.currentUserId = userViewModel.insert()
+                    userViewModel.insert()
                 }
 
                 // Set the company context
