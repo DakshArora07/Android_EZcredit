@@ -86,6 +86,7 @@ fun AddInvoiceScreen(
 
     val customers by customerViewModel.customersLiveData.observeAsState(emptyList())
 
+    // Load OCR data if available
     LaunchedEffect(ocrResult) {
         ocrResult?.let {
             invoiceNumber = it.invoiceNumber ?: ""
@@ -202,6 +203,7 @@ fun ViewEditInvoiceScreen(
     val customers by customerViewModel.customersLiveData.observeAsState(emptyList())
     var hasLoadedFromDb by rememberSaveable { mutableStateOf(false) }
 
+    // Load invoice detail from db
     if (!hasLoadedFromDb) {
         LaunchedEffect(invoiceId) {
             val fetchedInvoice = invoiceViewModel.getInvoiceById(invoiceId)

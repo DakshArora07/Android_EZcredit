@@ -65,6 +65,7 @@ fun CalendarScreen(
     var isAdmin by remember { mutableStateOf<Boolean?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
+    // Check if current user has access to this screen
     LaunchedEffect(Unit) {
         val currentUserId = CompanyContext.currentUserId
         if (currentUserId != null) {
@@ -135,11 +136,6 @@ fun CalendarScreen(
         }
         return
     }
-
-
-
-
-
     val today = calendarScreenViewModel.today
     val currentDate = calendarScreenViewModel.currentDate
     val selectedDate = calendarScreenViewModel.selectedDate

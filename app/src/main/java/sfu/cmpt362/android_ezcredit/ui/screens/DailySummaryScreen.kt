@@ -33,8 +33,6 @@ import sfu.cmpt362.android_ezcredit.ui.theme.VeryLightGray
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.DailySummaryScreenViewModel
 import sfu.cmpt362.android_ezcredit.utils.AccessMode
 import sfu.cmpt362.android_ezcredit.utils.DailySummaryUiState
-
-
 @Composable
 fun DailySummaryScreen(
 
