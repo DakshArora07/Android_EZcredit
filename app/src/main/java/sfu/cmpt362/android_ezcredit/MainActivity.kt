@@ -84,9 +84,7 @@ class MainActivity : ComponentActivity() {
                         CompanyProfileScreen(
                             viewModel = companyProfileViewModel,
                             onCancel = { showCompanyProfile = false },
-                            onSave = {
-                                showCompanyProfile = false
-                                     isLoggedIn = true},
+                            onSave = { showCompanyProfile = false },
                             onAddUser = { showUserProfile = true }
                         )
                     }
