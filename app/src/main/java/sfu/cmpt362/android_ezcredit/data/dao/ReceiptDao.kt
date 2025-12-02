@@ -11,7 +11,7 @@ import sfu.cmpt362.android_ezcredit.data.entity.Receipt
 
 @Dao
 interface ReceiptDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertReceipt(receipt: Receipt): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

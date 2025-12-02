@@ -9,6 +9,7 @@ import com.itextpdf.text.*
 import com.itextpdf.text.pdf.PdfPCell
 import com.itextpdf.text.pdf.PdfPTable
 import com.itextpdf.text.pdf.PdfWriter
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import java.io.File
 import java.io.FileOutputStream
 
@@ -16,6 +17,7 @@ object PdfUtils {
 
     fun generateInvoicePdf(
         context: Context,
+        companyName: String,
         invoiceNumber: String,
         customerName: String,
         amount: String,
@@ -38,7 +40,7 @@ object PdfUtils {
             val normalFont = Font(Font.FontFamily.HELVETICA, 12f, Font.NORMAL)
 
             // Business Name
-            val businessName = Paragraph("EZCredit", titleFont)
+            val businessName = Paragraph(companyName, titleFont)
             businessName.alignment = Element.ALIGN_CENTER
             document.add(businessName)
             document.add(Paragraph(" "))
@@ -100,6 +102,7 @@ object PdfUtils {
 
     fun generateReceiptPdf(
         context: Context,
+        companyName: String,
         receiptNumber: String,
         invoiceNumber: String,
         issueDate: String,
@@ -120,7 +123,7 @@ object PdfUtils {
             val normalFont = Font(Font.FontFamily.HELVETICA, 12f, Font.NORMAL)
 
             // Business Name
-            val businessName = Paragraph("EZCredit", titleFont)
+            val businessName = Paragraph(companyName, titleFont)
             businessName.alignment = Element.ALIGN_CENTER
             document.add(businessName)
             document.add(Paragraph(" "))

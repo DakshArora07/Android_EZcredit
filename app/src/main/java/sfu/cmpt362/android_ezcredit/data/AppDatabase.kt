@@ -18,7 +18,7 @@ import sfu.cmpt362.android_ezcredit.data.entity.User
 
 @Database(
     entities = [Invoice::class, Customer::class, Receipt::class, Company::class, User::class],
-    version = 5
+    version = 6
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {

@@ -5,6 +5,8 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import androidx.room.Index
+
 
 @Entity(
     tableName = "receipt_list",
@@ -12,7 +14,10 @@ import androidx.room.PrimaryKey
         entity = Invoice::class,
         parentColumns = ["id"],
         childColumns = ["invoice_id"]
-    )]
+    )],
+    indices = [
+        Index(value = ["invoice_id"], unique = true)
+    ]
 )
 data class Receipt (
     @PrimaryKey(autoGenerate = true)

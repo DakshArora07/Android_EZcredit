@@ -3,9 +3,11 @@ package sfu.cmpt362.android_ezcredit.data.repository
 import com.google.firebase.Firebase
 import com.google.firebase.database.DatabaseReference
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.FirebaseRefs
 import sfu.cmpt362.android_ezcredit.data.dao.InvoiceDao
@@ -51,15 +53,32 @@ class InvoiceRepository(private val invoiceDao: InvoiceDao) {
         return invoiceDao.getInvoicesByCustomerId(id)
     }
 
-    fun deleteById(id: Long){
+    fun deleteById(
+        id: Long,
+        onError: (String) -> Unit = {},
+        onSuccess: () -> Unit = {}
+    ) {
         CoroutineScope(IO).launch {
-            val existing = invoiceDao.getInvoiceById(id)
-            val deleted = existing.copy(
-                isDeleted = true,
-                lastModified = System.currentTimeMillis()
-            )
-            invoiceDao.deleteInvoiceById(id)
-            pushToFirebase(deleted)
+            try {
+                val existing = invoiceDao.getInvoiceById(id)
+                val deleted = existing.copy(
+                    isDeleted = true,
+                    lastModified = System.currentTimeMillis()
+                )
+                invoiceDao.deleteInvoiceById(id)
+                pushToFirebase(deleted)
+                withContext(Dispatchers.Main) {
+                    onSuccess()
+                }
+            } catch (e: android.database.sqlite.SQLiteConstraintException) {
+                withContext(Dispatchers.Main) {
+                    onError("Cannot delete invoice: there are receipts linked to it")
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    onError("Failed to delete invoice: ${e.message}")
+                }
+            }
         }
     }
 

@@ -23,8 +23,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.selects.select
+import sfu.cmpt362.android_ezcredit.data.AppDatabase
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
+import sfu.cmpt362.android_ezcredit.data.repository.CompanyRepository
+import sfu.cmpt362.android_ezcredit.data.viewmodel.CompanyViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.CompanyViewModelFactory
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.ReceiptViewModel
@@ -133,13 +139,21 @@ fun ReceiptAdd(
             receiptViewModel.updateReceipt(0, receiptNumber,
                 localIssueDate, selectedInvoice.id
             )
-            receiptViewModel.insert()
 
-            Toast.makeText(context, "Receipt added", Toast.LENGTH_SHORT).show()
-            invoiceViewModel.clearCustomerName()
-            invoiceViewModel.selectedInvoice = null
-            invoiceSearchQuery = ""
-            onBack()
+
+            receiptViewModel.insert { error ->
+                if (error != "") {
+
+                    Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                } else {
+
+                    Toast.makeText(context, "Receipt added", Toast.LENGTH_SHORT).show()
+                    invoiceViewModel.clearCustomerName()
+                    invoiceViewModel.selectedInvoice = null
+                    invoiceSearchQuery = ""
+                    onBack()
+                }
+            }
 
         },
         onCancel = {
@@ -208,12 +222,23 @@ fun ReceiptViewScreen(
             onCustomerNameChange = { },
             isEditable = false,
             showEditButton = false,
-            showDeleteButton = false,
+            showDeleteButton = true,
             onSave = { },
             onCancel = {
                 onBack()
             },
-            onDelete = {},
+            onDelete = {
+                receiptViewModel.delete(
+                    currentReceipt.id,
+                    onError = { msg ->
+                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                    },
+                    onSuccess = {
+                        Toast.makeText(context, "Receipt deleted", Toast.LENGTH_SHORT).show()
+                        onBack()
+                    }
+                )
+            },
             context = context
         )
     }
@@ -288,6 +313,24 @@ private fun SetupUI(
             )
 
             if (title == "Receipt Information" && selectedInvoice != null) {
+
+                val companyRepository = remember {
+                    val db = AppDatabase.getInstance(context)
+                    CompanyRepository(db.companyDao)
+                }
+                val companyViewModel: CompanyViewModel = viewModel(
+                    factory = CompanyViewModelFactory(companyRepository)
+                )
+
+                var companyName by remember { mutableStateOf("EZCredit") }
+
+                LaunchedEffect(Unit) {
+                    val companyId = CompanyContext.currentCompanyId
+                    if (companyId != null) {
+                        val company = companyViewModel.getCompanyById(companyId)
+                        companyName = company.name
+                    }
+                }
                 Button(
                     onClick = {
                         PdfUtils.generateReceiptPdf(
@@ -295,7 +338,8 @@ private fun SetupUI(
                             receiptNumber = receiptNumber,
                             invoiceNumber = selectedInvoice.invoiceNumber,
                             amount = amountText,
-                            issueDate = localIssueDate.time.toString()
+                            issueDate = localIssueDate.time.toString(),
+                            companyName = companyName
                         )
                     },
                     shape = MaterialTheme.shapes.medium
@@ -416,15 +460,15 @@ private fun SetupUI(
             Button(onClick = onSave, modifier = Modifier.fillMaxWidth().height(56.dp)) {
                 Text("Save Receipt", style = MaterialTheme.typography.titleMedium)
             }
-        }
-        OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().height(56.dp)) {
-            Text(if (isEditable) "Cancel" else "Back", style = MaterialTheme.typography.titleMedium)
-        }
-        if (showDeleteButton) {
+        } else if(showDeleteButton) {
             OutlinedButton(onClick = onDelete, modifier = Modifier.fillMaxWidth().height(56.dp)) {
                 Text("Delete", style = MaterialTheme.typography.titleMedium)
             }
         }
+        OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            Text(if (isEditable) "Cancel" else "Back", style = MaterialTheme.typography.titleMedium)
+        }
+
         val forIssueDate = true
         // Date Pickers
         if (showIssueDatePicker) {
