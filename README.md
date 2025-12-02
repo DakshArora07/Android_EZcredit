@@ -21,11 +21,11 @@
 
 ## 🚀 Overview
 
-Project pitch Link: https://youtu.be/o5EsZg6VefA
+[**Project pitch Link**](https://youtu.be/o5EsZg6VefA)
 
-Show_and_Tell_1 Link : https://youtu.be/CRAPZDmeTiM
+[**Show_and_Tell_1**](https://youtu.be/CRAPZDmeTiM)
 
-Show_and_Tell_2 Link : https://youtu.be/5QegMo8JUec
+[**Show_and_Tell_2**](https://youtu.be/5QegMo8JUec)
 
 EZCredit is an Android application designed for small and mid-sized businesses to efficiently manage their daily financial operations.
 
