@@ -294,6 +294,18 @@ fun ViewEditInvoiceScreen(
         },
         onCancel = onBack,
         onDelete = {
+            val currentInvoice = invoice
+            val currentCustomer = customerViewModel.customerFromDB
+
+            if (currentInvoice != null && currentCustomer != null) {
+                if (currentInvoice.status == InvoiceStatus.Unpaid ||
+                    currentInvoice.status == InvoiceStatus.PastDue) {
+                    val updatedCredit = currentCustomer.credit - currentInvoice.amount
+                    customerViewModel.update(currentCustomer.copy(credit = updatedCredit))
+                }
+            }
+
+            // Now delete the invoice
             invoiceViewModel.delete(
                 invoiceId,
                 onError = { msg ->
