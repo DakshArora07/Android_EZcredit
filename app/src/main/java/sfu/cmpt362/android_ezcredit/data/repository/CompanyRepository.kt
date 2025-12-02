@@ -50,6 +50,6 @@ class CompanyRepository(private val companyDao: CompanyDao) {
             "lastModified" to company.lastModified,
             "isDeleted" to company.isDeleted
         )
-        FirebaseRefs.companyRef(company.id).setValue(map)
+        FirebaseRefs.companyRef(company.id).updateChildren(map)
     }
 }

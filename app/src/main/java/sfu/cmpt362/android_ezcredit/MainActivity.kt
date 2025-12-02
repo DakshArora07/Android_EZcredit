@@ -146,7 +146,7 @@ class MainActivity : ComponentActivity() {
                                     ).show()
                                     return@UserProfileScreen
                                 }
-                                companyProfileViewModel.addUserToFirebase(newUser)
+                                companyProfileViewModel.addUserToDatabase(newUser)
                                 showAddUserFromCompanyProfile = false
                                 showCompanyProfileFromSettings = true
                             }

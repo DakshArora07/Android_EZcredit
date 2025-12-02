@@ -89,7 +89,6 @@ fun CompanyProfileScreen(
                     onAddressChange = { viewModel.updateAddress(it) },
                     onPhoneChange = { viewModel.updatePhone(it) },
                     onAddUser = onAddUser,
-                    onRemoveUser = { user -> viewModel.removeUser(user.id) },
                     onChangeUserRole = { user, newRole -> viewModel.changeUserRole(user.id, newRole) },
                     onCancel = {
                         viewModel.loadCompanyData()
@@ -193,7 +192,6 @@ private fun CompanyProfileViewMode(
     onAddressChange: (String) -> Unit,
     onPhoneChange: (String) -> Unit,
     onAddUser: () -> Unit,
-    onRemoveUser: (User) -> Unit,
     onChangeUserRole: (User, UserRole) -> Unit,
     onCancel: () -> Unit,
     onSave: () -> Unit,
@@ -226,7 +224,6 @@ private fun CompanyProfileViewMode(
                 users = users,
                 isEditing = isEditing,
                 onAddUser = onAddUser,
-                onRemoveUser = onRemoveUser,
                 onChangeUserRole = onChangeUserRole
             )
 
@@ -304,7 +301,6 @@ private fun CompanyProfileViewMode(
                     users = users,
                     isEditing = isEditing,
                     onAddUser = onAddUser,
-                    onRemoveUser = onRemoveUser,
                     onChangeUserRole = onChangeUserRole,
                     modifier = Modifier.weight(1f)
                 )
@@ -494,7 +490,6 @@ private fun UsersCardViewMode(
     users: List<User>,
     isEditing: Boolean,
     onAddUser: () -> Unit,
-    onRemoveUser: (User) -> Unit,
     onChangeUserRole: (User, UserRole) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -560,7 +555,6 @@ private fun UsersCardViewMode(
                         UserItemViewModeEditable(
                             user = user,
                             isEditing = isEditing,
-                            onRemove = { onRemoveUser(user) },
                             onChangeRole = { newRole -> onChangeUserRole(user, newRole) }
                         )
                     }
@@ -597,10 +591,128 @@ private fun UsersCardViewMode(
 private fun UserItemViewModeEditable(
     user: User,
     isEditing: Boolean,
-    onRemove: () -> Unit,
     onChangeRole: (UserRole) -> Unit
 ) {
     var showRoleMenu by remember { mutableStateOf(false) }
+    val isAdmin = user.role == UserRole.ADMIN
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = WhiteSmoke)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+
+                Column {
+                    Text(
+                        text = user.name,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = user.email,
+                        fontSize = 12.sp,
+                        color = Grey
+                    )
+                }
+            }
+
+            // Role Badge - clickable when editing AND not Admin
+            Box {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = when (user.role) {
+                        UserRole.ADMIN -> MaterialTheme.colorScheme.primaryContainer
+                        UserRole.SALES -> MaterialTheme.colorScheme.secondaryContainer
+                        UserRole.RECEIPTS -> MaterialTheme.colorScheme.tertiaryContainer
+                    },
+                    modifier = if (isEditing && !isAdmin) Modifier.clickable { showRoleMenu = true } else Modifier
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = user.role.displayName,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = when (user.role) {
+                                UserRole.ADMIN -> MaterialTheme.colorScheme.onPrimaryContainer
+                                UserRole.SALES -> MaterialTheme.colorScheme.onSecondaryContainer
+                                UserRole.RECEIPTS -> MaterialTheme.colorScheme.onTertiaryContainer
+                            }
+                        )
+                        // Only show dropdown arrow if editing and not Admin
+                        if (isEditing && !isAdmin) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Change role",
+                                modifier = Modifier.size(16.dp),
+                                tint = when (user.role) {
+                                    UserRole.ADMIN -> MaterialTheme.colorScheme.onPrimaryContainer
+                                    UserRole.SALES -> MaterialTheme.colorScheme.onSecondaryContainer
+                                    UserRole.RECEIPTS -> MaterialTheme.colorScheme.onTertiaryContainer
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Role selection dropdown - only for non-Admin users, only show Sales and Receipts
+                if (!isAdmin) {
+                    DropdownMenu(
+                        expanded = showRoleMenu,
+                        onDismissRequest = { showRoleMenu = false }
+                    ) {
+                        listOf(UserRole.SALES, UserRole.RECEIPTS).forEach { role ->
+                            DropdownMenuItem(
+                                text = { Text(role.displayName) },
+                                onClick = {
+                                    onChangeRole(role)
+                                    showRoleMenu = false
+                                },
+                                leadingIcon = {
+                                    if (user.role == role) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UserItem(
+    user: User,
+    onRemove: () -> Unit
+) {
+    val isAdmin = user.role == UserRole.ADMIN
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -644,75 +756,29 @@ private fun UserItemViewModeEditable(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Role Badge - clickable when editing
-                Box {
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = when (user.role) {
+                        UserRole.ADMIN -> MaterialTheme.colorScheme.primaryContainer
+                        UserRole.SALES -> MaterialTheme.colorScheme.secondaryContainer
+                        UserRole.RECEIPTS -> MaterialTheme.colorScheme.tertiaryContainer
+                    }
+                ) {
+                    Text(
+                        text = user.role.displayName,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
                         color = when (user.role) {
-                            UserRole.ADMIN -> MaterialTheme.colorScheme.primaryContainer
-                            UserRole.SALES -> MaterialTheme.colorScheme.secondaryContainer
-                            UserRole.RECEIPTS -> MaterialTheme.colorScheme.tertiaryContainer
-                        },
-                        modifier = if (isEditing) Modifier.clickable { showRoleMenu = true } else Modifier
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = user.role.displayName,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = when (user.role) {
-                                    UserRole.ADMIN -> MaterialTheme.colorScheme.onPrimaryContainer
-                                    UserRole.SALES -> MaterialTheme.colorScheme.onSecondaryContainer
-                                    UserRole.RECEIPTS -> MaterialTheme.colorScheme.onTertiaryContainer
-                                }
-                            )
-                            if (isEditing) {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Change role",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = when (user.role) {
-                                        UserRole.ADMIN -> MaterialTheme.colorScheme.onPrimaryContainer
-                                        UserRole.SALES -> MaterialTheme.colorScheme.onSecondaryContainer
-                                        UserRole.RECEIPTS -> MaterialTheme.colorScheme.onTertiaryContainer
-                                    }
-                                )
-                            }
+                            UserRole.ADMIN -> MaterialTheme.colorScheme.onPrimaryContainer
+                            UserRole.SALES -> MaterialTheme.colorScheme.onSecondaryContainer
+                            UserRole.RECEIPTS -> MaterialTheme.colorScheme.onTertiaryContainer
                         }
-                    }
-
-                    // Role selection dropdown
-                    DropdownMenu(
-                        expanded = showRoleMenu,
-                        onDismissRequest = { showRoleMenu = false }
-                    ) {
-                        UserRole.values().forEach { role ->
-                            DropdownMenuItem(
-                                text = { Text(role.displayName) },
-                                onClick = {
-                                    onChangeRole(role)
-                                    showRoleMenu = false
-                                },
-                                leadingIcon = {
-                                    if (user.role == role) {
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-                            )
-                        }
-                    }
+                    )
                 }
 
-                // Remove Button (only when editing)
-                if (isEditing) {
+                // Only show remove button for non-Admin users
+                if (!isAdmin) {
                     IconButton(onClick = onRemove) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -1174,86 +1240,6 @@ private fun EmptyUsersPlaceholder(onAddUser: () -> Unit) {
                 color = Grey,
                 fontSize = 12.sp
             )
-        }
-    }
-}
-
-@Composable
-private fun UserItem(
-    user: User,
-    onRemove: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = WhiteSmoke)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-
-                Column {
-                    Text(
-                        text = user.name,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp,
-                        color = Color.Black
-                    )
-                    Text(
-                        text = user.email,
-                        fontSize = 12.sp,
-                        color = Grey
-                    )
-                }
-            }
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = when (user.role) {
-                        UserRole.ADMIN -> MaterialTheme.colorScheme.primaryContainer
-                        UserRole.SALES -> MaterialTheme.colorScheme.secondaryContainer
-                        UserRole.RECEIPTS -> MaterialTheme.colorScheme.tertiaryContainer
-                    }
-                ) {
-                    Text(
-                        text = user.role.displayName,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = when (user.role) {
-                            UserRole.ADMIN -> MaterialTheme.colorScheme.onPrimaryContainer
-                            UserRole.SALES -> MaterialTheme.colorScheme.onSecondaryContainer
-                            UserRole.RECEIPTS -> MaterialTheme.colorScheme.onTertiaryContainer
-                        }
-                    )
-                }
-
-                IconButton(onClick = onRemove) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Remove user",
-                        tint = Red
-                    )
-                }
-            }
         }
     }
 }
