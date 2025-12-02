@@ -65,18 +65,6 @@ class SyncManager(
     }
 
     // Phase 2: Sync detailed company data after company selection/login
-    fun clearCompanyData() {
-        try {
-            Log.d(TAG, "Clearing all company-specific data")
-            customerDao.deleteAll()
-            invoiceDao.deleteAll()
-            receiptDao.deleteAll()
-            Log.d(TAG, "Company data cleared successfully")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error clearing company data", e)
-        }
-    }
-
     fun startCompanyDataSync(companyId: Long) {
         scope.launch(IO) {
             try {
@@ -404,5 +392,18 @@ class SyncManager(
 
     private fun Long.toCalendar(): Calendar = Calendar.getInstance().apply {
         timeInMillis = this@toCalendar
+    }
+
+    // Synchronous clear method for use before syncing
+    fun clearCompanyDataSync() {
+        try {
+            Log.d(TAG, "Clearing all company-specific data synchronously")
+            customerDao.deleteAll()
+            invoiceDao.deleteAll()
+            receiptDao.deleteAll()
+            Log.d(TAG, "Company data cleared successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error clearing company data", e)
+        }
     }
 }
