@@ -1,9 +1,15 @@
 package sfu.cmpt362.android_ezcredit.ui.viewmodel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import sfu.cmpt362.android_ezcredit.data.FirebaseAuthManager
 
 data class LoginState(
     val email: String = "",
@@ -13,9 +19,13 @@ data class LoginState(
     val errorMessage: String? = null
 )
 
-class LoginScreenViewModel : ViewModel() {
+class LoginScreenViewModel() : ViewModel() {
     private val _state = MutableStateFlow(LoginState())
     val state: StateFlow<LoginState> = _state.asStateFlow()
+
+    private val authManager =  FirebaseAuthManager()
+    var loginResult by mutableStateOf<LoginResult>(LoginResult.Idle)
+        private set
 
     fun updateEmail(email: String) {
         _state.value = _state.value.copy(email = email)
@@ -29,11 +39,23 @@ class LoginScreenViewModel : ViewModel() {
         _state.value = _state.value.copy(passwordVisible = !_state.value.passwordVisible)
     }
 
-    fun login(onSuccess: () -> Unit) {
-        _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+    fun login(email: String, password: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+            val companyId = authManager.loginAndSetCompanyContext(email, password)
 
-        // TODO: Implement actual login
-        onSuccess()
+            if (companyId != null) {
+                onSuccess()
+            } else {
+                _state.value = _state.value.copy(isLoading = false, errorMessage = "Invalid credentials")
+            }
+        }
     }
+}
 
+sealed class LoginResult {
+    object Idle : LoginResult()
+    object Loading : LoginResult()
+    data class Success(val companyId: Long) : LoginResult()
+    data class Error(val message: String) : LoginResult()
 }

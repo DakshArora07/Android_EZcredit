@@ -17,7 +17,7 @@ class CompanyViewModel(private val repository: CompanyRepository) : ViewModel() 
     val companiesLiveData: LiveData<List<Company>> = repository.companies.asLiveData()
 
     fun updateCompany(
-        companyId: Long = -1L,
+        companyId: Long,
         name: String,
         address: String,
         phone: String

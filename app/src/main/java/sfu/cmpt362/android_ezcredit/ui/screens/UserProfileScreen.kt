@@ -1,5 +1,6 @@
 package sfu.cmpt362.android_ezcredit.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,11 +22,15 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
+import sfu.cmpt362.android_ezcredit.data.FirebaseAuthManager
 import sfu.cmpt362.android_ezcredit.ui.theme.*
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.UserProfileScreenViewModel
 
@@ -34,11 +39,13 @@ fun UserProfileScreen(
     existingUsers: List<User>,
     onCancel: () -> Unit = {},
     onSave: (User) -> Unit = {},
-    modifier: Modifier = Modifier,
-    viewModel: UserProfileScreenViewModel = viewModel()
+    modifier: Modifier = Modifier
 ) {
+    val viewModel: UserProfileScreenViewModel = viewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
+
+    val authManager = FirebaseAuthManager()
 
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -242,6 +249,19 @@ fun UserProfileScreen(
                                             email = email,
                                             role = role
                                         )
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            val firebaseUser = authManager.createUser(email, password)
+                                            if (firebaseUser != null) {
+                                                CompanyContext.currentUserId = firebaseUser.uid
+                                                val newUser = User(name = name, email = email, role = role)
+                                                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                                                    viewModel.clearState()
+                                                    onSave(newUser)
+                                                }
+                                            } else {
+                                                Log.d("Authentication", "User not created")
+                                            }
+                                        }
                                         viewModel.clearState()
                                         onSave(newUser)
                                     }

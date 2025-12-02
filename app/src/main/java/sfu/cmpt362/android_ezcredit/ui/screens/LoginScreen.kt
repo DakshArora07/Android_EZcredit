@@ -35,12 +35,14 @@ import androidx.compose.ui.focus.FocusManager
 import sfu.cmpt362.android_ezcredit.ui.theme.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import sfu.cmpt362.android_ezcredit.EZCreditApplication
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.LoginScreenViewModel
 
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit = {},
     onCreateCompany: () -> Unit = {},
+    application: EZCreditApplication,
     modifier: Modifier = Modifier,
     viewModel: LoginScreenViewModel = viewModel()
 ) {
@@ -61,7 +63,10 @@ fun LoginScreen(
                 onPasswordChange = {viewModel.updatePassword(it) },
                 onPasswordVisibilityToggle = { viewModel.togglePasswordVisibility() },
                 onLogin = {
-                    viewModel.login(onLoginSuccess)
+                    viewModel.login(state.email, state.password) {
+                        application.restartSyncAfterLogin()
+                        onLoginSuccess()
+                    }
                 },
                 onCreateCompany = onCreateCompany,
                 focusManager = focusManager
@@ -77,7 +82,10 @@ fun LoginScreen(
                 onPasswordChange = { viewModel.updatePassword(it) },
                 onPasswordVisibilityToggle = { viewModel.togglePasswordVisibility() },
                 onLogin = {
-                    viewModel.login(onLoginSuccess)
+                    viewModel.login(state.email, state.password) {
+                        application.restartSyncAfterLogin()
+                        onLoginSuccess()
+                    }
                 },
                 onCreateCompany = onCreateCompany,
                 focusManager = focusManager

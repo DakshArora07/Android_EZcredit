@@ -28,11 +28,11 @@ class EZCreditApplication : Application() {
             database.receiptDao,
             applicationScope
         )
-        //syncManager!!.start() // Downloads: Companies→Users→Customers→Invoices→Receipts
+        syncManager?.startInitialSync() // Downloads: Companies→Users→Customers→Invoices→Receipts
     }
 
     // Call this to restart sync after login (keeps live listeners active)
     fun restartSyncAfterLogin() {
-        syncManager?.start() // Re-triggers live listeners
+        syncManager?.startCompanyDataSync(CompanyContext.currentCompanyId!!) // Re-triggers live listeners
     }
 }
