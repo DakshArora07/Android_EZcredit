@@ -133,13 +133,21 @@ fun ReceiptAdd(
             receiptViewModel.updateReceipt(0, receiptNumber,
                 localIssueDate, selectedInvoice.id
             )
-            receiptViewModel.insert()
 
-            Toast.makeText(context, "Receipt added", Toast.LENGTH_SHORT).show()
-            invoiceViewModel.clearCustomerName()
-            invoiceViewModel.selectedInvoice = null
-            invoiceSearchQuery = ""
-            onBack()
+
+            receiptViewModel.insert { error ->
+                if (error != "") {
+
+                    Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                } else {
+
+                    Toast.makeText(context, "Receipt added", Toast.LENGTH_SHORT).show()
+                    invoiceViewModel.clearCustomerName()
+                    invoiceViewModel.selectedInvoice = null
+                    invoiceSearchQuery = ""
+                    onBack()
+                }
+            }
 
         },
         onCancel = {
@@ -208,12 +216,23 @@ fun ReceiptViewScreen(
             onCustomerNameChange = { },
             isEditable = false,
             showEditButton = false,
-            showDeleteButton = false,
+            showDeleteButton = true,
             onSave = { },
             onCancel = {
                 onBack()
             },
-            onDelete = {},
+            onDelete = {
+                receiptViewModel.delete(
+                    currentReceipt.id,
+                    onError = { msg ->
+                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                    },
+                    onSuccess = {
+                        Toast.makeText(context, "Receipt deleted", Toast.LENGTH_SHORT).show()
+                        onBack()
+                    }
+                )
+            },
             context = context
         )
     }
@@ -416,15 +435,15 @@ private fun SetupUI(
             Button(onClick = onSave, modifier = Modifier.fillMaxWidth().height(56.dp)) {
                 Text("Save Receipt", style = MaterialTheme.typography.titleMedium)
             }
-        }
-        OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().height(56.dp)) {
-            Text(if (isEditable) "Cancel" else "Back", style = MaterialTheme.typography.titleMedium)
-        }
-        if (showDeleteButton) {
+        } else if(showDeleteButton) {
             OutlinedButton(onClick = onDelete, modifier = Modifier.fillMaxWidth().height(56.dp)) {
                 Text("Delete", style = MaterialTheme.typography.titleMedium)
             }
         }
+        OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            Text(if (isEditable) "Cancel" else "Back", style = MaterialTheme.typography.titleMedium)
+        }
+
         val forIssueDate = true
         // Date Pickers
         if (showIssueDatePicker) {
