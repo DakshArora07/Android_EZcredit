@@ -38,8 +38,7 @@ class FirebaseAuthManager {
                 val userEmail = userSnap.child("email").getValue(String::class.java)
                 if (userEmail == email) {
                     CompanyContext.currentCompanyId = companyId
-                    CompanyContext.currentUserId = auth.currentUser?.uid
-                    return companyId  // Found!
+                    return companyId
                 }
             }
         }
@@ -52,4 +51,21 @@ class FirebaseAuthManager {
     }
 
     fun getCurrentUserId(): String? = auth.currentUser?.uid
+
+    suspend fun changePassword(newPassword: String): Boolean {
+        return try {
+            val user = auth.currentUser
+            if (user == null) {
+                Log.e("FirebaseAuthManager", "No user logged in")
+                return false
+            }
+
+            user.updatePassword(newPassword).await()
+            Log.d("FirebaseAuthManager", "Password updated successfully")
+            true
+        } catch (e: Exception) {
+            Log.e("FirebaseAuthManager", "changePassword failed", e)
+            false
+        }
+    }
 }

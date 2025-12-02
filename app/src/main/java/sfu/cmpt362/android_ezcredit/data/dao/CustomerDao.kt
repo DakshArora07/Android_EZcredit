@@ -30,4 +30,7 @@
 
         @Query("DELETE FROM customer_list WHERE id = :key")
         suspend fun deleteCustomerById(key: Long)
+
+        @Query("DELETE FROM customer_list")
+        fun deleteAll()
     }

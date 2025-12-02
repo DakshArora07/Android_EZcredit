@@ -37,4 +37,7 @@ interface ReceiptDao {
 
     @Query("DELETE FROM receipt_list WHERE id = :key")
     suspend fun deleteReceiptById(key: Long)
+
+    @Query("DELETE FROM receipt_list")
+    fun deleteAll()
 }

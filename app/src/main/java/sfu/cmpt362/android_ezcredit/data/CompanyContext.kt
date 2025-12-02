@@ -19,9 +19,9 @@ object CompanyContext {
         get() = prefs.getLong(KEY_CURRENT_COMPANY_ID_LONG, 0L).takeIf { it > 0 }
         set(value) = prefs.edit { putLong(KEY_CURRENT_COMPANY_ID_LONG, value ?: 0L) }
 
-    var currentUserId: String?
-        get() = prefs.getString(KEY_CURRENT_USER_ID, null)
-        set(value) = prefs.edit { putString(KEY_CURRENT_USER_ID, value) }
+    var currentUserId: Long?
+        get() = prefs.getLong(KEY_CURRENT_USER_ID, 0L).takeIf { it > 0 }
+        set(value) = prefs.edit { putLong(KEY_CURRENT_USER_ID, value ?: 0L) }
 
     fun clear() {
         prefs.edit { clear() }

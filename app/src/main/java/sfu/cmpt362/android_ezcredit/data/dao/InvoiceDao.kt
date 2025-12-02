@@ -36,4 +36,7 @@ interface InvoiceDao {
 
     @Query("DELETE FROM invoice_list WHERE id = :key")
     suspend fun deleteInvoiceById(key: Long)
+
+    @Query("DELETE FROM invoice_list")
+    fun deleteAll()
 }

@@ -33,6 +33,7 @@ class EZCreditApplication : Application() {
 
     // Call this to restart sync after login (keeps live listeners active)
     fun restartSyncAfterLogin() {
+        syncManager?.clearCompanyData()
         syncManager?.startCompanyDataSync(CompanyContext.currentCompanyId!!) // Re-triggers live listeners
     }
 }

@@ -252,7 +252,6 @@ fun UserProfileScreen(
                                         CoroutineScope(Dispatchers.IO).launch {
                                             val firebaseUser = authManager.createUser(email, password)
                                             if (firebaseUser != null) {
-                                                CompanyContext.currentUserId = firebaseUser.uid
                                                 val newUser = User(name = name, email = email, role = role)
                                                 kotlinx.coroutines.withContext(Dispatchers.Main) {
                                                     viewModel.clearState()
