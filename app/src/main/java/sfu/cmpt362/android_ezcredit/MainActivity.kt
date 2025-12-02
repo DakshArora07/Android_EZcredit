@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -56,6 +57,14 @@ class MainActivity : ComponentActivity() {
 
                 val companyViewModel = CompanyViewModel(companyRepository)
                 val userViewModel = UserViewModel(userRepository)
+
+                LaunchedEffect(Unit) {
+                    if (CompanyContext.isCompanySelected()) {
+                        // User is already logged in, trigger sync check
+                        isLoggedIn = true
+                        application.checkAndSyncOnStartup()
+                    }
+                }
 
                 val companyProfileViewModel: CompanyProfileScreenViewModel = viewModel(
                     factory = CompanyProfileScreenViewModelFactory(
@@ -143,6 +152,8 @@ class MainActivity : ComponentActivity() {
                         NavigationDrawerScreen(
                             onLogout = {
                                 val authManager = FirebaseAuthManager()
+                                val application = context.applicationContext as EZCreditApplication
+                                application.clearOnLogout()
                                 authManager.signOut()
                                 isLoggedIn = false
                             },

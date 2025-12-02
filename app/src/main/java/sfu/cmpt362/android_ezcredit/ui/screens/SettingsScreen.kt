@@ -21,7 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import sfu.cmpt362.android_ezcredit.data.AppDatabase
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
+import sfu.cmpt362.android_ezcredit.data.repository.UserRepository
+import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModelFactory
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.SettingsScreenViewModel
+import sfu.cmpt362.android_ezcredit.utils.AccessMode
 
 @Composable
 fun SettingsScreen(
@@ -49,6 +55,41 @@ fun SettingsScreen(
         settingsScreenViewModel.loadSummaryReminderState(context)
     }
 
+    val userRepository = remember {
+        val database = AppDatabase.getInstance(context)
+        UserRepository(database.userDao)
+    }
+    val userViewModel: UserViewModel = viewModel(
+        factory = UserViewModelFactory(userRepository)
+    )
+    var isAdmin by remember { mutableStateOf<Boolean?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        val currentUserId = CompanyContext.currentUserId
+        if (currentUserId != null) {
+            try {
+                val user = userViewModel.getUserById(currentUserId)
+                isAdmin = user.accessLevel == AccessMode.Admin
+            } catch (e: Exception) {
+                isAdmin = false
+            }
+        } else {
+            isAdmin = false
+        }
+        isLoading = false
+    }
+
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -60,26 +101,26 @@ fun SettingsScreen(
 
         SectionTitles("Account")
         UserProfile(onProfileClick)
-        CompanyProfile(onCompanyProfileClick)
+        if(isAdmin == true){
+            CompanyProfile(onCompanyProfileClick)
+            SectionTitles("Background Tasks")
+            ReminderSettingsCard(
+                context = context,
+                enabled = invoiceRemindersEnabled,
+                hour = settingsScreenViewModel.reminderHour.collectAsState().value,
+                minute = settingsScreenViewModel.reminderMinute.collectAsState().value,
+                settingsScreenViewModel = settingsScreenViewModel
+            )
 
-        SectionTitles("Background Tasks")
-        ReminderSettingsCard(
-            context = context,
-            enabled = invoiceRemindersEnabled,
-            hour = settingsScreenViewModel.reminderHour.collectAsState().value,
-            minute = settingsScreenViewModel.reminderMinute.collectAsState().value,
-            settingsScreenViewModel = settingsScreenViewModel
-        )
-
-        SummarySettingsCard(
-            context = context,
-            enabled = dailySummaryEnabled,
-            hour = settingsScreenViewModel.summaryHour.collectAsState().value,
-            minute = settingsScreenViewModel.summaryMinute.collectAsState().value,
-            settingsScreenViewModel = settingsScreenViewModel,
-            requestNotificationPermissionLauncher = requestNotificationPermissionLauncher
-        )
-
+            SummarySettingsCard(
+                context = context,
+                enabled = dailySummaryEnabled,
+                hour = settingsScreenViewModel.summaryHour.collectAsState().value,
+                minute = settingsScreenViewModel.summaryMinute.collectAsState().value,
+                settingsScreenViewModel = settingsScreenViewModel,
+                requestNotificationPermissionLauncher = requestNotificationPermissionLauncher
+            )
+        }
         Spacer(modifier = Modifier.weight(1f))
         Logout(onLogout)
     }
