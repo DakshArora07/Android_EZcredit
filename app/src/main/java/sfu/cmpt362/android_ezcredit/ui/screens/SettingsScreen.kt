@@ -7,9 +7,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +26,7 @@ import sfu.cmpt362.android_ezcredit.ui.viewmodel.SettingsScreenViewModel
 @Composable
 fun SettingsScreen(
     onProfileClick: () -> Unit = {},
+    onCompanyProfileClick: () -> Unit = {},
     onLogout: () -> Unit = {},
     settingsScreenViewModel: SettingsScreenViewModel = viewModel()
 ) {
@@ -48,13 +52,15 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(20.dp),
+            .padding(20.dp)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(28.dp)
     ) {
         ScreenTitle()
 
         SectionTitles("Account")
         UserProfile(onProfileClick)
+        CompanyProfile(onCompanyProfileClick)
 
         SectionTitles("Background Tasks")
         ReminderSettingsCard(
@@ -123,6 +129,46 @@ private fun UserProfile(onProfileClick: () -> Unit) {
                 Text("User Profile", style = MaterialTheme.typography.bodyLarge)
                 Text(
                     "Manage your personal information",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompanyProfile(onCompanyProfileClick: () -> Unit) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onCompanyProfileClick() }
+                .padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Business,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Company Profile", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "View and manage company information",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

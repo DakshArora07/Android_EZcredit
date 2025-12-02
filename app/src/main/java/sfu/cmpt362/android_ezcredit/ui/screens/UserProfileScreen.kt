@@ -29,16 +29,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.FirebaseAuthManager
 import sfu.cmpt362.android_ezcredit.ui.theme.*
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.UserProfileScreenViewModel
+import kotlinx.coroutines.withContext
 
 @Composable
 fun UserProfileScreen(
-    existingUsers: List<User>,
+    existingUsers: List<User> = emptyList(),
     onCancel: () -> Unit = {},
     onSave: (User) -> Unit = {},
+    isEditMode: Boolean = false,
+    currentUserEmail: String? = null,
     modifier: Modifier = Modifier
 ) {
     val viewModel: UserProfileScreenViewModel = viewModel()
@@ -48,6 +50,14 @@ fun UserProfileScreen(
     val authManager = FirebaseAuthManager()
 
     var passwordVisible by remember { mutableStateOf(false) }
+    var isEditing by remember { mutableStateOf(!isEditMode) }
+
+    // Load user data from Firebase when in edit mode
+    LaunchedEffect(isEditMode, currentUserEmail) {
+        if (isEditMode && currentUserEmail != null) {
+            viewModel.loadUserData(currentUserEmail)
+        }
+    }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val isVertical = maxWidth < 800.dp
@@ -58,222 +68,415 @@ fun UserProfileScreen(
                 .background(WhiteSmoke)
         ) {
             // Header
-            UserProfileHeader()
+            UserProfileHeader(isEditMode = isEditMode)
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(if (isVertical) 16.dp else 48.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Main Card
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = 600.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            if (state.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        modifier = Modifier.padding(32.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    CircularProgressIndicator()
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(if (isVertical) 16.dp else 48.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Main Card
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 600.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (!isEditMode || isEditing) Color.White else LightGray.copy(alpha = 0.3f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Text(
-                            text = "User Information",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
+                        Column(
+                            modifier = Modifier.padding(32.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "User Information",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black
+                                )
 
-                        // Name Field
-                        OutlinedTextField(
-                            value = state.name,
-                            onValueChange = { viewModel.updateName(it) },
-                            label = { Text("Name *") },
-                            leadingIcon = {
-                                Icon(Icons.Default.Person, contentDescription = null, tint = Grey)
-                            },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                            keyboardActions = KeyboardActions(
-                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                            ),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = LightGray
-                            )
-                        )
-
-                        // Email Field
-                        OutlinedTextField(
-                            value = state.email,
-                            onValueChange = { viewModel.updateEmail(it) },
-                            label = { Text("Email *") },
-                            leadingIcon = {
-                                Icon(Icons.Default.Email, contentDescription = null, tint = Grey)
-                            },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Email,
-                                imeAction = ImeAction.Next
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                            ),
-                            isError = state.email.isNotEmpty() && !viewModel.isValidEmail(),
-                            supportingText = if (state.email.isNotEmpty() && !viewModel.isValidEmail()) {
-                                { Text("Invalid email address", color = Red) }
-                            } else null,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = LightGray
-                            )
-                        )
-
-                        // Password Field
-                        OutlinedTextField(
-                            value = state.password,
-                            onValueChange = { viewModel.updatePassword(it) },
-                            label = { Text("Password *") },
-                            leadingIcon = {
-                                Icon(Icons.Default.Lock, contentDescription = null, tint = Grey)
-                            },
-                            trailingIcon = {
-                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                    Icon(
-                                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                        contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                                        tint = Grey
-                                    )
+                                // Edit/Lock icon in edit mode
+                                if (isEditMode) {
+                                    IconButton(onClick = { isEditing = !isEditing }) {
+                                        Icon(
+                                            imageVector = if (isEditing) Icons.Default.Lock else Icons.Default.Edit,
+                                            contentDescription = if (isEditing) "Lock" else "Edit",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
                                 }
-                            },
-                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Password,
-                                imeAction = ImeAction.Done
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onDone = { focusManager.clearFocus() }
-                            ),
-                            isError = state.password.isNotEmpty() && state.password.length < 6,
-                            supportingText = if (state.password.isNotEmpty() && state.password.length < 6) {
-                                { Text("Password must be at least 6 characters", color = Red) }
-                            } else null,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = LightGray
-                            )
-                        )
+                            }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Access Level Section
-                        Text(
-                            text = "Access Level *",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.Black
-                        )
-
-                        AccessLevelSelector(
-                            selectedRole = state.selectedRole,
-                            existingUsers = existingUsers,
-                            onRoleSelected = { viewModel.updateRole(it) }
-                        )
-
-                        // Error Message
-                        if (state.showError) {
-                            Card(
+                            // Name Field
+                            OutlinedTextField(
+                                value = state.name,
+                                onValueChange = { viewModel.updateName(it) },
+                                label = { Text("Name *") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Person, contentDescription = null, tint = Grey)
+                                },
+                                singleLine = true,
+                                enabled = isEditing,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = Red.copy(alpha = 0.1f)
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                                keyboardActions = KeyboardActions(
+                                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                                ),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = LightGray,
+                                    disabledBorderColor = LightGray,
+                                    disabledTextColor = Color.Black
                                 )
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                            )
+
+                            // Email Field - Editable in CREATE mode, Disabled in EDIT mode
+                            OutlinedTextField(
+                                value = state.email,
+                                onValueChange = { viewModel.updateEmail(it) },
+                                label = { Text("Email *") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Email, contentDescription = null, tint = Grey)
+                                },
+                                singleLine = true,
+                                enabled = !isEditMode, // Only enabled in create mode (isEditMode = false)
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Email,
+                                    imeAction = ImeAction.Next
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                                ),
+                                isError = !isEditMode && state.email.isNotEmpty() && !viewModel.isValidEmail(),
+                                supportingText = if (!isEditMode && state.email.isNotEmpty() && !viewModel.isValidEmail()) {
+                                    { Text("Invalid email address", color = Red) }
+                                } else if (isEditMode) {
+                                    { Text("Email cannot be changed", color = Grey, fontSize = 12.sp) }
+                                } else null,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = LightGray,
+                                    disabledBorderColor = LightGray,
+                                    disabledTextColor = Color.Black,
+                                    disabledLabelColor = Grey,
+                                    disabledLeadingIconColor = Grey
+                                )
+                            )
+
+                            // Password Field
+                            if (!isEditMode || isEditing) {
+                                OutlinedTextField(
+                                    value = state.password,
+                                    onValueChange = { viewModel.updatePassword(it) },
+                                    label = {
+                                        Text(if (isEditMode) "New Password (optional)" else "Password *")
+                                    },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Lock, contentDescription = null, tint = Grey)
+                                    },
+                                    trailingIcon = {
+                                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                            Icon(
+                                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                                contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                                                tint = Grey
+                                            )
+                                        }
+                                    },
+                                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                    singleLine = true,
+                                    enabled = isEditing,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Password,
+                                        imeAction = ImeAction.Done
+                                    ),
+                                    keyboardActions = KeyboardActions(
+                                        onDone = { focusManager.clearFocus() }
+                                    ),
+                                    isError = !isEditMode && state.password.isNotEmpty() && state.password.length < 6,
+                                    supportingText = if (!isEditMode && state.password.isNotEmpty() && state.password.length < 6) {
+                                        { Text("Password must be at least 6 characters", color = Red) }
+                                    } else if (isEditMode && isEditing) {
+                                        { Text("Leave empty to keep current password", color = Grey, fontSize = 12.sp) }
+                                    } else null,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = LightGray,
+                                        disabledBorderColor = LightGray,
+                                        disabledTextColor = Color.Black
+                                    )
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Access Level Section
+                            if (!isEditMode) {
+                                // CREATE MODE: Show role selector
+                                Text(
+                                    text = "Access Level *",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.Black
+                                )
+
+                                AccessLevelSelector(
+                                    selectedRole = state.selectedRole,
+                                    existingUsers = existingUsers,
+                                    onRoleSelected = { viewModel.updateRole(it) }
+                                )
+                            } else {
+                                // EDIT MODE: Show role as read-only
+                                Text(
+                                    text = "Access Level",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.Black
+                                )
+
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = LightGray.copy(alpha = 0.3f)
+                                    )
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Error,
-                                        contentDescription = null,
-                                        tint = Red
-                                    )
-                                    Text(
-                                        text = state.errorMessage,
-                                        color = Red,
-                                        fontSize = 14.sp
-                                    )
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = when (state.selectedRole) {
+                                                UserRole.ADMIN -> Icons.Default.AdminPanelSettings
+                                                UserRole.SALES -> Icons.Default.PointOfSale
+                                                UserRole.RECEIPTS -> Icons.Default.Receipt
+                                            },
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                        Column {
+                                            Text(
+                                                text = state.selectedRole.displayName,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 16.sp,
+                                                color = Color.Black
+                                            )
+                                            Text(
+                                                text = "Role cannot be changed",
+                                                fontSize = 12.sp,
+                                                color = Grey
+                                            )
+                                        }
+                                    }
                                 }
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Buttons
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = {
-                                    viewModel.clearState()
-                                    onCancel()
-                                },
-                                modifier = Modifier.weight(1f).height(56.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = Grey
-                                )
-                            ) {
-                                Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            // Error Message
+                            if (state.showError) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Red.copy(alpha = 0.1f)
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Error,
+                                            contentDescription = null,
+                                            tint = Red
+                                        )
+                                        Text(
+                                            text = state.errorMessage,
+                                            color = Red,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                }
                             }
 
-                            Button(
-                                onClick = {
-                                    viewModel.validateAndSave(existingUsers) { name, email, password, role ->
-                                        val newUser = User(
-                                            name = name,
-                                            email = email,
-                                            role = role
-                                        )
-                                        CoroutineScope(Dispatchers.IO).launch {
-                                            val firebaseUser = authManager.createUser(email, password)
-                                            if (firebaseUser != null) {
-                                                val newUser = User(name = name, email = email, role = role)
-                                                kotlinx.coroutines.withContext(Dispatchers.Main) {
-                                                    viewModel.clearState()
-                                                    onSave(newUser)
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Buttons
+                            if (isEditMode) {
+                                if (isEditing) {
+                                    // Cancel and Save buttons when editing
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        OutlinedButton(
+                                            onClick = {
+                                                // Reload data to cancel changes
+                                                if (currentUserEmail != null) {
+                                                    viewModel.loadUserData(currentUserEmail)
                                                 }
-                                            } else {
-                                                Log.d("Authentication", "User not created")
-                                            }
+                                                isEditing = false
+                                            },
+                                            modifier = Modifier.weight(1f).height(56.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                contentColor = Grey
+                                            )
+                                        ) {
+                                            Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                         }
-                                        viewModel.clearState()
-                                        onSave(newUser)
+
+                                        Button(
+                                            onClick = {
+                                                if (state.name.isNotEmpty()) {
+                                                    CoroutineScope(Dispatchers.IO).launch {
+                                                        // Update password if provided
+                                                        if (state.password.isNotEmpty() && state.password.length >= 6) {
+                                                            val success = authManager.changePassword(state.password)
+                                                            if (!success) {
+                                                                withContext(Dispatchers.Main) {
+                                                                    viewModel.setError("Failed to update password")
+                                                                }
+                                                                return@launch
+                                                            }
+                                                        }
+
+                                                        // Update user in Firebase
+                                                        viewModel.updateUserInFirebase(state.email, state.name)
+
+                                                        // Update user in local database
+                                                        val updatedUser = User(
+                                                            name = state.name,
+                                                            email = state.email,
+                                                            role = state.selectedRole
+                                                        )
+
+                                                        withContext(Dispatchers.Main) {
+                                                            isEditing = false
+                                                            onSave(updatedUser)
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            enabled = state.name.isNotEmpty() &&
+                                                    (state.password.isEmpty() || state.password.length >= 6),
+                                            modifier = Modifier.weight(1f).height(56.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = MaterialTheme.colorScheme.primary,
+                                                disabledContainerColor = LightGray
+                                            )
+                                        ) {
+                                            Text(
+                                                text = "Save Changes",
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
-                                },
-                                enabled = viewModel.canSave(existingUsers),
-                                modifier = Modifier.weight(1f).height(56.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    disabledContainerColor = LightGray
-                                )
-                            ) {
-                                Text("Save", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                } else {
+                                    // Back button when not editing
+                                    Button(
+                                        onClick = onCancel,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(56.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary
+                                        )
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowBack,
+                                            contentDescription = null
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Back to Settings", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            } else {
+                                // Create mode buttons
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            viewModel.clearState()
+                                            onCancel()
+                                        },
+                                        modifier = Modifier.weight(1f).height(56.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            contentColor = Grey
+                                        )
+                                    ) {
+                                        Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            viewModel.validateAndSave(existingUsers) { name, email, password, role ->
+                                                CoroutineScope(Dispatchers.IO).launch {
+                                                    val firebaseUser = authManager.createUser(email, password)
+                                                    if (firebaseUser != null) {
+                                                        val newUser = User(name = name, email = email, role = role)
+                                                        withContext(Dispatchers.Main) {
+                                                            viewModel.clearState()
+                                                            onSave(newUser)
+                                                        }
+                                                    } else {
+                                                        withContext(Dispatchers.Main) {
+                                                            viewModel.setError("Failed to create user account")
+                                                        }
+                                                        Log.d("Authentication", "User not created")
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        enabled = viewModel.canSave(existingUsers),
+                                        modifier = Modifier.weight(1f).height(56.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary,
+                                            disabledContainerColor = LightGray
+                                        )
+                                    ) {
+                                        Text(
+                                            text = "Save",
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -284,7 +487,7 @@ fun UserProfileScreen(
 }
 
 @Composable
-private fun UserProfileHeader() {
+private fun UserProfileHeader(isEditMode: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -296,19 +499,19 @@ private fun UserProfileHeader() {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Icon(
-                imageVector = Icons.Default.PersonAdd,
+                imageVector = if (isEditMode) Icons.Default.Person else Icons.Default.PersonAdd,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(32.dp)
             )
             Column {
                 Text(
-                    text = "Add User",
+                    text = if (isEditMode) "User Profile" else "Add User",
                     style = MaterialTheme.typography.headlineLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "Create a new user account",
+                    text = if (isEditMode) "View and edit your account information" else "Create a new user account",
                     style = MaterialTheme.typography.bodyLarge,
                     color = Grey
                 )
@@ -357,7 +560,7 @@ private fun AccessLevelSelector(
 
         if (hasAdmin && selectedRole == UserRole.ADMIN) {
             Text(
-                text = "⚠️ Only one Admin user is allowed",
+                text = "Only one Admin user is allowed",
                 fontSize = 12.sp,
                 color = Orange,
                 modifier = Modifier.padding(start = 4.dp)

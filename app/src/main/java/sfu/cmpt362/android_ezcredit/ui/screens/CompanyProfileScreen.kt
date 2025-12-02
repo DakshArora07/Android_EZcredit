@@ -46,12 +46,22 @@ fun CompanyProfileScreen(
     onCancel: () -> Unit = {},
     onSave: () -> Unit = {},
     onAddUser: () -> Unit = {},
+    isViewMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
 
+    var isEditing by remember { mutableStateOf(!isViewMode) }
+
     val isValidPhone = state.phone.isEmpty() || state.phone.length == 10
+
+    // Load company data in view mode
+    LaunchedEffect(isViewMode) {
+        if (isViewMode) {
+            viewModel.loadCompanyData()
+        }
+    }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val isVertical = maxWidth < 800.dp
@@ -62,10 +72,11 @@ fun CompanyProfileScreen(
                 .background(WhiteSmoke)
         ) {
             // Header
-            CompanyProfileHeader()
+            CompanyProfileHeader(isViewMode = isViewMode)
 
-            if (isVertical) {
-                CompanyProfileContentVertical(
+            if (isViewMode) {
+                // View Mode: Show company details and users
+                CompanyProfileViewMode(
                     companyName = state.companyName,
                     address = state.address,
                     phone = state.phone,
@@ -73,50 +84,82 @@ fun CompanyProfileScreen(
                     isValidPhone = isValidPhone,
                     showError = state.showError,
                     errorMessage = state.errorMessage,
-                    isCompanyDetailsSaved = state.isCompanyDetailsSaved,
-                    onCompanyNameChange = { viewModel.updateCompanyName(it) },
+                    isEditing = isEditing,
+                    onToggleEdit = { isEditing = !isEditing },
                     onAddressChange = { viewModel.updateAddress(it) },
                     onPhoneChange = { viewModel.updatePhone(it) },
                     onAddUser = onAddUser,
                     onRemoveUser = { user -> viewModel.removeUser(user.id) },
-                    onCancelCompanyDetails = {
-                        viewModel.resetCompanyDetails()
+                    onChangeUserRole = { user, newRole -> viewModel.changeUserRole(user.id, newRole) },
+                    onCancel = {
+                        viewModel.loadCompanyData()
+                        isEditing = false
                         onCancel()
                     },
-                    onSaveCompanyDetails = { viewModel.saveCompanyDetails() },
-                    onGoToDashboard = { viewModel.goToDashboard(onSave) },
-                    focusManager = focusManager
+                    onSave = {
+                        viewModel.saveCompanyDetailsInViewMode()
+                        isEditing = false
+                    },
+                    onBack = onCancel,
+                    focusManager = focusManager,
+                    isVertical = isVertical
                 )
             } else {
-                CompanyProfileContentHorizontal(
-                    companyName = state.companyName,
-                    address = state.address,
-                    phone = state.phone,
-                    users = state.users,
-                    isValidPhone = isValidPhone,
-                    showError = state.showError,
-                    errorMessage = state.errorMessage,
-                    isCompanyDetailsSaved = state.isCompanyDetailsSaved,
-                    onCompanyNameChange = { viewModel.updateCompanyName(it) },
-                    onAddressChange = { viewModel.updateAddress(it) },
-                    onPhoneChange = { viewModel.updatePhone(it) },
-                    onAddUser = onAddUser,
-                    onRemoveUser = { user -> viewModel.removeUser(user.id) },
-                    onCancelCompanyDetails = {
-                        viewModel.resetCompanyDetails()
-                        onCancel()
-                    },
-                    onSaveCompanyDetails = { viewModel.saveCompanyDetails() },
-                    onGoToDashboard = { viewModel.goToDashboard(onSave) },
-                    focusManager = focusManager
-                )
+                // Create Mode: Original flow
+                if (isVertical) {
+                    CompanyProfileContentVertical(
+                        companyName = state.companyName,
+                        address = state.address,
+                        phone = state.phone,
+                        users = state.users,
+                        isValidPhone = isValidPhone,
+                        showError = state.showError,
+                        errorMessage = state.errorMessage,
+                        isCompanyDetailsSaved = state.isCompanyDetailsSaved,
+                        onCompanyNameChange = { viewModel.updateCompanyName(it) },
+                        onAddressChange = { viewModel.updateAddress(it) },
+                        onPhoneChange = { viewModel.updatePhone(it) },
+                        onAddUser = onAddUser,
+                        onRemoveUser = { user -> viewModel.removeUser(user.id) },
+                        onCancelCompanyDetails = {
+                            viewModel.resetCompanyDetails()
+                            onCancel()
+                        },
+                        onSaveCompanyDetails = { viewModel.saveCompanyDetails() },
+                        onGoToDashboard = { viewModel.goToDashboard(onSave) },
+                        focusManager = focusManager
+                    )
+                } else {
+                    CompanyProfileContentHorizontal(
+                        companyName = state.companyName,
+                        address = state.address,
+                        phone = state.phone,
+                        users = state.users,
+                        isValidPhone = isValidPhone,
+                        showError = state.showError,
+                        errorMessage = state.errorMessage,
+                        isCompanyDetailsSaved = state.isCompanyDetailsSaved,
+                        onCompanyNameChange = { viewModel.updateCompanyName(it) },
+                        onAddressChange = { viewModel.updateAddress(it) },
+                        onPhoneChange = { viewModel.updatePhone(it) },
+                        onAddUser = onAddUser,
+                        onRemoveUser = { user -> viewModel.removeUser(user.id) },
+                        onCancelCompanyDetails = {
+                            viewModel.resetCompanyDetails()
+                            onCancel()
+                        },
+                        onSaveCompanyDetails = { viewModel.saveCompanyDetails() },
+                        onGoToDashboard = { viewModel.goToDashboard(onSave) },
+                        focusManager = focusManager
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun CompanyProfileHeader() {
+private fun CompanyProfileHeader(isViewMode: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -124,15 +167,562 @@ private fun CompanyProfileHeader() {
             .padding(24.dp)
     ) {
         Text(
-            text = "Create Company",
+            text = if (isViewMode) "Company Profile" else "Create Company",
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.primary
         )
         Text(
-            text = "Set up your company profile",
+            text = if (isViewMode) "View and manage your company information" else "Set up your company profile",
             style = MaterialTheme.typography.bodyLarge,
             color = Grey
         )
+    }
+}
+
+@Composable
+private fun CompanyProfileViewMode(
+    companyName: String,
+    address: String,
+    phone: String,
+    users: List<User>,
+    isValidPhone: Boolean,
+    showError: Boolean,
+    errorMessage: String,
+    isEditing: Boolean,
+    onToggleEdit: () -> Unit,
+    onAddressChange: (String) -> Unit,
+    onPhoneChange: (String) -> Unit,
+    onAddUser: () -> Unit,
+    onRemoveUser: (User) -> Unit,
+    onChangeUserRole: (User, UserRole) -> Unit,
+    onCancel: () -> Unit,
+    onSave: () -> Unit,
+    onBack: () -> Unit,
+    focusManager: FocusManager,
+    isVertical: Boolean
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(if (isVertical) 16.dp else 24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        if (isVertical) {
+            // Vertical layout
+            CompanyDetailsCardViewMode(
+                companyName = companyName,
+                address = address,
+                phone = phone,
+                isValidPhone = isValidPhone,
+                isEditing = isEditing,
+                onToggleEdit = onToggleEdit,
+                onAddressChange = onAddressChange,
+                onPhoneChange = onPhoneChange,
+                focusManager = focusManager
+            )
+
+            UsersCardViewMode(
+                users = users,
+                isEditing = isEditing,
+                onAddUser = onAddUser,
+                onRemoveUser = onRemoveUser,
+                onChangeUserRole = onChangeUserRole
+            )
+
+            if (showError) {
+                ErrorMessage(errorMessage)
+            }
+
+            // Buttons
+            if (isEditing) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onCancel,
+                        modifier = Modifier.weight(1f).height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Grey
+                        )
+                    ) {
+                        Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = onSave,
+                        modifier = Modifier.weight(1f).height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("Save Changes", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            } else {
+                Button(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Back to App", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        } else {
+            // Horizontal layout
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                CompanyDetailsCardViewMode(
+                    companyName = companyName,
+                    address = address,
+                    phone = phone,
+                    isValidPhone = isValidPhone,
+                    isEditing = isEditing,
+                    onToggleEdit = onToggleEdit,
+                    onAddressChange = onAddressChange,
+                    onPhoneChange = onPhoneChange,
+                    focusManager = focusManager,
+                    modifier = Modifier.weight(1f)
+                )
+
+                UsersCardViewMode(
+                    users = users,
+                    isEditing = isEditing,
+                    onAddUser = onAddUser,
+                    onRemoveUser = onRemoveUser,
+                    onChangeUserRole = onChangeUserRole,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            if (showError) {
+                ErrorMessage(errorMessage)
+            }
+
+            // Buttons
+            if (isEditing) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onCancel,
+                        modifier = Modifier.weight(1f).height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Grey
+                        )
+                    ) {
+                        Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = onSave,
+                        modifier = Modifier.weight(1f).height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("Save Changes", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            } else {
+                Button(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Back to Settings", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompanyDetailsCardViewMode(
+    companyName: String,
+    address: String,
+    phone: String,
+    isValidPhone: Boolean,
+    isEditing: Boolean,
+    onToggleEdit: () -> Unit,
+    onAddressChange: (String) -> Unit,
+    onPhoneChange: (String) -> Unit,
+    focusManager: FocusManager,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (!isEditing) LightGray.copy(alpha = 0.3f) else Color.White
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Company Details",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                IconButton(onClick = onToggleEdit) {
+                    Icon(
+                        imageVector = if (isEditing) Icons.Default.Lock else Icons.Default.Edit,
+                        contentDescription = if (isEditing) "Lock" else "Edit",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            // Company Name - ALWAYS DISABLED (cannot be edited)
+            OutlinedTextField(
+                value = companyName,
+                onValueChange = {},
+                label = { Text("Company Name *") },
+                leadingIcon = {
+                    Icon(Icons.Default.Business, contentDescription = null, tint = Grey)
+                },
+                singleLine = true,
+                enabled = false,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledBorderColor = LightGray,
+                    disabledTextColor = Color.Black,
+                    disabledLabelColor = Grey,
+                    disabledLeadingIconColor = Grey
+                )
+            )
+
+            // Address
+            OutlinedTextField(
+                value = address,
+                onValueChange = onAddressChange,
+                label = { Text("Address *") },
+                leadingIcon = {
+                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = Grey)
+                },
+                minLines = 2,
+                maxLines = 3,
+                enabled = isEditing,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                ),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = LightGray,
+                    disabledBorderColor = LightGray,
+                    disabledTextColor = Color.Black
+                )
+            )
+
+            // Phone
+            OutlinedTextField(
+                value = phone,
+                onValueChange = onPhoneChange,
+                label = { Text("Phone *") },
+                leadingIcon = {
+                    Icon(Icons.Default.Phone, contentDescription = null, tint = Grey)
+                },
+                singleLine = true,
+                enabled = isEditing,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Phone,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                    onDone = { focusManager.clearFocus() }
+                ),
+                isError = phone.isNotEmpty() && !isValidPhone && isEditing,
+                supportingText = if (phone.isNotEmpty() && !isValidPhone && isEditing) {
+                    { Text("Phone number must be 10 digits", color = Red) }
+                } else null,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = LightGray,
+                    disabledBorderColor = LightGray,
+                    disabledTextColor = Color.Black
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun UsersCardViewMode(
+    users: List<User>,
+    isEditing: Boolean,
+    onAddUser: () -> Unit,
+    onRemoveUser: (User) -> Unit,
+    onChangeUserRole: (User, UserRole) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (!isEditing) LightGray.copy(alpha = 0.3f) else Color.White
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Users",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "(${users.size})",
+                        fontSize = 14.sp,
+                        color = Grey
+                    )
+                    if (!isEditing) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Locked",
+                            tint = Grey,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            if (users.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No users found",
+                        color = Grey,
+                        fontSize = 14.sp
+                    )
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    users.forEach { user ->
+                        UserItemViewModeEditable(
+                            user = user,
+                            isEditing = isEditing,
+                            onRemove = { onRemoveUser(user) },
+                            onChangeRole = { newRole -> onChangeUserRole(user, newRole) }
+                        )
+                    }
+                }
+            }
+
+            // Add User Button (only when editing)
+            if (isEditing) {
+                OutlinedButton(
+                    onClick = onAddUser,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Add User")
+                }
+            } else {
+                Text(
+                    text = "Click Edit to manage users and roles",
+                    fontSize = 12.sp,
+                    color = Grey,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun UserItemViewModeEditable(
+    user: User,
+    isEditing: Boolean,
+    onRemove: () -> Unit,
+    onChangeRole: (UserRole) -> Unit
+) {
+    var showRoleMenu by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = WhiteSmoke)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+
+                Column {
+                    Text(
+                        text = user.name,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = user.email,
+                        fontSize = 12.sp,
+                        color = Grey
+                    )
+                }
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Role Badge - clickable when editing
+                Box {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = when (user.role) {
+                            UserRole.ADMIN -> MaterialTheme.colorScheme.primaryContainer
+                            UserRole.SALES -> MaterialTheme.colorScheme.secondaryContainer
+                            UserRole.RECEIPTS -> MaterialTheme.colorScheme.tertiaryContainer
+                        },
+                        modifier = if (isEditing) Modifier.clickable { showRoleMenu = true } else Modifier
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = user.role.displayName,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = when (user.role) {
+                                    UserRole.ADMIN -> MaterialTheme.colorScheme.onPrimaryContainer
+                                    UserRole.SALES -> MaterialTheme.colorScheme.onSecondaryContainer
+                                    UserRole.RECEIPTS -> MaterialTheme.colorScheme.onTertiaryContainer
+                                }
+                            )
+                            if (isEditing) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Change role",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = when (user.role) {
+                                        UserRole.ADMIN -> MaterialTheme.colorScheme.onPrimaryContainer
+                                        UserRole.SALES -> MaterialTheme.colorScheme.onSecondaryContainer
+                                        UserRole.RECEIPTS -> MaterialTheme.colorScheme.onTertiaryContainer
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Role selection dropdown
+                    DropdownMenu(
+                        expanded = showRoleMenu,
+                        onDismissRequest = { showRoleMenu = false }
+                    ) {
+                        UserRole.values().forEach { role ->
+                            DropdownMenuItem(
+                                text = { Text(role.displayName) },
+                                onClick = {
+                                    onChangeRole(role)
+                                    showRoleMenu = false
+                                },
+                                leadingIcon = {
+                                    if (user.role == role) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Remove Button (only when editing)
+                if (isEditing) {
+                    IconButton(onClick = onRemove) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Remove user",
+                            tint = Red
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -163,7 +753,6 @@ private fun CompanyProfileContentVertical(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Company Details Card
         CompanyDetailsCard(
             companyName = companyName,
             address = address,
@@ -176,7 +765,6 @@ private fun CompanyProfileContentVertical(
             focusManager = focusManager
         )
 
-        // Cancel/Save buttons for Company Details (only show if not saved yet)
         if (!isCompanyDetailsSaved) {
             if (showError) {
                 ErrorMessage(errorMessage)
@@ -188,7 +776,6 @@ private fun CompanyProfileContentVertical(
             )
         }
 
-        // Users section (only show after company details are saved)
         if (isCompanyDetailsSaved) {
             UsersCard(
                 users = users,
@@ -200,7 +787,6 @@ private fun CompanyProfileContentVertical(
                 ErrorMessage(errorMessage)
             }
 
-            // Go to Dashboard button
             DashboardButton(
                 enabled = users.isNotEmpty(),
                 onClick = onGoToDashboard
@@ -237,7 +823,6 @@ private fun CompanyProfileContentHorizontal(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         if (!isCompanyDetailsSaved) {
-            // Step 1: Company Details only
             CompanyDetailsCard(
                 companyName = companyName,
                 address = address,
@@ -259,7 +844,6 @@ private fun CompanyProfileContentHorizontal(
                 onSave = onSaveCompanyDetails
             )
         } else {
-            // Step 2: Show both Company Details (locked) and Users side by side
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(24.dp)
@@ -343,7 +927,6 @@ private fun CompanyDetailsCard(
                 }
             }
 
-            // Company Name
             OutlinedTextField(
                 value = companyName,
                 onValueChange = onCompanyNameChange,
@@ -367,7 +950,6 @@ private fun CompanyDetailsCard(
                 )
             )
 
-            // Address
             OutlinedTextField(
                 value = address,
                 onValueChange = onAddressChange,
@@ -392,7 +974,6 @@ private fun CompanyDetailsCard(
                 )
             )
 
-            // Phone
             OutlinedTextField(
                 value = phone,
                 onValueChange = onPhoneChange,
@@ -507,7 +1088,6 @@ private fun UsersCard(
                 }
             }
 
-            // Add User Button
             OutlinedButton(
                 onClick = onAddUser,
                 modifier = Modifier.fillMaxWidth(),
@@ -645,7 +1225,6 @@ private fun UserItem(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Role Badge
                 Surface(
                     shape = RoundedCornerShape(6.dp),
                     color = when (user.role) {
@@ -667,7 +1246,6 @@ private fun UserItem(
                     )
                 }
 
-                // Remove Button
                 IconButton(onClick = onRemove) {
                     Icon(
                         imageVector = Icons.Default.Close,
