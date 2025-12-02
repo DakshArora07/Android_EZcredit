@@ -101,10 +101,15 @@ class InvoiceViewModel(private val repository: InvoiceRepository) : ViewModel() 
     }
 
 
-    fun delete(id: Long) {
+    fun delete(
+        id: Long,
+        onError: (String) -> Unit = {},
+        onSuccess: () -> Unit = {}
+    ) {
         val invoiceList = invoicesLiveData.value
         if (invoiceList != null && invoiceList.isNotEmpty()) {
-            repository.deleteById(id)
+            repository.deleteById(id, onError, onSuccess)
         }
     }
+
 }

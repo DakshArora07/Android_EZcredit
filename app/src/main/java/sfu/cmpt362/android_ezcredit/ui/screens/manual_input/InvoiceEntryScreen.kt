@@ -34,6 +34,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.Locale
+import android.database.sqlite.SQLiteConstraintException
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -274,10 +275,18 @@ fun ViewEditInvoiceScreen(
         },
         onCancel = onBack,
         onDelete = {
-            invoiceViewModel.delete(invoiceId)
-            Toast.makeText(context, "Invoice deleted", Toast.LENGTH_SHORT).show()
-            onBack()
+            invoiceViewModel.delete(
+                invoiceId,
+                onError = { msg ->
+                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                },
+                onSuccess = {
+                    Toast.makeText(context, "Invoice deleted", Toast.LENGTH_SHORT).show()
+                    onBack()
+                }
+            )
         }
+
     )
 }
 
