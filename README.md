@@ -12,15 +12,21 @@
 ---
 
 ## 🚀 Overview
-EZCredit is a modern *Android business management app* designed to help small businesses **manage their financial operations efficiently**. Its core features include:  
-•⁠ Customer credit tracking  
-•⁠ OCR-powered invoice data extraction  
-•⁠ Stripe payments & receipt matching  
-•⁠ Automated email reminders & overdue notifications  
-•⁠ Invoice creation and management
-•⁠ Filter Customers and Invoices with ease
 
-Built using *MVVM architecture, **Jetpack Compose, **WorkManager, and **Firebase*, EZCredit provides a complete financial workflow from Sales to daily credit updates.
+EZCredit is an Android application designed for small and mid-sized businesses to efficiently manage their daily financial operations.
+
+The app provides a complete workflow that spans from:
+- Creating and managing companies
+- Adding multiple users with different access levels
+- Handling customers and invoices
+- Sending payment reminders
+- Accepting payments through Stripe
+- Automatically generating receipts
+- Running background tasks for real-time updates
+- Syncing data across multiple users and devices
+  
+The app supports multi-company and multi-user access, with all data synchronized live through Firebase and stored locally with Room for offline consistency.
+Most advanced features—such as invoice sync, user management, payments, and background automation—require internet access, and the app will not start without it.
 
 ---
 
@@ -43,45 +49,107 @@ Built using *MVVM architecture, **Jetpack Compose, **WorkManager, and **Firebase
 
 ---
 
-# ✨ Key Features
+✨ Key Features
 
-## 📄 Smart Invoice Management
-•⁠  ⁠Auto status updates: *Unpaid → PastDue → Paid → LatePayment*  
-•⁠  ⁠PDF invoice generation  
-•⁠  ⁠Stripe checkout & receipt matching  
-•⁠  ⁠Customer credit updates  
-•⁠  ⁠Group invoices by customer  
+--- 
 
-## 🧾 OCR Invoice Extraction
-•⁠  ⁠Detect invoice *Amount, date, Customer*  
-•⁠  ⁠Autofill invoice form instantly  
-•⁠  ⁠Supports camera & image upload  
+🏢 Multi-Company & Multi-User Support
 
-## 👤 Customer Management
-•⁠  ⁠Add, edit, delete customers  
-•⁠  ⁠Track daily credit score changes  
-•⁠  ⁠Full payment history  
+•⁠ Create new companies directly from the app.
 
-## 📅 Calendar View
-•⁠  ⁠Visual invoice/payment timelines  
-•⁠  ⁠Daily summaries & color-coded statuses  
+•⁠ Add users with different access levels (Admin, Sales, Receipts).
 
-## 📊 Analytics Dashboard
-•⁠  ⁠Total receivables  
-•⁠  ⁠Past-due trends  
-•⁠  ⁠Daily collection summaries  
-•⁠  ⁠Customer credit performance  
+•⁠ Each company keeps its own isolated, real-time synchronized data.
+
+•⁠ Switching companies updates the entire dataset instantly.
+
+---
+
+👤 User & Company Management
+
+•⁠ Admins can update company details, add new users, or change access levels.
+
+•⁠ Users can update their profile information (email, name, password).
+
+•⁠ Access-based UI:
+- Sales users: Customers & Invoices
+- Receipts users: Receipts only
+- Admin users: Full system access
+
+---
+
+📄 Smart Invoice Management
+
+•⁠ Create invoices manually or using OCR extraction from images or camera.
+
+•⁠ Auto-update statuses (Unpaid, Paid, PastDue, Late).
+
+•⁠ Sort and filter invoices by status, due date, or customer.
+
+•⁠ Edit and delete invoices anytime.
+
+•⁠ Generate professional PDF invoices.
+
+•⁠ Send email reminders with a payment link.
+
+---
+
+🔍 OCR (Optical Character Recognition)
+
+•⁠ Extract invoice fields such as amount, dates, and customer info.
+
+•⁠ Auto-populate invoice forms for faster data entry.
+
+•⁠ Works with camera input and uploaded images.
+
+•⁠ OCR strictly extracts text — no AI rewriting or hallucinations.
+
+---
+
+💰 Payments & Automated Receipts
+
+•⁠ Customers can pay online using Stripe via the emailed payment link.
+
+•⁠ Successful payments automatically generate receipts on the cloud.
+
+•⁠ Receipts sync instantly across all users in the company.
+
+•⁠ Manual receipt creation supported for in-person payments.
+
+•⁠ Search and filter receipts by date, amount, or customer.
+
+---
+
+📊 Analytics Dashboard
+
+•⁠ Admin users get insights into:
+⁠- Amount collected
+- Past-due trends
+- Total outstanding amounts
+- Customer credit performance
+
+Filter analytics by week, month, or quarter.
+
+---
+
+📅 Calendar View
+
+•⁠ View invoices on a calendar based on status (Paid, Unpaid, PastDue, Late).
+
+•⁠ Apply multiple status filters at once.
+
+•⁠ Quickly navigate invoice history at a glance.
 
 ---
 
 # ⚙️ Background Automation (5 Workers)
 | Worker | Function |
 |--------|---------|
-| *Auto Email Reminder* | Sends daily payment reminders via Mailgun |
-| *Credit Score Update* | Recalculates customer credit scores |
-| *Overdue Invoice* | Marks invoices as PastDue |
-| *Paid / Late Payment* | Matches receipts & updates invoice status |
-| *Daily Summary* | Sends notifications with summary of invoices & credit changes |
+| Auto Email Reminder | Sends daily payment reminders via Mailgun |
+| Credit Score Update | Recalculates customer credit scores |
+| Overdue Invoice | Marks invoices as PastDue |
+| Paid / Late Payment | Matches receipts & updates invoice status |
+| Daily Summary | Sends notifications with summary of invoices & credit changes |
 
 ---
 
@@ -170,18 +238,9 @@ EZCredit/
 # 👥 Team
 | Developer | Role |
 |-----------|------|
-| Ayush Arora | UI, WorkManager logic, credit system |
-| Daksh Arora | Database architecture, Firebase sync |
+| Ayush Arora | UI, WorkManager logic, Credit Score algorithm, Email reminders |
+| Daksh Arora | Room Database, Firebase sync, Firebase auth, Firebase functions, Payment gateway |
 | Gurshan Singh Aulakh | Invoice & customer UI Screens, Automatic Email Background Worker, PDF Invoice Generation |
-| Hetmay Vora | Calendar & analytics |
-| Henry Nguyen | OCR engine & invoice formatting |
+| Hetmay Vora | Calendar, Analytics, Login Screen, Company and User profile screens |
+| Henry Nguyen | OCR engine, invoice formatting, receipt screen and project planning diagrams  |
 
----
-
-# 📜 License
-MIT License © 2025 EZCredit Development Team
-
----
-
-# ⭐ Support
-If you find this project helpful, *please give it a star!*
