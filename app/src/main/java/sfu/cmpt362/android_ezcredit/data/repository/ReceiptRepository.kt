@@ -113,6 +113,6 @@ class ReceiptRepository (private val receiptDao: ReceiptDao) {
             "lastModified" to receipt.lastModified,
             "isDeleted" to receipt.isDeleted
         )
-        receiptsRef.child(receipt.id.toString()).setValue(map)
+        receiptsRef.push().setValue(map)
     }
 }

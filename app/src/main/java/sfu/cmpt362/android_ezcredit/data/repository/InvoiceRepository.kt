@@ -36,7 +36,8 @@ class InvoiceRepository(private val invoiceDao: InvoiceDao) {
 
     fun update(invoice: Invoice){
         CoroutineScope(IO).launch{
-            val updated = invoice.copy(lastModified = System.currentTimeMillis())
+            val url = createPaymentLink(invoice.id,invoice.invoiceNumber, invoice.amount)
+            val updated = invoice.copy(url = url, lastModified = System.currentTimeMillis())
             invoiceDao.updateInvoice(updated)
             pushToFirebase(updated)
         }
