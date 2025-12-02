@@ -56,6 +56,7 @@ fun UserProfileScreen(
     LaunchedEffect(isEditMode, currentUserEmail) {
         if (isEditMode && currentUserEmail != null) {
             viewModel.loadUserData(currentUserEmail)
+            viewModel.updatePassword("")
         }
     }
 
@@ -342,6 +343,7 @@ fun UserProfileScreen(
                                                 // Reload data to cancel changes
                                                 if (currentUserEmail != null) {
                                                     viewModel.loadUserData(currentUserEmail)
+                                                    viewModel.updatePassword("")
                                                 }
                                                 isEditing = false
                                             },

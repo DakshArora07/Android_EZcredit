@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import sfu.cmpt362.android_ezcredit.data.CompanyContext
-import sfu.cmpt362.android_ezcredit.data.FirebaseRefs
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CompanyViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModel
 import sfu.cmpt362.android_ezcredit.ui.screens.User
@@ -60,58 +60,59 @@ class CompanyProfileScreenViewModel(
     }
 
     fun removeUser(userId: String) {
-        _state.update { currentState ->
-            currentState.copy(
-                users = currentState.users.filter { it.id != userId },
-                showError = false
-            )
-        }
-
-        // Remove from Firebase
         viewModelScope.launch {
             try {
-                val currentCompanyId = CompanyContext.currentCompanyId
-                if (currentCompanyId != null) {
-                    FirebaseRefs.usersRef(currentCompanyId).child(userId).removeValue().await()
-                    Log.d("CompanyProfileVM", "User removed from Firebase: $userId")
+                val numericUserId = userId.toLongOrNull() ?: return@launch
+
+                // Delete from database
+                withContext(Dispatchers.IO) {
+                    userViewModel.delete(numericUserId)
+                }
+
+                Log.d("CompanyProfileVM", "User $userId deleted from database")
+
+                // Update UI state
+                _state.update { currentState ->
+                    currentState.copy(
+                        users = currentState.users.filter { it.id != userId },
+                        showError = false
+                    )
                 }
             } catch (e: Exception) {
-                Log.e("CompanyProfileVM", "Error removing user", e)
+                Log.e("CompanyProfileVM", "Error deleting user", e)
+                _state.update {
+                    it.copy(showError = true, errorMessage = "Failed to delete user: ${e.message}")
+                }
             }
         }
     }
 
-    // Add user to Firebase and create auth account
-    fun addUserToFirebase(user: User) {
+    fun addUserToDatabase(user: User) {
         viewModelScope.launch {
             try {
                 val currentCompanyId = CompanyContext.currentCompanyId ?: return@launch
 
-                val usersRef = FirebaseRefs.usersRef(currentCompanyId)
-                val newUserRef = usersRef.push()
-                val firebaseKey = newUserRef.key ?: return@launch
+                Log.d("CompanyProfileVM", "Adding user: ${user.name}, Email: ${user.email}, Role: ${user.role}")
 
-                val roleString = when (user.role) {
-                    UserRole.ADMIN -> "ADMIN"
-                    UserRole.SALES -> "SALES"
-                    UserRole.RECEIPTS -> "RECEIPTS"
+                val accessMode = when (user.role) {
+                    UserRole.ADMIN -> AccessMode.Admin
+                    UserRole.SALES -> AccessMode.Sales
+                    UserRole.RECEIPTS -> AccessMode.Receipts
                 }
 
-                // Create user data
-                val userData = hashMapOf<String, Any>(
-                    "name" to user.name,
-                    "email" to user.email,
-                    "role" to roleString,
-                    "accessLevel" to roleString,
-                    "lastModified" to System.currentTimeMillis(),
-                    "isDeleted" to false
+                userViewModel.updateUser(
+                    userId = 0L, // Let Room auto-generate
+                    name = user.name,
+                    email = user.email,
+                    companyId = currentCompanyId,
+                    accessLevel = accessMode
                 )
 
-                newUserRef.setValue(userData).await()
-                Log.d("CompanyProfileVM", "User added to Firebase: $firebaseKey")
+                val localUserId = userViewModel.insert()
+                Log.d("CompanyProfileVM", "User added to local DB with ID: $localUserId")
 
-                // Reload to refresh UI
                 loadCompanyData()
+
             } catch (e: Exception) {
                 Log.e("CompanyProfileVM", "Error adding user", e)
                 _state.update {
@@ -121,59 +122,63 @@ class CompanyProfileScreenViewModel(
         }
     }
 
-    // Load company data from Firebase
     fun loadCompanyData() {
         viewModelScope.launch {
             try {
                 val currentCompanyId = CompanyContext.currentCompanyId ?: return@launch
 
+                Log.d("CompanyProfileVM", "Loading company data for ID: $currentCompanyId")
+
                 // Load company details
-                val companySnapshot = FirebaseRefs.companiesRef()
-                    .child(currentCompanyId.toString()).get().await()
-
-                val companyName = companySnapshot.child("name").getValue(String::class.java) ?: ""
-                val address = companySnapshot.child("address").getValue(String::class.java) ?: ""
-                val phone = companySnapshot.child("phone").getValue(String::class.java) ?: ""
-
-                // Load users
-                val usersSnapshot = FirebaseRefs.usersRef(currentCompanyId).get().await()
-
-                val uiUsers = mutableListOf<User>()
-                usersSnapshot.children.forEach { userSnap ->
-                    val firebaseKey = userSnap.key ?: return@forEach
-                    val name = userSnap.child("name").getValue(String::class.java) ?: ""
-                    val email = userSnap.child("email").getValue(String::class.java) ?: ""
-
-                    // Try both fields
-                    var roleString = userSnap.child("role").getValue(String::class.java)
-                    if (roleString == null) {
-                        roleString = userSnap.child("accessLevel").getValue(String::class.java)
-                    }
-
-                    Log.d("CompanyProfileVM", "User: $name, Role: $roleString")
-
-                    val role = when (roleString?.uppercase()) {
-                        "ADMIN" -> UserRole.ADMIN
-                        "SALES" -> UserRole.SALES
-                        "RECEIPTS" -> UserRole.RECEIPTS
-                        else -> UserRole.SALES
-                    }
-
-                    uiUsers.add(User(id = firebaseKey, name = name, email = email, role = role))
+                val company = withContext(Dispatchers.IO) {
+                    companyViewModel.getCompanyById(currentCompanyId)
                 }
 
-                companyId = currentCompanyId
+                Log.d("CompanyProfileVM", "Company loaded - Name: ${company.name}, Address: ${company.address}, Phone: ${company.phone}")
 
-                _state.update {
-                    it.copy(
-                        companyName = companyName,
-                        address = address,
-                        phone = phone,
-                        users = uiUsers,
-                        isCompanyDetailsSaved = true,
-                        showError = false
-                    )
+                // Load users and observe LiveData
+                val usersLiveData = userViewModel.getUsersByCompanyId(currentCompanyId)
+
+                // Observe the LiveData to get users
+                usersLiveData.observeForever { dbUsers ->
+                    val uiUsers = dbUsers?.mapNotNull { user ->
+                        try {
+                            val role = when (user.accessLevel) {
+                                AccessMode.Admin -> UserRole.ADMIN
+                                AccessMode.Sales -> UserRole.SALES
+                                AccessMode.Receipts -> UserRole.RECEIPTS
+                            }
+
+                            Log.d("CompanyProfileVM", "User: ID: ${user.id}, Name: ${user.name}, Email: ${user.email}, Role: $role")
+
+                            User(
+                                id = user.id.toString(),
+                                name = user.name,
+                                email = user.email,
+                                role = role
+                            )
+                        } catch (e: Exception) {
+                            Log.e("CompanyProfileVM", "Error mapping user ${user.id}", e)
+                            null
+                        }
+                    } ?: emptyList()
+
+                    companyId = currentCompanyId
+
+                    _state.update {
+                        it.copy(
+                            companyName = company.name,
+                            address = company.address,
+                            phone = company.phone,
+                            users = uiUsers,
+                            isCompanyDetailsSaved = true,
+                            showError = false
+                        )
+                    }
+
+                    Log.d("CompanyProfileVM", "State updated with ${uiUsers.size} users")
                 }
+
             } catch (e: Exception) {
                 Log.e("CompanyProfileVM", "Error loading company data", e)
                 _state.update {
@@ -183,45 +188,64 @@ class CompanyProfileScreenViewModel(
         }
     }
 
-    // Change user role
     fun changeUserRole(userId: String, newRole: UserRole) {
+        Log.d("CompanyProfileVM", "Changing role for user $userId to $newRole")
+
+        // Prevent changing Admin users' role
+        val currentUser = _state.value.users.find { it.id == userId }
+        if (currentUser?.role == UserRole.ADMIN) {
+            Log.d("CompanyProfileVM", "Cannot change role of Admin user")
+            _state.update {
+                it.copy(showError = true, errorMessage = "Admin user's role cannot be changed")
+            }
+            return
+        }
+
         // Update UI immediately
         _state.update { currentState ->
             currentState.copy(
                 users = currentState.users.map { user ->
                     if (user.id == userId) user.copy(role = newRole) else user
-                }
+                },
+                showError = false
             )
         }
 
-        // Update Firebase
         viewModelScope.launch {
             try {
                 val currentCompanyId = CompanyContext.currentCompanyId ?: return@launch
+                val numericUserId = userId.toLongOrNull() ?: return@launch
 
-                val roleString = when (newRole) {
-                    UserRole.ADMIN -> "ADMIN"
-                    UserRole.SALES -> "SALES"
-                    UserRole.RECEIPTS -> "RECEIPTS"
+                // Update in local database
+                val accessMode = when (newRole) {
+                    UserRole.ADMIN -> AccessMode.Admin
+                    UserRole.SALES -> AccessMode.Sales
+                    UserRole.RECEIPTS -> AccessMode.Receipts
                 }
 
-                val updates = hashMapOf<String, Any>(
-                    "role" to roleString,
-                    "accessLevel" to roleString,
-                    "lastModified" to System.currentTimeMillis()
+                val localUser = withContext(Dispatchers.IO) {
+                    userViewModel.getUserById(numericUserId)
+                }
+
+                userViewModel.updateUser(
+                    userId = numericUserId,
+                    name = localUser.name,
+                    email = localUser.email,
+                    companyId = currentCompanyId,
+                    accessLevel = accessMode
                 )
+                userViewModel.update()
 
-                FirebaseRefs.usersRef(currentCompanyId).child(userId)
-                    .updateChildren(updates).await()
-
-                Log.d("CompanyProfileVM", "Role updated in Firebase")
+                Log.d("CompanyProfileVM", "Role updated in local DB")
             } catch (e: Exception) {
                 Log.e("CompanyProfileVM", "Error updating role", e)
+                _state.update {
+                    it.copy(showError = true, errorMessage = "Failed to update role: ${e.message}")
+                }
             }
         }
     }
 
-    // Save company details in view mode
     fun saveCompanyDetailsInViewMode() {
         val currentState = _state.value
 
@@ -237,26 +261,27 @@ class CompanyProfileScreenViewModel(
             try {
                 val currentCompanyId = CompanyContext.currentCompanyId ?: return@launch
 
-                val updates = hashMapOf<String, Any>(
-                    "address" to currentState.address,
-                    "phone" to currentState.phone,
-                    "lastModified" to System.currentTimeMillis()
-                )
+                Log.d("CompanyProfileVM", "Saving company details - Current users in state: ${currentState.users.size}")
 
-                FirebaseRefs.companiesRef().child(currentCompanyId.toString())
-                    .updateChildren(updates).await()
+                // Update local DB company info only (not touching users)
+                withContext(Dispatchers.IO) {
+                    companyViewModel.updateCompany(
+                        companyId = currentCompanyId,
+                        name = currentState.companyName,
+                        address = currentState.address,
+                        phone = currentState.phone
+                    )
+                    companyViewModel.update()
+                }
 
-                // Update local DB
-                companyViewModel.updateCompany(
-                    companyId = currentCompanyId,
-                    name = currentState.companyName,
-                    address = currentState.address,
-                    phone = currentState.phone
-                )
-                companyViewModel.update()
+                Log.d("CompanyProfileVM", "Company updated in local DB")
 
-                _state.update { it.copy(showError = false) }
-                Log.d("CompanyProfileVM", "Company updated")
+                // Clear error and keep the current state (don't reload to preserve users)
+                _state.update {
+                    it.copy(showError = false)
+                }
+
+                Log.d("CompanyProfileVM", "Company updated successfully. Users remain: ${currentState.users.size}")
             } catch (e: Exception) {
                 Log.e("CompanyProfileVM", "Error updating company", e)
                 _state.update {
@@ -326,7 +351,7 @@ class CompanyProfileScreenViewModel(
                         accessLevel = accessMode
                     )
 
-                    userViewModel.insert()
+                    CompanyContext.currentUserId = userViewModel.insert()
                 }
 
                 CompanyContext.currentCompanyId = companyId
