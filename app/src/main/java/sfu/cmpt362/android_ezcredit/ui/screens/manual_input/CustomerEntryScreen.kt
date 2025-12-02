@@ -17,7 +17,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
@@ -109,6 +108,7 @@ fun ViewEditCustomerScreen(
     var phone by rememberSaveable { mutableStateOf("") }
     var hasLoadedFromDb by rememberSaveable { mutableStateOf(false) }
 
+    // Load customer details from db
     if (!hasLoadedFromDb) {
         LaunchedEffect(customerId) {
             val selectedCustomer = viewModel.getCustomerById(customerId)

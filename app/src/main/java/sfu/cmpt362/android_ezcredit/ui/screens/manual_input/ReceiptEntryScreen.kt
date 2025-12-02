@@ -42,6 +42,9 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.Locale
 
+// Check the mode
+// Add Mode: add a new receipt to database
+// View Mode : view details and delete receipt
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -60,6 +63,7 @@ fun ReceiptEntryScreen(
     }
 }
 
+// Add mode
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -167,6 +171,7 @@ fun ReceiptAdd(
     )
 }
 
+// View mode
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -191,6 +196,7 @@ fun ReceiptViewScreen(
 
     val receipt by receiptViewModel.currentReceipt.collectAsState()
 
+    // Load from db
     LaunchedEffect(receiptId) {
         receiptId?.let { receiptViewModel.loadReceipt(it) }
     }
@@ -314,6 +320,7 @@ private fun SetupUI(
 
             if (title == "Receipt Information" && selectedInvoice != null) {
 
+                // PDF Generation
                 val companyRepository = remember {
                     val db = AppDatabase.getInstance(context)
                     CompanyRepository(db.companyDao)
@@ -352,7 +359,7 @@ private fun SetupUI(
         Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Invoice Number
+        // Receipt Number
         OutlinedTextField(
             value = receiptNumber,
             onValueChange = onReceiptNumberChange,
@@ -363,7 +370,7 @@ private fun SetupUI(
             modifier = Modifier.fillMaxWidth().height(60.dp)
         )
 
-        // Invoice Dropdown
+        // Receipt Dropdown
         ExposedDropdownMenuBox(
             expanded = showInvoiceDropdown && filteredInvoices.isNotEmpty(),
             onExpandedChange = { showInvoiceDropdown = it }

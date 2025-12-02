@@ -10,15 +10,16 @@ import sfu.cmpt362.android_ezcredit.data.repository.InvoiceRepository
 import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 import java.util.Calendar
 
+//Background Worker to mark invoices as overdue
 class OverdueInvoiceStatusWorker (context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         Log.d("OverdueInvoiceStatusWorker", "Starting nightly invoice status update")
 
         val database = AppDatabase.getInstance(applicationContext)
         val invoiceRepository = InvoiceRepository(database.invoiceDao)
-        
-        val allInvoices = invoiceRepository.invoices.first()
 
+        // Scans all invoices from db
+        val allInvoices = invoiceRepository.invoices.first()
         if (allInvoices.isEmpty()) {
             Log.d("OverdueInvoiceStatusWorker", "No invoices to process")
             return Result.success()
@@ -31,6 +32,7 @@ class OverdueInvoiceStatusWorker (context: Context, params: WorkerParameters) : 
             set(Calendar.MILLISECOND, 0)
         }
 
+        // Compares current date with invoice.dueDate and marks the unpaid invoices as past due
         val overdueInvoices = allInvoices.filter { invoice ->
             val dueDate = Calendar.getInstance().apply {
                 timeInMillis = invoice.dueDate.timeInMillis
@@ -49,6 +51,7 @@ class OverdueInvoiceStatusWorker (context: Context, params: WorkerParameters) : 
             invoiceRepository.update(invoice)
         }
 
+        // Update Daily summary
         saveSummaryData(overdueInvoices.size)
 
         return Result.success()

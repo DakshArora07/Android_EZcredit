@@ -39,6 +39,9 @@ import sfu.cmpt362.android_ezcredit.utils.BackgroundTaskSchedular
 import sfu.cmpt362.android_ezcredit.ui.screens.UserRole
 import sfu.cmpt362.android_ezcredit.utils.NetworkUtils
 
+// This is the main activity of the application. It verifies user login and
+// only launched the app upon verifying login. It does not allow to login if
+// phone is not connected to internet
 class MainActivity : ComponentActivity() {
 
     @SuppressLint("ViewModelConstructorInComposable")
@@ -56,7 +59,6 @@ class MainActivity : ComponentActivity() {
                 var showAddUserFromCompanyProfile by rememberSaveable { mutableStateOf(false) }
                 var isCheckingNetwork by rememberSaveable { mutableStateOf(true) }
                 var hasInternet by rememberSaveable { mutableStateOf(false) }
-
                 val context = LocalContext.current
                 val application = context.applicationContext as EZCreditApplication
                 val database = AppDatabase.getInstance(context)

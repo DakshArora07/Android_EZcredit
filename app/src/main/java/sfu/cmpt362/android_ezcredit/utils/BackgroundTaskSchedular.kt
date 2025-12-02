@@ -14,8 +14,8 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+// Schedules all the workers
 object BackgroundTaskSchedular {
-
     private const val TAG = "BackgroundTaskScheduler"
     private const val DAILY_SUMMARY_WORK_NAME = "daily_summary_work"
     private const val REMINDER_WORK_NAME = "invoice_reminder_work"
@@ -23,6 +23,7 @@ object BackgroundTaskSchedular {
     private const val OVERDUE_INVOICE_STATUS_UPDATE_WORK_NAME = "overdue_invoice_status_update_work"
     private const val PAID_INVOICE_STATUS_UPDATE_WORK_NAME = "paid_invoice_status_update_work"
 
+    // Daily Summary: Notification time set bu user in settings
     fun scheduleDailySummary(context: Context) {
         Log.d(TAG, "Scheduling daily summary")
 
@@ -92,6 +93,7 @@ object BackgroundTaskSchedular {
 
     }
 
+    // Invoice Reminder Emails: Email sending time selected by user in settings
     fun scheduleInvoiceReminders(context: Context) {
         Log.d(TAG, "Scheduling invoice reminders")
 
@@ -158,6 +160,7 @@ object BackgroundTaskSchedular {
         }
     }
 
+    // Runs at 12:02 am
     fun scheduleOverdueInvoiceWorker(context: Context) {
         Log.d(TAG, "Scheduling overdue invoice status updates")
 
@@ -198,6 +201,7 @@ object BackgroundTaskSchedular {
         }
     }
 
+    // Runs at 12:04 am
     fun schedulePaidInvoiceWorker(context: Context) {
         Log.d(TAG, "Scheduling paid invoice status updates")
 
@@ -239,6 +243,7 @@ object BackgroundTaskSchedular {
 
     }
 
+    // Runs at 12:06 am
     fun scheduleCreditScoreUpdate(context: Context) {
         Log.d(TAG, "Scheduling credit score updates")
 

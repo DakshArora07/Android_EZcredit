@@ -1,19 +1,12 @@
 package sfu.cmpt362.android_ezcredit.workers
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.os.Build
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.data.AppDatabase
 import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.repository.CompanyRepository
@@ -25,6 +18,7 @@ import sfu.cmpt362.android_ezcredit.utils.MailgunEmailService
 import java.text.SimpleDateFormat
 import java.util.*
 
+// Background Worker to send reminder emails for unpaid invoices
 class InvoiceReminderWorker(
     context: Context,
     params: WorkerParameters
@@ -37,8 +31,9 @@ class InvoiceReminderWorker(
         try {
             Log.d("InvoiceReminderWorker", "Worker started")
             resetDailySummary()
-
             Log.d("InvoiceReminderWorker", "initialining the MailgunEmailService()")
+
+            // Mailgun Email Service Instance
             val emailService = MailgunEmailService()
             Log.d("InvoiceReminderWorker", "DONE initialining the MailgunEmailService()")
 
@@ -47,6 +42,7 @@ class InvoiceReminderWorker(
             val customerRepository = CustomerRepository(database.customerDao)
             val companyRepository = CompanyRepository(database.companyDao)
 
+            // Scan all invoices
             val allInvoices = invoiceRepository.invoices.first()
             if (allInvoices.isEmpty()) {
                 Log.d("InvoiceReminderWorker", "No invoices to process")
@@ -68,6 +64,7 @@ class InvoiceReminderWorker(
             var emailsFailed = 0
             val failedEmails = mutableListOf<String>()
 
+            // Calculate difference between today and invoice.dueDate
             unpaidInvoices.forEach { invoice ->
                 val dueDate = Calendar.getInstance().apply {
                     time = invoice.dueDate.time
@@ -76,11 +73,10 @@ class InvoiceReminderWorker(
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
                 }
-
                 val daysDifference = ((today.timeInMillis - dueDate.timeInMillis) / (1000 * 60 * 60 * 24)).toInt()
-
                 Log.d("InvoiceReminderWorker", "Invoice #${invoice.invoiceNumber}: dueDate=$dueDate, daysDifference=$daysDifference")
 
+                // If invoices are due within two days or have been pastDue for last 30 days, send reminder
                 val shouldSendReminder = daysDifference in -2..30
 
                 if (shouldSendReminder) {
@@ -94,6 +90,7 @@ class InvoiceReminderWorker(
 
                     val companyName = companyRepository.getById(CompanyContext.currentCompanyId!!).name
 
+                    // Gemini generates an email body
                     val message = GeminiHelper.generateReminderMessage(
                         customerName = customer.name,
                         invoiceNumber = invoice.invoiceNumber,
@@ -105,6 +102,7 @@ class InvoiceReminderWorker(
                         invoiceURL =  invoice.url
                     )
 
+                    // email service sends the generated email
                     val result = emailService.sendEmail(
                         toEmail = customer.email,
                         subject = "Invoice #${invoice.invoiceNumber} Payment Reminder",
@@ -120,7 +118,7 @@ class InvoiceReminderWorker(
                     }
                 }
             }
-
+            // stats are updated accordingly
             saveSummaryData(emailsSent, emailsFailed, failedEmails)
             Log.d("InvoiceReminderWorker", "Worker finished successfully")
             Result.success()

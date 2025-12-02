@@ -12,6 +12,7 @@ import android.icu.util.Calendar
 import android.util.Log
 import sfu.cmpt362.android_ezcredit.data.repository.CustomerRepository
 
+// Background Worker to mark invoices as paid or late looking at the receipts table
 class PaidInvoiceStatusWorker (context: Context, params: WorkerParameters) : CoroutineWorker(context, params){
 
     companion object {
@@ -24,12 +25,14 @@ class PaidInvoiceStatusWorker (context: Context, params: WorkerParameters) : Cor
         val invoiceRepository = InvoiceRepository(database.invoiceDao)
         val customerRepository = CustomerRepository(database.customerDao)
 
+        // Scans all receipts from db
         val allReceipts = receiptRepository.receipts.first()
         Log.d(TAG, "Processing ${allReceipts.size} receipts")
 
         var paidCount = 0
         var lateCount = 0
 
+        // Marks the invoices paid or late according to today's date and invoice.dueDate
         allReceipts.forEach { receipt ->
             val invoice = invoiceRepository.getById(receipt.invoiceId)
             Log.d(TAG, "invoice status = ${invoice.status}")
@@ -59,6 +62,7 @@ class PaidInvoiceStatusWorker (context: Context, params: WorkerParameters) : Cor
             }
         }
 
+        // Update Daily Summary Dashboard
         saveSummaryData(paidCount, lateCount)
 
         return Result.success()

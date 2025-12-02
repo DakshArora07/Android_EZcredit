@@ -42,7 +42,6 @@ import sfu.cmpt362.android_ezcredit.ui.screens.manual_input.ReceiptEntryScreen
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.InvoiceScreenViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
-import sfu.cmpt362.android_ezcredit.utils.BackgroundTaskSchedular
 
 data class Screen(
     val route: String,
@@ -215,7 +214,7 @@ fun NavigationHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = "analytics",
+        startDestination = "settings",
         modifier = modifier,
     ) {
         composable("customers") {

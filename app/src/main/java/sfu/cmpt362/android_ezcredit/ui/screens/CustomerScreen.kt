@@ -58,6 +58,7 @@ fun CustomerScreen(
     var isReceipts by remember { mutableStateOf<Boolean?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
+    // Check if user ihas access to this screen
     LaunchedEffect(Unit) {
         val currentUserId = CompanyContext.currentUserId
         if (currentUserId != null) {

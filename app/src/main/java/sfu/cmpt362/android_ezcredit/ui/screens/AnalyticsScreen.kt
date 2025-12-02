@@ -31,7 +31,6 @@ import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModelFactory
 import sfu.cmpt362.android_ezcredit.ui.theme.*
-import sfu.cmpt362.android_ezcredit.ui.viewmodel.DailySummaryScreenViewModel
 import sfu.cmpt362.android_ezcredit.utils.AccessMode
 import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
 import java.text.NumberFormat
@@ -83,6 +82,7 @@ fun AnalyticsScreen(
     var isAdmin by remember { mutableStateOf<Boolean?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
+    // Check if current user has access to this screen
     LaunchedEffect(Unit) {
         val currentUserId = CompanyContext.currentUserId
         if (currentUserId != null) {

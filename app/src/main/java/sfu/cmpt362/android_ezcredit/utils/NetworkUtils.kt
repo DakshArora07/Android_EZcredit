@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
+// Check internet connection
+// Code written with AI help
 object NetworkUtils {
     private const val TAG = "NetworkUtils"
 
@@ -62,10 +64,7 @@ object NetworkUtils {
             .build()
 
         connectivityManager.registerNetworkCallback(request, callback)
-
-        // Send initial state
         trySend(isNetworkAvailable(context))
-
         awaitClose {
             Log.d(TAG, "Unregistering network callback")
             connectivityManager.unregisterNetworkCallback(callback)
