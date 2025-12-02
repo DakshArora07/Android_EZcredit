@@ -47,8 +47,7 @@ exports.stripeWebhook = https.onRequest(
       let event;
 
       try {
-        event =
-        stripeLib(process.env.STRIPE_WEBHOOK_SECRET)
+        event = stripeLib(process.env.STRIPE_WEBHOOK_SECRET)
             .webhooks.constructEvent(
                 req.rawBody,
                 sig,
@@ -65,21 +64,42 @@ exports.stripeWebhook = https.onRequest(
         const invoiceId = parseInt(session.metadata.invoice_id || "0");
         const companyId = parseInt(session.metadata.company_id || "0");
 
-        if (invoiceNumber && invoiceId) {
-          // ✅ YOUR Receipt format exactly!
-          await admin.database()
-              .ref(`companies/${companyId}/data/receipts`)
-              .push({
-                receiptNumber: `AUTO_REC_${invoiceNumber}`,
-                receiptDate: admin.database.ServerValue.TIMESTAMP,
-                invoiceId: invoiceId,
-                lastModified: admin.database.ServerValue.TIMESTAMP,
-                isDeleted: false,
-              });
+        if (invoiceNumber && invoiceId && companyId) {
+          const db = admin.database();
+          const companyRootRef =
+            db.ref(`companies/${companyId}/data`);
+          const counterRef = companyRootRef.child("receiptCounter");
+          const receiptsRef = companyRootRef.child("receipts");
 
-          console.log(
-              `Receipt AUTO_REC_${invoiceNumber} created, invoice ${invoiceId}`,
-          );
+          try {
+            const nextId = await counterRef.transaction((current) => {
+              if (current === null || current < 700000) {
+                return 700001;
+              }
+              return current + 1;
+            }).then((result) => {
+              if (!result.committed) {
+                throw new Error("Counter transaction not committed");
+              }
+              return result.snapshot.val();
+            });
+
+            await receiptsRef.push({
+              id: nextId,
+              receiptNumber: `AUTO_REC_${invoiceNumber}`,
+              receiptDate: admin.database.ServerValue.TIMESTAMP,
+              invoiceId: invoiceId,
+              lastModified: admin.database.ServerValue.TIMESTAMP,
+              isDeleted: false,
+            });
+
+            console.log(
+                `✅ Receipt ${nextId} AUTO_REC_${invoiceNumber} created ` +
+                `for invoice ${invoiceId} (company ${companyId})`,
+            );
+          } catch (e) {
+            console.error("Failed to create auto receipt:", e);
+          }
         }
       }
 

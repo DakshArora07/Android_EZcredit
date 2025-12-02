@@ -330,19 +330,26 @@ class SyncManager(
     private suspend fun processReceipts(snapshot: DataSnapshot) {
         snapshot.children.forEach { snap ->
             try {
-                val id = snap.child("id").getValue(Long::class.java) ?: return@forEach
-                val receiptNumber = snap.child("receiptNumber").getValue(String::class.java) ?: ""
-                val receiptDateMillis = snap.child("receiptDate").getValue(Long::class.java) ?: 0L
+                val id = snap.child("id").getValue(Long::class.java) ?: run {
+                    Log.w(TAG, "Skipping receipt without numeric id: key=${snap.key}")
+                    return@forEach
+                }
 
-                // FIX: Changed from "invoiceID" to "invoiceId" to match what ReceiptRepository writes
-                val invoiceId = snap.child("invoiceId").getValue(Long::class.java) ?: 0L
+                val receiptNumber =
+                    snap.child("receiptNumber").getValue(String::class.java) ?: ""
+                val receiptDateMillis =
+                    snap.child("receiptDate").getValue(Long::class.java) ?: 0L
 
-                val lastModified = snap.child("lastModified").getValue(Long::class.java) ?: 0L
-                val isDeleted = snap.child("isDeleted").getValue(Boolean::class.java) ?: false
+                val invoiceId =
+                    snap.child("invoiceId").getValue(Long::class.java) ?: 0L
+
+                val lastModified =
+                    snap.child("lastModified").getValue(Long::class.java) ?: 0L
+                val isDeleted =
+                    snap.child("isDeleted").getValue(Boolean::class.java) ?: false
 
                 Log.d(TAG, "Processing receipt $id with invoiceId: $invoiceId")
 
-                // Verify invoice exists before inserting receipt
                 val invoiceExists = invoiceDao.getInvoiceByIdOrNull(invoiceId) != null
                 if (!invoiceExists && invoiceId != 0L) {
                     Log.w(TAG, "Skipping receipt $id: invoice $invoiceId not found")
@@ -367,7 +374,10 @@ class SyncManager(
                                 isDeleted = isDeleted
                             )
                         )
-                        Log.d(TAG, "Upserted receipt $id: $receiptNumber for invoice $invoiceId")
+                        Log.d(
+                            TAG,
+                            "Upserted receipt $id: $receiptNumber for invoice $invoiceId"
+                        )
                     }
                 }
             } catch (e: Exception) {
@@ -377,7 +387,6 @@ class SyncManager(
     }
 
     // Helper functions
-
     private suspend fun com.google.firebase.database.DatabaseReference.awaitSingleValue(): DataSnapshot =
         suspendCancellableCoroutine { cont ->
             val listener = object : ValueEventListener {
