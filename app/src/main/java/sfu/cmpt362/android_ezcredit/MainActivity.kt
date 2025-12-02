@@ -25,6 +25,7 @@ import sfu.cmpt362.android_ezcredit.data.viewmodel.CompanyViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModel
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModel
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModelFactory
+import sfu.cmpt362.android_ezcredit.utils.BackgroundTaskSchedular
 
 class MainActivity : ComponentActivity() {
 
@@ -63,6 +64,7 @@ class MainActivity : ComponentActivity() {
                     )
                 )
 
+                val companyViewModel: CompanyProfileScreenViewModel = viewModel()
                 when {
                     isLoggedIn -> {
                         NavigationDrawerScreen()
@@ -86,6 +88,7 @@ class MainActivity : ComponentActivity() {
                             onCancel = { showCompanyProfile = false },
                             onSave = {
                                 showCompanyProfile = false
+                            onSave = { showCompanyProfile = false
                                 isLoggedIn = true
                             },
                             onAddUser = { showUserProfile = true }
@@ -96,6 +99,15 @@ class MainActivity : ComponentActivity() {
                             onLoginSuccess = { isLoggedIn = true },
                             onCreateCompany = { showCompanyProfile = true },
                             application = application
+                            onLoginSuccess = {
+                                isLoggedIn = true
+
+                                BackgroundTaskSchedular.scheduleOverdueInvoiceWorker(this)
+                                BackgroundTaskSchedular.schedulePaidInvoiceWorker(this)
+                                BackgroundTaskSchedular.scheduleCreditScoreUpdate(this)
+                                BackgroundTaskSchedular.rescheduleAllEnabledTasks(this)
+                            },
+                            onCreateCompany = { showCompanyProfile = true }
                         )
                     }
                 }

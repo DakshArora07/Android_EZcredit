@@ -7,6 +7,8 @@ object PreferenceManager {
 
     private const val PREF_NAME = "app_settings"
     private const val KEY_INVOICE_REMINDER = "invoice_reminder_enabled"
+
+    private const val KEY_DAILY_SUMMARY = "daily_summary_enabled"
     private const val KEY_REMINDER_TIME_HOUR = "invoice_reminder_hour"
     private const val KEY_SUMMARY_TIME_HOUR = "summary_time_hour"
     private const val KEY_REMINDER_TIME_MIN = "invoice_reminder_min"
@@ -21,6 +23,19 @@ object PreferenceManager {
         }
     }
 
+    fun isInvoiceReminderEnabled(context: Context) : Boolean {
+        return prefs(context).getBoolean(KEY_INVOICE_REMINDER, false)
+    }
+
+    fun setDailySummaryEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit {
+            putBoolean(KEY_DAILY_SUMMARY, enabled)
+        }
+    }
+
+    fun isDailySummaryEnabled(context: Context) : Boolean {
+        return prefs(context).getBoolean(KEY_DAILY_SUMMARY, false)
+    }
     fun setInvoiceReminderHour(context: Context, hour: Int) {
         prefs(context).edit {
             putInt(KEY_REMINDER_TIME_HOUR, hour)
@@ -29,10 +44,6 @@ object PreferenceManager {
 
     fun getInvoiceReminderHour(context: Context): Int {
         return prefs(context).getInt(KEY_REMINDER_TIME_HOUR, 9) // default 9 AM
-    }
-
-    fun isInvoiceReminderEnabled(context: Context) : Boolean {
-        return prefs(context).getBoolean(KEY_INVOICE_REMINDER, true)
     }
 
     fun getSummaryReminderHour(context: Context): Int {

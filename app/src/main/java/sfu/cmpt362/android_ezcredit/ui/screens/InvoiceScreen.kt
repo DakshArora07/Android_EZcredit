@@ -722,7 +722,7 @@ fun InvoiceCard(invoice: Invoice, customerName: String = "Unknown", onClick: () 
                     InvoiceStatus.Paid -> MaterialTheme.colorScheme.primaryContainer
                     InvoiceStatus.Unpaid -> MaterialTheme.colorScheme.secondaryContainer
                     InvoiceStatus.PastDue -> MaterialTheme.colorScheme.errorContainer
-                    else -> MaterialTheme.colorScheme.surfaceVariant
+                    InvoiceStatus.LatePayment-> MaterialTheme.colorScheme.errorContainer
                 }
             ) {
                 Text(
@@ -736,7 +736,7 @@ fun InvoiceCard(invoice: Invoice, customerName: String = "Unknown", onClick: () 
                         InvoiceStatus.Paid -> MaterialTheme.colorScheme.onPrimaryContainer
                         InvoiceStatus.Unpaid -> MaterialTheme.colorScheme.onSecondaryContainer
                         InvoiceStatus.PastDue -> MaterialTheme.colorScheme.onErrorContainer
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        InvoiceStatus.LatePayment -> MaterialTheme.colorScheme.onErrorContainer
                     }
                 )
             }

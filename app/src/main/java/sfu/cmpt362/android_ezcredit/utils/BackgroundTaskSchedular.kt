@@ -23,20 +23,6 @@ object BackgroundTaskSchedular {
     private const val OVERDUE_INVOICE_STATUS_UPDATE_WORK_NAME = "overdue_invoice_status_update_work"
     private const val PAID_INVOICE_STATUS_UPDATE_WORK_NAME = "paid_invoice_status_update_work"
 
-    fun initializeAllTasks(context: Context) {
-
-        scheduleOverdueInvoiceWorker(context)
-        schedulePaidInvoiceWorker(context)
-        scheduleCreditScoreUpdate(context)
-        if (PreferenceManager.isInvoiceReminderEnabled(context)) {
-            scheduleInvoiceReminders(context)
-        } else {
-            cancelInvoiceReminders(context)
-        }
-        scheduleDailySummary(context)
-        checkWorkStatus(context)
-    }
-
     fun scheduleDailySummary(context: Context) {
         Log.d(TAG, "Scheduling daily summary")
 
@@ -58,11 +44,51 @@ object BackgroundTaskSchedular {
             .addTag("credit_score_update")
             .build()
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        val workManager = WorkManager.getInstance(context)
+        workManager.enqueueUniquePeriodicWork(
             DAILY_SUMMARY_WORK_NAME,
             ExistingPeriodicWorkPolicy.REPLACE,
             summaryWork
         )
+
+        val summaryWorkInfos = workManager.getWorkInfosForUniqueWork(DAILY_SUMMARY_WORK_NAME)
+        summaryWorkInfos.get().forEach { workInfo ->
+            val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                .format(Date(workInfo.nextScheduleTimeMillis))
+
+            Log.d(TAG, """
+                    ====================================
+                    Daily Summary Work Status:
+                    State: ${workInfo.state}
+                    Next run: $nextRunTime
+                    Run attempt: ${workInfo.runAttemptCount}
+                    Tags: ${workInfo.tags}
+                    ====================================
+                """.trimIndent())
+        }
+
+    }
+
+    fun cancelDailySummary(context: Context) {
+        Log.d(TAG, "Cancelling daily summary status updates")
+
+        val workManager = WorkManager.getInstance(context)
+        workManager.cancelUniqueWork(DAILY_SUMMARY_WORK_NAME)
+        val summaryWorkInfos = workManager.getWorkInfosForUniqueWork(DAILY_SUMMARY_WORK_NAME)
+        summaryWorkInfos.get().forEach { workInfo ->
+            val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                .format(Date(workInfo.nextScheduleTimeMillis))
+
+            Log.d(TAG, """
+                    ====================================
+                    Daily Summary Work Status:
+                    State: ${workInfo.state}
+                    Next run: $nextRunTime
+                    Run attempt: ${workInfo.runAttemptCount}
+                    Tags: ${workInfo.tags}
+                    ====================================
+                """.trimIndent())
+        }
 
     }
 
@@ -86,16 +112,50 @@ object BackgroundTaskSchedular {
             .addTag("invoice_reminders")
             .build()
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        val workManager = WorkManager.getInstance(context)
+        workManager.enqueueUniquePeriodicWork(
             REMINDER_WORK_NAME,
             ExistingPeriodicWorkPolicy.REPLACE,
             reminderWork
         )
+
+        val reminderWorkInfos = workManager.getWorkInfosForUniqueWork(REMINDER_WORK_NAME)
+        reminderWorkInfos.get().forEach { workInfo ->
+            val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                .format(Date(workInfo.nextScheduleTimeMillis))
+
+            Log.d(TAG, """
+                    ====================================
+                    Invoice Reminder Work Status:
+                    State: ${workInfo.state}
+                    Next run: $nextRunTime
+                    Run attempt: ${workInfo.runAttemptCount}
+                    Tags: ${workInfo.tags}
+                    ====================================
+                """.trimIndent())
+        }
     }
 
     fun cancelInvoiceReminders(context: Context) {
         Log.d(TAG, "Cancelling invoice reminders")
-        WorkManager.getInstance(context).cancelUniqueWork(REMINDER_WORK_NAME)
+
+        val workManager = WorkManager.getInstance(context)
+        workManager.cancelUniqueWork(REMINDER_WORK_NAME)
+        val reminderWorkInfos = workManager.getWorkInfosForUniqueWork(REMINDER_WORK_NAME)
+        reminderWorkInfos.get().forEach { workInfo ->
+            val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                .format(Date(workInfo.nextScheduleTimeMillis))
+
+            Log.d(TAG, """
+                    ====================================
+                    Invoice Reminder Work Status:
+                    State: ${workInfo.state}
+                    Next run: $nextRunTime
+                    Run attempt: ${workInfo.runAttemptCount}
+                    Tags: ${workInfo.tags}
+                    ====================================
+                """.trimIndent())
+        }
     }
 
     fun scheduleOverdueInvoiceWorker(context: Context) {
@@ -116,11 +176,26 @@ object BackgroundTaskSchedular {
             .addTag("overdue_invoice_status_update")
             .build()
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        val workManager = WorkManager.getInstance(context)
+        workManager.enqueueUniquePeriodicWork(
             OVERDUE_INVOICE_STATUS_UPDATE_WORK_NAME,
             ExistingPeriodicWorkPolicy.REPLACE,
             overdueInvoiceStatusWorker
         )
+        val overdueInvoiceStatusWorkerInfos = workManager.getWorkInfosForUniqueWork(OVERDUE_INVOICE_STATUS_UPDATE_WORK_NAME)
+        overdueInvoiceStatusWorkerInfos.get().forEach { workInfo ->
+            val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                .format(Date(workInfo.nextScheduleTimeMillis))
+            Log.d(TAG, """
+                    ====================================
+                    Overdue Invoice Status Work Status:
+                    State: ${workInfo.state}
+                    Next run: $nextRunTime
+                    Run attempt: ${workInfo.runAttemptCount}
+                    Tags: ${workInfo.tags}
+                    ====================================
+                    """.trimIndent())
+        }
     }
 
     fun schedulePaidInvoiceWorker(context: Context) {
@@ -141,11 +216,26 @@ object BackgroundTaskSchedular {
             .addTag("paid_invoice_status_update")
             .build()
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        val workManager = WorkManager.getInstance(context)
+        workManager.enqueueUniquePeriodicWork(
             PAID_INVOICE_STATUS_UPDATE_WORK_NAME,
             ExistingPeriodicWorkPolicy.REPLACE,
             paidInvoiceStatusWorker
         )
+        val paidInvoiceStatusWorkerInfos = workManager.getWorkInfosForUniqueWork(PAID_INVOICE_STATUS_UPDATE_WORK_NAME)
+        paidInvoiceStatusWorkerInfos.get().forEach { workInfo ->
+            val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                .format(Date(workInfo.nextScheduleTimeMillis))
+            Log.d(TAG, """
+                    ====================================
+                    Paid Invoice Status Work Status:
+                    State: ${workInfo.state}
+                    Next run: $nextRunTime
+                    Run attempt: ${workInfo.runAttemptCount}
+                    Tags: ${workInfo.tags}
+                    ====================================
+                    """.trimIndent())
+        }
 
     }
 
@@ -167,11 +257,43 @@ object BackgroundTaskSchedular {
             .addTag("credit_score_update")
             .build()
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        val workManager = WorkManager.getInstance(context)
+        workManager.enqueueUniquePeriodicWork(
             CREDIT_SCORE_UPDATE_WORK_NAME,
             ExistingPeriodicWorkPolicy.REPLACE,
             creditScoreUpdateWork
         )
+        val creditScoreWorkInfos =
+            workManager.getWorkInfosForUniqueWork(CREDIT_SCORE_UPDATE_WORK_NAME)
+        creditScoreWorkInfos.get().forEach { workInfo ->
+            val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                .format(Date(workInfo.nextScheduleTimeMillis))
+
+            Log.d(TAG, """
+                    ====================================
+                    Credit Score Work Status:
+                    State: ${workInfo.state}
+                    Next run: $nextRunTime
+                    Run attempt: ${workInfo.runAttemptCount}
+                    Tags: ${workInfo.tags}
+                    ====================================
+                """.trimIndent())
+        }
+    }
+
+    fun rescheduleAllEnabledTasks(context: Context) {
+        Log.d(TAG, "Rescheduling all enabled tasks on app startup")
+
+        // Check preferences and reschedule accordingly
+        if (PreferenceManager.isInvoiceReminderEnabled(context)) {
+            Log.d(TAG, "Invoice reminders were enabled - rescheduling")
+            scheduleInvoiceReminders(context)
+        }
+
+        if (PreferenceManager.isDailySummaryEnabled(context)) {
+            Log.d(TAG, "Daily summary was enabled - rescheduling")
+            scheduleDailySummary(context)
+        }
     }
 
     private fun calculateInitialDelay(targetHour: Int, targetMinute: Int): Long {
@@ -184,92 +306,5 @@ object BackgroundTaskSchedular {
             if (before(now)) add(Calendar.DAY_OF_MONTH, 1)
         }
         return target.timeInMillis - now.timeInMillis
-    }
-
-    fun checkWorkStatus(context: Context) {
-        val workManager = WorkManager.getInstance(context)
-
-        try {
-            val overdueInvoiceStatusWorkerInfos = workManager.getWorkInfosForUniqueWork(OVERDUE_INVOICE_STATUS_UPDATE_WORK_NAME)
-            overdueInvoiceStatusWorkerInfos.get().forEach { workInfo ->
-                val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                    .format(Date(workInfo.nextScheduleTimeMillis))
-                Log.d(TAG, """
-                    ====================================
-                    Overdue Invoice Status Work Status:
-                    State: ${workInfo.state}
-                    Next run: $nextRunTime
-                    Run attempt: ${workInfo.runAttemptCount}
-                    Tags: ${workInfo.tags}
-                    ====================================
-                    """.trimIndent())
-            }
-
-            val paidInvoiceStatusWorkerInfos = workManager.getWorkInfosForUniqueWork(PAID_INVOICE_STATUS_UPDATE_WORK_NAME)
-            paidInvoiceStatusWorkerInfos.get().forEach { workInfo ->
-                val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                    .format(Date(workInfo.nextScheduleTimeMillis))
-                Log.d(TAG, """
-                    ====================================
-                    Paid Invoice Status Work Status:
-                    State: ${workInfo.state}
-                    Next run: $nextRunTime
-                    Run attempt: ${workInfo.runAttemptCount}
-                    Tags: ${workInfo.tags}
-                    ====================================
-                    """.trimIndent())
-            }
-            val creditScoreWorkInfos =
-                workManager.getWorkInfosForUniqueWork(CREDIT_SCORE_UPDATE_WORK_NAME)
-            creditScoreWorkInfos.get().forEach { workInfo ->
-                val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                    .format(Date(workInfo.nextScheduleTimeMillis))
-
-                Log.d(TAG, """
-                    ====================================
-                    Credit Score Work Status:
-                    State: ${workInfo.state}
-                    Next run: $nextRunTime
-                    Run attempt: ${workInfo.runAttemptCount}
-                    Tags: ${workInfo.tags}
-                    ====================================
-                """.trimIndent())
-            }
-
-            val reminderWorkInfos = workManager.getWorkInfosForUniqueWork(REMINDER_WORK_NAME)
-            reminderWorkInfos.get().forEach { workInfo ->
-                val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                    .format(Date(workInfo.nextScheduleTimeMillis))
-
-                Log.d(TAG, """
-                    ====================================
-                    Invoice Reminder Work Status:
-                    State: ${workInfo.state}
-                    Next run: $nextRunTime
-                    Run attempt: ${workInfo.runAttemptCount}
-                    Tags: ${workInfo.tags}
-                    ====================================
-                """.trimIndent())
-            }
-
-            val summaryWorkInfos = workManager.getWorkInfosForUniqueWork(DAILY_SUMMARY_WORK_NAME)
-            summaryWorkInfos.get().forEach { workInfo ->
-                val nextRunTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                    .format(Date(workInfo.nextScheduleTimeMillis))
-
-                Log.d(TAG, """
-                    ====================================
-                    Daily Summary Work Status:
-                    State: ${workInfo.state}
-                    Next run: $nextRunTime
-                    Run attempt: ${workInfo.runAttemptCount}
-                    Tags: ${workInfo.tags}
-                    ====================================
-                """.trimIndent())
-            }
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Error checking work status: ${e.message}")
-        }
     }
 }

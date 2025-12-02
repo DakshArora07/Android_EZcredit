@@ -18,6 +18,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -70,7 +71,6 @@ fun AddInvoiceScreen(
     var amountText by rememberSaveable { mutableStateOf("") }
     var localIssueDate by rememberSaveable { mutableStateOf(invoiceViewModel.invoice.invDate) }
     var localDueDate by rememberSaveable { mutableStateOf(invoiceViewModel.invoice.dueDate) }
-    var selectedStatus by rememberSaveable { mutableStateOf(invoiceViewModel.invoice.status) }
     var customerSearchQuery by rememberSaveable { mutableStateOf("") }
 
     val customers by customerViewModel.customersLiveData.observeAsState(emptyList())
@@ -110,8 +110,6 @@ fun AddInvoiceScreen(
         onDueDateChange = { localDueDate = it },
         amountText = amountText,
         onAmountChange = { amountText = it },
-        selectedStatus = selectedStatus,
-        onStatusChange = { selectedStatus = it },
         isEditable = true,
         showEditButton = false,
         showDeleteButton = false,
@@ -131,14 +129,25 @@ fun AddInvoiceScreen(
                 Toast.makeText(context, "Amount must be a number", Toast.LENGTH_SHORT).show()
                 return@SetupUIViews
             }
+
+            val today = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val calculatedStatus = if (localDueDate.before(today)) {
+                InvoiceStatus.PastDue
+            } else {
+                InvoiceStatus.Unpaid
+            }
+
             invoiceViewModel.updateAmountText(amountText)
             invoiceViewModel.updateInvoice(0, invoiceNumber, selectedCustomer.id,
-                localIssueDate, localDueDate, amount, selectedStatus)
+                localIssueDate, localDueDate, amount, calculatedStatus)
             invoiceViewModel.insert()
 
-            val updatedCredit = if (selectedStatus == InvoiceStatus.Unpaid || selectedStatus == InvoiceStatus.PastDue) {
-                selectedCustomer.credit + amount
-            } else selectedCustomer.credit
+            val updatedCredit = selectedCustomer.credit + amount
 
             customerViewModel.update(selectedCustomer.copy(
                 credit = updatedCredit))
@@ -170,7 +179,6 @@ fun ViewEditInvoiceScreen(
     var invoice by remember { mutableStateOf<Invoice?>(null) }
     var invoiceNumber by rememberSaveable { mutableStateOf("") }
     var amountText by rememberSaveable { mutableStateOf("") }
-    var selectedStatus: InvoiceStatus by rememberSaveable { mutableStateOf(InvoiceStatus.Unpaid)}
     var localIssueDate by rememberSaveable { mutableStateOf(Calendar.getInstance()) }
     var localDueDate by rememberSaveable { mutableStateOf(Calendar.getInstance()) }
     var customerSearchQuery by rememberSaveable { mutableStateOf("") }
@@ -184,7 +192,6 @@ fun ViewEditInvoiceScreen(
             invoice = fetchedInvoice
             invoiceNumber = fetchedInvoice.invoiceNumber
             amountText = fetchedInvoice.amount.toString()
-            selectedStatus = fetchedInvoice.status
             localIssueDate = fetchedInvoice.invDate
             localDueDate = fetchedInvoice.dueDate
 
@@ -221,8 +228,6 @@ fun ViewEditInvoiceScreen(
         onDueDateChange = { localDueDate = it },
         amountText = amountText,
         onAmountChange = { amountText = it },
-        selectedStatus = selectedStatus,
-        onStatusChange = { selectedStatus = it },
         isEditable = allowToEdit,
         showEditButton = true,
         onEditToggle = { allowToEdit = !allowToEdit },
@@ -240,14 +245,29 @@ fun ViewEditInvoiceScreen(
                 return@SetupUIViews
             }
 
+            val today = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val oldStatus = invoice?.status ?: InvoiceStatus.Unpaid
+            val calculatedStatus = if (oldStatus == InvoiceStatus.Paid || oldStatus == InvoiceStatus.LatePayment) {
+                oldStatus
+            } else if (localDueDate.before(today)) {
+                InvoiceStatus.PastDue
+            } else {
+                InvoiceStatus.Unpaid
+            }
+
             val oldAmount = invoice?.amount ?: 0.0
             val amountDifference = newAmount - oldAmount
-            if ((selectedStatus == InvoiceStatus.Unpaid || selectedStatus == InvoiceStatus.PastDue) && amountDifference != 0.0) {
+            if ((calculatedStatus == InvoiceStatus.Unpaid || calculatedStatus == InvoiceStatus.PastDue) && amountDifference != 0.0) {
                 customerViewModel.update(selectedCustomer.copy(credit = selectedCustomer.credit + amountDifference))
             }
 
             invoiceViewModel.updateInvoice(invoiceId, invoiceNumber, selectedCustomer.id,
-                localIssueDate, localDueDate, newAmount, selectedStatus)
+                localIssueDate, localDueDate, newAmount, calculatedStatus)
             invoiceViewModel.update()
             Toast.makeText(context, "Invoice updated", Toast.LENGTH_SHORT).show()
             onBack()
@@ -285,8 +305,6 @@ private fun SetupUIViews(
     onDueDateChange: (Calendar) -> Unit,
     amountText: String,
     onAmountChange: (String) -> Unit,
-    selectedStatus: InvoiceStatus,
-    onStatusChange: (InvoiceStatus) -> Unit,
     isEditable: Boolean,
     showEditButton: Boolean,
     onEditToggle: () -> Unit = {},
@@ -297,7 +315,6 @@ private fun SetupUIViews(
 ) {
     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     var showCustomerDropdown by rememberSaveable { mutableStateOf(false) }
-    var expandedStatus by rememberSaveable { mutableStateOf(false) }
     var showIssueDatePicker by rememberSaveable { mutableStateOf(false) }
     var showDueDatePicker by rememberSaveable { mutableStateOf(false) }
 
@@ -325,25 +342,50 @@ private fun SetupUIViews(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(title, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
-                Button(onClick = onEditToggle, shape = MaterialTheme.shapes.medium) {
-                    Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = {
+                            val today = Calendar.getInstance().apply {
+                                set(Calendar.HOUR_OF_DAY, 0)
+                                set(Calendar.MINUTE, 0)
+                                set(Calendar.SECOND, 0)
+                                set(Calendar.MILLISECOND, 0)
+                            }
+                            val displayStatus = if (localDueDate.before(today)) {
+                                InvoiceStatus.PastDue
+                            } else {
+                                InvoiceStatus.Unpaid
+                            }
+                            PdfUtils.generateInvoicePdf(
+                                context = context,
+                                invoiceNumber = invoiceNumber,
+                                customerName = selectedCustomer?.name ?: "Unknown",
+                                amount = amountText,
+                                issueDate = localIssueDate.time.toString(),
+                                dueDate = localDueDate.time.toString(),
+                                status = displayStatus.name
+                            )
+                        },
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Generate PDF")
+                    }
+
+                    Button(
+                        onClick = onEditToggle,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null)
+                    }
                 }
             }
+
         } else {
             Text(title, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
-        }
-        Button(onClick = {
-            PdfUtils.generateInvoicePdf(
-                context = context,
-                invoiceNumber = invoiceNumber,
-                customerName = selectedCustomer?.name ?: "Unknown",
-                amount = amountText,
-                issueDate = localIssueDate.time.toString(),
-                dueDate = localDueDate.time.toString(),
-                status = selectedStatus.name
-            )
-        }){
-            Text("Generate PDF", style = MaterialTheme.typography.titleMedium)
         }
 
         Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -408,7 +450,6 @@ private fun SetupUIViews(
             }
         }
 
-        // Dates
         DateField("Issue Date", localIssueDate, dateFormat, isEditable) { showIssueDatePicker = true }
         DateField("Due Date", localDueDate, dateFormat, isEditable) { showDueDatePicker = true }
 
@@ -423,46 +464,6 @@ private fun SetupUIViews(
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
-
-        if (!isEditMode){
-            // Status Dropdown
-            ExposedDropdownMenuBox(
-                expanded = expandedStatus,
-                onExpandedChange = { expandedStatus = it }
-            ) {
-                OutlinedTextField(
-                    value = selectedStatus.name,
-                    onValueChange = {},
-                    enabled = isEditable,
-                    readOnly = true,
-                    label = { Text("Status") },
-                    leadingIcon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
-                    trailingIcon = {
-                        IconButton(onClick = { expandedStatus = !expandedStatus }) {
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().menuAnchor()
-                )
-                ExposedDropdownMenu(
-                    expanded = expandedStatus,
-                    onDismissRequest = { expandedStatus = false }
-                ) {
-                    InvoiceStatus.entries.forEach { status ->
-                        DropdownMenuItem(
-                            text = { Text(status.name) },
-                            onClick = {
-                                onStatusChange(status)
-                                expandedStatus = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-        }
-
         // Buttons
         Button(onClick = onSave, modifier = Modifier.fillMaxWidth().height(56.dp)) {
             Text("Save Invoice", style = MaterialTheme.typography.titleMedium)
@@ -526,15 +527,21 @@ private fun DatePickerDialog(
         confirmButton = {
             TextButton(onClick = {
                 state.selectedDateMillis?.let { millis ->
-                    val selectedCalender =millisUtcToLocalDate(millis).toLocalMidnightCalendar()
-                    if(forIssueDate){
-                        onDateChange(selectedCalender)
-                    }
-                    if(!forIssueDate && localIssueDate!=null){
-                        if(selectedCalender.before(localIssueDate)){
+                    val selectedCalender = millisUtcToLocalDate(millis).toLocalMidnightCalendar()
+
+                    if (forIssueDate) {
+                        if (selectedCalender.after(Calendar.getInstance())) {
+                            Toast.makeText(context, "Issue date cannot be in the future", Toast.LENGTH_SHORT).show()
+                            state.selectedDateMillis = Calendar.getInstance().toUtcStartOfDayMillis()
+                        } else {
+                            onDateChange(selectedCalender)
+                        }
+
+                    } else if (localIssueDate != null) {
+                        if (selectedCalender.before(localIssueDate)) {
                             Toast.makeText(context, "Due date cannot be earlier than issue date", Toast.LENGTH_SHORT).show()
                             state.selectedDateMillis = localIssueDate.toUtcStartOfDayMillis()
-                        }else{
+                        } else {
                             onDateChange(selectedCalender)
                         }
                     }
@@ -543,7 +550,8 @@ private fun DatePickerDialog(
             }) {
                 Text("OK")
             }
-        },
+        }
+        ,
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Cancel")

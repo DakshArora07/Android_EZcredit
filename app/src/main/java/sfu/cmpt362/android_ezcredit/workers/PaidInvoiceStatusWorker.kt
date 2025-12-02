@@ -5,7 +5,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.flow.first
 import sfu.cmpt362.android_ezcredit.data.AppDatabase
-import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.repository.InvoiceRepository
 import sfu.cmpt362.android_ezcredit.data.repository.ReceiptRepository
 import sfu.cmpt362.android_ezcredit.utils.InvoiceStatus
