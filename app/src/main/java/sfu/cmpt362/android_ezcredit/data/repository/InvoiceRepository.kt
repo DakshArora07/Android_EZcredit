@@ -25,10 +25,11 @@ class InvoiceRepository(private val invoiceDao: InvoiceDao) {
     fun insert(invoice: Invoice){
         CoroutineScope(IO).launch{
             val ts = System.currentTimeMillis()
-            val url = createPaymentLink(invoice.invoiceNumber, invoice.amount)
-            val toInsert = invoice.copy(url = url, lastModified = ts, isDeleted = false)
+            val toInsert = invoice.copy(lastModified = ts, isDeleted = false)
             val newId = invoiceDao.insertInvoice(toInsert)
-            val finalInv = toInsert.copy(id = newId)
+            val url = createPaymentLink(newId,invoice.invoiceNumber, invoice.amount)
+            val finalInv = toInsert.copy(id = newId, url = url)
+            invoiceDao.updateInvoice(finalInv)
             pushToFirebase(finalInv)
         }
     }
@@ -82,11 +83,13 @@ class InvoiceRepository(private val invoiceDao: InvoiceDao) {
         }
     }
 
-    suspend fun createPaymentLink(invoiceNumber: String, amount: Double): String {
+    suspend fun createPaymentLink(invoiceId: Long, invoiceNumber: String, amount: Double): String {
         return try {
             val data = hashMapOf(
                 "invoiceNumber" to invoiceNumber,
-                "amount" to (amount * 100).toLong()
+                "amount" to (amount * 100).toLong(),
+                "companyId" to CompanyContext.currentCompanyId,
+                "invoiceId" to invoiceId
             )
             val response = Firebase.functions
                 .getHttpsCallable("createStripePaymentLink")
