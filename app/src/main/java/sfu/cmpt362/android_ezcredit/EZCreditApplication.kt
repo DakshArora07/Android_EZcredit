@@ -71,7 +71,7 @@ class EZCreditApplication : Application() {
             // Clear all company-specific data
             syncManager?.clearCompanyDataSync()
             resetDailySummary()
-            PreferenceManager.resetBackgroundSettingsPreferences(this as Context)
+            PreferenceManager.resetBackgroundSettingsPreferences(applicationContext)
         }
     }
     private fun resetDailySummary() {
