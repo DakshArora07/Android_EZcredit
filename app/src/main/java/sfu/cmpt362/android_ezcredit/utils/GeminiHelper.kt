@@ -15,6 +15,7 @@ object GeminiHelper {
     suspend fun generateReminderMessage(
         customerName: String,
         invoiceNumber: String,
+        invoiceURL: String,
         companyName: String,
         amount: Double,
         dueDate: String,
@@ -22,7 +23,7 @@ object GeminiHelper {
         daysOffset: Int
     ): String {
         try {
-            val prompt = buildPrompt(customerName, invoiceNumber, amount, dueDate, status, daysOffset, companyName)
+            val prompt = buildPrompt(customerName, invoiceNumber, amount, dueDate, status, daysOffset, companyName, invoiceURL)
             Log.d("GeminiHelper", "Generating message with prompt:\n$prompt")
 
             val response = model.generateContent(prompt)
@@ -43,7 +44,8 @@ object GeminiHelper {
         dueDate: String,
         status: InvoiceStatus,
         daysOffset: Int,
-        companyName: String
+        companyName: String,
+        invoiceURL: String
     ): String {
 
         return """
@@ -56,6 +58,7 @@ object GeminiHelper {
             Amount Due: $$amount
             Due Date: $dueDate
             Invoice Status: ${status.name}
+            Invoice Payment Link: $invoiceURL
             
             Requirements:
             - Begin with a salutation greeting the customer by name on its own line.
@@ -66,7 +69,7 @@ object GeminiHelper {
             - Be professional and courteous, concise (2-3 sentences).
             - Look at the invoice status to see whether it is unpaid or overdue, and mention it accordingly
             - End the email by thanking formally and including the Company Name
-            - Include: Pay here: https://buy.stripe.com/test_28E4gzfbk6PPbr1babcwg00 (in a separate paragraph)
+            - Include: Pay here: $invoiceURL (in a separate paragraph)
         
             Generate only the message content with greeting, body, and closing formatted properly.
         """.trimIndent()
