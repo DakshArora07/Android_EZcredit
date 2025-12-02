@@ -16,6 +16,7 @@ import sfu.cmpt362.android_ezcredit.utils.PreferenceManager
 import sfu.cmpt362.android_ezcredit.workers.DailySummaryWorker
 import sfu.cmpt362.android_ezcredit.workers.InvoiceReminderWorker
 
+// This is the starting point of our app. It syncs data to local database from firebase.
 class EZCreditApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var syncManager: SyncManager? = null
@@ -42,6 +43,7 @@ class EZCreditApplication : Application() {
         syncManager?.startInitialSync()
     }
 
+    // Syncs company data to local room database
     fun checkAndSyncOnStartup() {
         val currentCompanyId = CompanyContext.currentCompanyId
 
@@ -65,6 +67,7 @@ class EZCreditApplication : Application() {
         }
     }
 
+    // Clears all company-specific data and resets daily summary counters on logout
     fun clearOnLogout() {
         applicationScope.launch {
             Log.d(TAG, "Logging out, clearing all company data")

@@ -3,6 +3,7 @@ package sfu.cmpt362.android_ezcredit.utils
 import android.content.Context
 import androidx.core.content.edit
 
+// DailySummary Shared Preferences
 object PreferenceManager {
 
     private const val PREF_NAME = "app_settings"

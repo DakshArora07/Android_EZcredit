@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
+// Background Worker to aggregate daily summary data
 class DailySummaryWorker(
     context: Context,
     params: WorkerParameters
@@ -46,7 +47,6 @@ class DailySummaryWorker(
             // Read all summary data
             val emailsSent = prefs.getInt(KEY_EMAILS_SENT, 0)
             val emailsFailed = prefs.getInt(KEY_EMAILS_FAILED, 0)
-            // failedEmails list is read by the UI screen, not needed here
             val creditScoreUpdates = prefs.getInt(KEY_CREDIT_SCORE_UPDATES, 0)
             val invoicesOverdue = prefs.getInt(KEY_INVOICES_MARKED_OVERDUE, 0)
             val invoicesPaid = prefs.getInt(KEY_INVOICES_MARKED_PAID, 0)

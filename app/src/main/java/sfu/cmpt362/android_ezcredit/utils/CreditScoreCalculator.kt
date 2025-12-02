@@ -12,8 +12,8 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
+// Credit Score Calculator
 object CreditScoreCalculator {
-
     const val BASE_SCORE = 60
     const val PAYMENT_HISTORY_BASE_SCORE = 60
     const val OUTSTANDING_DEBT_BASE_SCORE = 40
@@ -30,6 +30,7 @@ object CreditScoreCalculator {
         return min(MAX_SCORE, max(MIN_SCORE, score))
     }
 
+    // Calculate payment history score (no of paid, unpaid, overdue invoices)
     private fun paymentHistoryScore(invoices: List<Invoice>): Int {
 
         var score = PAYMENT_HISTORY_BASE_SCORE
@@ -72,6 +73,7 @@ object CreditScoreCalculator {
         return score
     }
 
+    // Outstanding debt score (amount of outstanding debt)
     private fun outstandingDebtScore(invoices: List<Invoice>): Int {
 
         val total = invoices.sumOf { it.amount }
@@ -89,17 +91,7 @@ object CreditScoreCalculator {
         }
     }
 
-    fun getCreditScoreCategory(score: Int): String {
-        return when (score) {
-            in 85..100 -> "Excellent"
-            in 70..84 -> "Very Good"
-            in 55..69 -> "Good"
-            in 40..54 -> "Fair"
-            in 20..39 -> "Poor"
-            else -> "Extremely Poor"
-        }
-    }
-
+    // Credit Score Color
     fun getCreditScoreColor(score: Int): Color {
         return when (score) {
             in 85..100 -> Green

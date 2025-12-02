@@ -8,6 +8,7 @@ import sfu.cmpt362.android_ezcredit.BuildConfig
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
+// Mailgun Email Service setup
 class MailgunEmailService {
     companion object {
         private const val MAILGUN_API_KEY = BuildConfig.MAILGUN_API_KEY
@@ -22,21 +23,12 @@ class MailgunEmailService {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    /**
-     * Send an email using Mailgun API
-     *
-     * @param toEmail Recipient email address
-     * @param subject Email subject
-     * @param body Email body (plain text)
-     * @return Result with success message or error
-     */
     suspend fun sendEmail(
         toEmail: String,
         subject: String,
         body: String
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
-            // Log configuration (without sensitive data)
             Log.d(TAG, "=== Email Send Attempt ===")
             Log.d(TAG, "To: $toEmail")
             Log.d(TAG, "Subject: $subject")
@@ -44,24 +36,23 @@ class MailgunEmailService {
             Log.d(TAG, "API Key configured: ${MAILGUN_API_KEY.isNotEmpty()}")
             Log.d(TAG, "From Email configured: ${FROM_EMAIL.isNotEmpty()}")
 
-            // Validate email format
             if (!isValidEmail(toEmail)) {
                 Log.e(TAG, "Invalid email address: $toEmail")
                 return@withContext Result.failure(Exception("Invalid email address format"))
             }
 
             // Validate configuration
-            if (MAILGUN_API_KEY.isEmpty() || MAILGUN_API_KEY == "your_mailgun_api_key") {
+            if (MAILGUN_API_KEY.isEmpty()) {
                 Log.e(TAG, "Mailgun API key not configured")
                 return@withContext Result.failure(Exception("Mailgun API key not configured in BuildConfig"))
             }
 
-            if (MAILGUN_DOMAIN.isEmpty() || MAILGUN_DOMAIN == "your_domain.mailgun.org") {
+            if (MAILGUN_DOMAIN.isEmpty()) {
                 Log.e(TAG, "Mailgun domain not configured")
                 return@withContext Result.failure(Exception("Mailgun domain not configured in BuildConfig"))
             }
 
-            if (FROM_EMAIL.isEmpty() || FROM_EMAIL == "noreply@your_domain.com") {
+            if (FROM_EMAIL.isEmpty()) {
                 Log.e(TAG, "From email not configured")
                 return@withContext Result.failure(Exception("From email not configured in BuildConfig"))
             }
@@ -86,9 +77,7 @@ class MailgunEmailService {
         }
     }
 
-    /**
-     * Send email via Mailgun's Messages API
-     */
+    // Send email via email
     private fun sendViaMailgun(toEmail: String, subject: String, body: String): Result<String> {
         val url = "https://api.mailgun.net/v3/$MAILGUN_DOMAIN/messages"
 
@@ -154,9 +143,6 @@ class MailgunEmailService {
         }
     }
 
-    /**
-     * Validate email address format
-     */
     private fun isValidEmail(email: String): Boolean {
         val isValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
         if (!isValid) {

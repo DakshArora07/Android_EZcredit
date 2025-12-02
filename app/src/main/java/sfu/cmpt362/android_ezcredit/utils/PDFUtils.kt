@@ -9,12 +9,13 @@ import com.itextpdf.text.*
 import com.itextpdf.text.pdf.PdfPCell
 import com.itextpdf.text.pdf.PdfPTable
 import com.itextpdf.text.pdf.PdfWriter
-import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import java.io.File
 import java.io.FileOutputStream
 
+// PDF generator class
 object PdfUtils {
 
+    // Invoice PDF
     fun generateInvoicePdf(
         context: Context,
         companyName: String,
@@ -30,7 +31,7 @@ object PdfUtils {
             if (!downloadsDir.exists()) downloadsDir.mkdirs()
 
             val pdfFile = File(downloadsDir, "Invoice_$invoiceNumber$customerName.pdf")
-            val document = Document(PageSize.A4, 36f, 36f, 72f, 36f) // Margins: left, right, top, bottom
+            val document = Document(PageSize.A4, 36f, 36f, 72f, 36f)
             PdfWriter.getInstance(document, FileOutputStream(pdfFile))
             document.open()
 
@@ -100,6 +101,7 @@ object PdfUtils {
         }
     }
 
+    // Receipt PDF
     fun generateReceiptPdf(
         context: Context,
         companyName: String,

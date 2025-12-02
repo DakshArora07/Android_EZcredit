@@ -4,14 +4,13 @@ import android.util.Log
 import com.google.ai.client.generativeai.GenerativeModel
 import sfu.cmpt362.android_ezcredit.BuildConfig
 
+// Generate email by Gemini setup
 object GeminiHelper {
     private const val API_KEY = BuildConfig.GEMINI_API_KEY
-
     val model = GenerativeModel(
         modelName = "gemini-2.5-flash-lite",
         apiKey = API_KEY
     )
-
     suspend fun generateReminderMessage(
         customerName: String,
         invoiceNumber: String,
