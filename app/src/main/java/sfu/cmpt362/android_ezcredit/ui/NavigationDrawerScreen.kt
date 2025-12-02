@@ -61,7 +61,9 @@ val screens = listOf(
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NavigationDrawerScreen() {
+fun NavigationDrawerScreen(
+    onLogout: () -> Unit = {}
+) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -188,6 +190,7 @@ fun NavigationDrawerScreen() {
                 customerViewModel = customerViewModel,
                 invoiceViewModel = invoiceViewModel,
                 receiptViewModel = receiptViewModel,
+                onLogout = onLogout,
                 modifier = Modifier.padding(padding)
             )
         }
@@ -201,6 +204,7 @@ fun NavigationHost(
     customerViewModel: CustomerViewModel,
     invoiceViewModel: InvoiceViewModel,
     receiptViewModel: ReceiptViewModel,
+    onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -356,6 +360,6 @@ fun NavigationHost(
         composable("summary") {
             DailySummaryScreen()
         }
-        composable("settings") { SettingsScreen() }
+        composable("settings") { SettingsScreen(onLogout = onLogout) }
     }
 }

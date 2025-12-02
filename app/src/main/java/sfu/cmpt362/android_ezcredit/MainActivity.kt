@@ -19,6 +19,7 @@ import sfu.cmpt362.android_ezcredit.ui.theme.Android_EZCreditTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import sfu.cmpt362.android_ezcredit.data.AppDatabase
+import sfu.cmpt362.android_ezcredit.data.FirebaseAuthManager
 import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.repository.CompanyRepository
 import sfu.cmpt362.android_ezcredit.data.repository.UserRepository
@@ -76,7 +77,15 @@ class MainActivity : ComponentActivity() {
                 )
                 when {
                     isLoggedIn -> {
-                        NavigationDrawerScreen()
+                        NavigationDrawerScreen(
+                            onLogout = {
+                                val authManager = FirebaseAuthManager()
+                                val application = context.applicationContext as EZCreditApplication
+                                application.clearOnLogout()
+                                authManager.signOut()
+                                isLoggedIn = false
+                            }
+                        )
                     }
                     showUserProfile -> {
                         val state by companyProfileViewModel.state.collectAsState()
