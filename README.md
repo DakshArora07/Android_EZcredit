@@ -157,39 +157,45 @@ Filter analytics by week, month, or quarter.
 ---
 
 # ⚙️ Background Automation (5 Workers)
-| Worker | Function |
-|--------|---------|
-| Auto Email Reminder | Sends daily payment reminders via Mailgun |
-| Credit Score Update | Recalculates customer credit scores |
-| Overdue Invoice | Marks invoices as PastDue |
-| Paid / Late Payment | Matches receipts & updates invoice status |
-| Daily Summary | Sends notifications with summary of invoices & credit changes |
+
+• Worker: Function 
+ - Auto Email Reminder: Sends daily payment reminders via Mailgun
+ - Credit Score Update: Recalculates customer credit scores
+ - Overdue Invoice: Marks invoices as PastDue
+ - Paid / Late Payment: Matches receipts & updates invoice status
+ - Daily Summary: Sends notifications with summary of invoices & credit changes
 
 ---
 
 # 🧰 Tech Stack
 
 ## Frontend
-| Category | Technology |
-|---------|------------|
-| Language | Kotlin |
-| UI | Jetpack Compose (Material 3) |
-| Architecture | MVVM + Clean Architecture |
-| State Management | StateFlow + Coroutines |
-| Networking | OkHttp |
-| Background Tasks | WorkManager |
-| PDF | iText / File Provider |
-| OCR | Gemini Messages |
+
+-Language: Kotlin
+
+-UI Framework: Jetpack Compose (Material 3)
+
+-Architecture: MVVM + Clean Architecture
+
+-State Management: StateFlow & Coroutines
+
+-Background Tasks: WorkManager
+
+-PDF Generation: iText + FileProvider
+
+-OCR Processing: Gemini Messages
+
+---
 
 ## Backend & Cloud
-| Category | Technology |
-|---------|------------|
-| Authentication | Firebase Auth |
-| Database | Firestore (NoSQL) |
-| Storage | Firebase Storage And Room Database |
-| Email | Mailgun API |
-| Payments | Stripe API |
-| AI | Google Gemini 1.5 Flash |
+
+- Authentication: Firebase Auth
+- Database: Firestore (NoSQL)
+- Local Storage: Room Database
+- File Storage: Firebase Storage
+- Email Service: Mailgun API
+- Payment Gateway: Stripe API
+- AI Processing: Google Gemini 1.5 Flash
 
 ---
 
@@ -302,11 +308,12 @@ EZCredit/
 ```
 
 # 👥 Team
-| Developer | Role |
-|-----------|------|
-| Ayush Arora | UI, WorkManager logic, Credit Score algorithm, Email reminders |
-| Daksh Arora | Room Database, Firebase sync, Firebase auth, Firebase functions, Payment gateway |
-| Gurshan Singh Aulakh | Invoice & customer UI Screens, Automatic Email Background Worker, PDF Invoice Generation |
-| Hetmay Vora | Calendar, Analytics, Login Screen, Company and User profile screens |
-| Henry Nguyen | OCR engine, invoice formatting, receipt screen and project planning diagrams  |
+
+• Developer: Role
+
+- Ayush Arora:  UI, WorkManager logic, Credit Score algorithm, Email reminders 
+- Daksh Arora: Room Database, Firebase sync, Firebase auth, Firebase functions, Payment gateway 
+- Gurshan Singh Aulakh: Invoice & customer UI Screens, Automatic Email Background Worker, PDF Invoice Generation 
+- Hetmay Vora: Calendar, Analytics, Login Screen, Company and User profile screens 
+- Henry Nguyen: OCR engine, invoice formatting, receipt screen and project planning diagrams 
 
