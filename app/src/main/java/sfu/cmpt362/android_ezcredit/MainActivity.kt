@@ -20,6 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import sfu.cmpt362.android_ezcredit.data.AppDatabase
 import sfu.cmpt362.android_ezcredit.data.FirebaseAuthManager
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.repository.CompanyRepository
 import sfu.cmpt362.android_ezcredit.data.repository.UserRepository
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CompanyViewModel
@@ -27,6 +28,7 @@ import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModel
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModel
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModelFactory
 import sfu.cmpt362.android_ezcredit.utils.BackgroundTaskSchedular
+import androidx.compose.runtime.LaunchedEffect
 
 class MainActivity : ComponentActivity() {
 
@@ -45,6 +47,15 @@ class MainActivity : ComponentActivity() {
 
                 // Get EZCreditApplication instance
                 val application = context.applicationContext as EZCreditApplication
+
+                // Check if user is already logged in on startup
+                LaunchedEffect(Unit) {
+                    if (CompanyContext.isCompanySelected()) {
+                        // User is already logged in, trigger sync check
+                        isLoggedIn = true
+                        application.checkAndSyncOnStartup()
+                    }
+                }
 
                 // Get database instance
                 val database = AppDatabase.getInstance(context)
@@ -99,11 +110,13 @@ class MainActivity : ComponentActivity() {
                     }
                     else -> {
                         LoginScreen(
-                            onLoginSuccess = { isLoggedIn = true
+                            onLoginSuccess = {
+                                isLoggedIn = true
                                 BackgroundTaskSchedular.scheduleOverdueInvoiceWorker(this)
                                 BackgroundTaskSchedular.schedulePaidInvoiceWorker(this)
                                 BackgroundTaskSchedular.scheduleCreditScoreUpdate(this)
-                                BackgroundTaskSchedular.rescheduleAllEnabledTasks(this)},
+                                BackgroundTaskSchedular.rescheduleAllEnabledTasks(this)
+                            },
                             onCreateCompany = { showCompanyProfile = true },
                             application = application,
                         )
