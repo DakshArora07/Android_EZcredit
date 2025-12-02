@@ -5,9 +5,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -28,11 +30,21 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.lifecycle.viewmodel.compose.viewModel
+import sfu.cmpt362.android_ezcredit.data.AppDatabase
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
 import sfu.cmpt362.android_ezcredit.data.entity.Receipt
+import sfu.cmpt362.android_ezcredit.data.repository.UserRepository
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.InvoiceViewModel
 import sfu.cmpt362.android_ezcredit.data.viewmodel.ReceiptViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModelFactory
+import sfu.cmpt362.android_ezcredit.utils.AccessMode
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,13 +56,91 @@ fun ReceiptScreen(
     receiptViewModel: ReceiptViewModel,
     onViewAddReceipt: (receiptID:Long) -> Unit
 ) {
+    val context = LocalContext.current
+    val userRepository = remember {
+        val database = AppDatabase.getInstance(context)
+        UserRepository(database.userDao)
+    }
+    val userViewModel: UserViewModel = viewModel(
+        factory = UserViewModelFactory(userRepository)
+    )
+    var isSales by remember { mutableStateOf<Boolean?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
 
+    LaunchedEffect(Unit) {
+        val currentUserId = CompanyContext.currentUserId
+        if (currentUserId != null) {
+            try {
+                val user = userViewModel.getUserById(currentUserId)
+                isSales = user.accessLevel == AccessMode.Sales
+            } catch (e: Exception) {
+                isSales = false
+            }
+        } else {
+            isSales = false
+        }
+        isLoading = false
+    }
 
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (isSales == true) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "Access Denied",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "This screen is only accessible to administrators.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        }
+        return
+    }
     var textFieldFocusState by remember { mutableStateOf(true) }
     val invoices by invoiceViewModel.invoicesLiveData.observeAsState(emptyList())
     var filterListExpanded by rememberSaveable { mutableStateOf(false) }
     var clearFilters by rememberSaveable { mutableStateOf(false) }
-
     var sortInvoicesByDueDateToday by rememberSaveable { mutableStateOf(false) }
     var showStatusDropdown by rememberSaveable { mutableStateOf(false) }
     var selectedStatus by rememberSaveable { mutableStateOf("") }
@@ -59,19 +149,10 @@ fun ReceiptScreen(
     // Search functionality states
     var receiptSearchQuery by rememberSaveable { mutableStateOf("") } //Refactor this later
     val selectedReceipt by invoiceScreenViewModel.customerFilter.collectAsState()
-
-
-
     val invoiceMap = remember(invoices) { invoices.associateBy { it.id } }
-
-
-
 
     // Receipts constansts
     val receipts by receiptViewModel.receiptsLiveData.observeAsState(emptyList())
-
-
-
     // Filter receipts based on input
 
     val filteredReceipts = if (receiptSearchQuery.isNotEmpty()) {
@@ -82,16 +163,10 @@ fun ReceiptScreen(
     } else {
         receipts
     }
-
     // set mutable list to receipts
-
     receiptViewModel.defReceiptOrSorted = filteredReceipts
 
     // Filter invoices by selected customer
-
-
-
-
     Box(
         modifier = Modifier
             .fillMaxSize()

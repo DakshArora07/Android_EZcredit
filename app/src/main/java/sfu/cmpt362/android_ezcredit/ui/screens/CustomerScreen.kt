@@ -4,14 +4,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterAlt
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -28,18 +31,109 @@ import sfu.cmpt362.android_ezcredit.R
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CustomerViewModel
 import sfu.cmpt362.android_ezcredit.utils.CreditScoreCalculator
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.lifecycle.viewmodel.compose.viewModel
+import sfu.cmpt362.android_ezcredit.data.AppDatabase
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
+import sfu.cmpt362.android_ezcredit.data.repository.UserRepository
+import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModelFactory
+import sfu.cmpt362.android_ezcredit.utils.AccessMode
 
 @Composable
 fun CustomerScreen(
     viewModel: CustomerViewModel,
     onAddCustomer: (id:Long) -> Unit
 ) {
+
+    val context = LocalContext.current
+    val userRepository = remember {
+        val database = AppDatabase.getInstance(context)
+        UserRepository(database.userDao)
+    }
+    val userViewModel: UserViewModel = viewModel(
+        factory = UserViewModelFactory(userRepository)
+    )
+    var isReceipts by remember { mutableStateOf<Boolean?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        val currentUserId = CompanyContext.currentUserId
+        if (currentUserId != null) {
+            try {
+                val user = userViewModel.getUserById(currentUserId)
+                isReceipts = user.accessLevel == AccessMode.Receipts
+            } catch (e: Exception) {
+                isReceipts = false
+            }
+        } else {
+            isReceipts = false
+        }
+        isLoading = false
+    }
+
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (isReceipts == true) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "Access Denied",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "This screen is only accessible to administrators.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        }
+        return
+    }
+
     var sortCustomersByName by rememberSaveable { mutableStateOf(false) }
     var sortCustomersByCreditScore by rememberSaveable { mutableStateOf(false) }
     var sortCustomersByTimeCreated by rememberSaveable { mutableStateOf(true) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val customers by viewModel.customersLiveData.observeAsState(emptyList())
-    val context = LocalContext.current
     var filterListExpanded by rememberSaveable { mutableStateOf(false) }
 
     // Apply search filter

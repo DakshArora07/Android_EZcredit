@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -21,24 +22,59 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import sfu.cmpt362.android_ezcredit.R
+import sfu.cmpt362.android_ezcredit.data.AppDatabase
+import sfu.cmpt362.android_ezcredit.data.CompanyContext
+import sfu.cmpt362.android_ezcredit.data.repository.UserRepository
+import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModel
+import sfu.cmpt362.android_ezcredit.data.viewmodel.UserViewModelFactory
 import sfu.cmpt362.android_ezcredit.ui.theme.Green
 import sfu.cmpt362.android_ezcredit.ui.theme.Red
 import sfu.cmpt362.android_ezcredit.ui.theme.VeryLightGray
 import sfu.cmpt362.android_ezcredit.ui.viewmodel.DailySummaryScreenViewModel
+import sfu.cmpt362.android_ezcredit.utils.AccessMode
 import sfu.cmpt362.android_ezcredit.utils.DailySummaryUiState
 
 
 @Composable
 fun DailySummaryScreen(
-    viewModel: DailySummaryScreenViewModel = viewModel()
+
 ) {
+    val context = LocalContext.current
+    val viewModel: DailySummaryScreenViewModel = viewModel()
+    val userRepository = remember {
+        val database = AppDatabase.getInstance(context)
+        UserRepository(database.userDao)
+    }
+    val userViewModel: UserViewModel = viewModel(
+        factory = UserViewModelFactory(userRepository)
+    )
+
     val uiState by viewModel.uiState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
-    val context = LocalContext.current
+
+    // State to track if user is admin
+    var isAdmin by remember { mutableStateOf<Boolean?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    // Check user access level on composition
+    LaunchedEffect(Unit) {
+        val currentUserId = CompanyContext.currentUserId
+        if (currentUserId != null) {
+            try {
+                val user = userViewModel.getUserById(currentUserId)
+                isAdmin = user.accessLevel == AccessMode.Admin
+            } catch (e: Exception) {
+                isAdmin = false
+            }
+        } else {
+            isAdmin = false
+        }
+        isLoading = false
+    }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
+            if (event == Lifecycle.Event.ON_RESUME && isAdmin == true) {
                 viewModel.refresh(context)
             }
         }
@@ -46,6 +82,64 @@ fun DailySummaryScreen(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
+    }
+
+    // Show loading state while checking access
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    // Show access denied message for non-admin users
+    if (isAdmin == false) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "Access Denied",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "This screen is only accessible to administrators.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        }
+        return
     }
 
     Scaffold { padding ->
