@@ -11,7 +11,21 @@
 
 ---
 
+[**App APK**](https://1drv.ms/u/c/931d74c7905f6350/IQCX_EIrsBmaRox9XoGeLCiKAcH83JBc4J4O8bj23Aqzavo?e=7l6v94)
+
+[**Final Presentation**](https://youtu.be/Gh9-xq7VQoU)
+
+[**Source Code**](https://github.com/DakshArora07/Android_EZcredit)
+
+---
+
 ## 🚀 Overview
+
+Project pitch Link: https://youtu.be/o5EsZg6VefA
+
+Show_and_Tell_1 Link : https://youtu.be/CRAPZDmeTiM
+
+Show_and_Tell_2 Link : https://youtu.be/5QegMo8JUec
 
 EZCredit is an Android application designed for small and mid-sized businesses to efficiently manage their daily financial operations.
 
@@ -211,10 +225,62 @@ Filter analytics by week, month, or quarter.
 ```
 
 ## 📁 MVVM Architecture
-![MVVM Architecture](./docs/MVVM.png)
+![MVVM Architecture](./docs/MVVM1.png)
+![MVVM Architecture](./docs/MVVM2.png)
 
 ## 📁 Threaded Architecture
-![Threads Diagram](./docs/Threads.png)
+![Threads Diagram](./docs/Threads.png) 
+
+## 📁 Cloud Database Structure
+Firebase Realtime Database Structure (EZCredit)
+
+┌─────────────────────────────────────────
+│ ROOT                                                        
+├─────────────────────────────────────────
+│ companies/                                                  
+│   ├─ {companyId}/                                          
+│   │  ├─ users/                                             
+│   │  │  ├─ {userId}/                                       
+│   │  │  │  ├─ name: "John Doe"                             
+│   │  │  │  ├─ email: "john@company.com"                    
+│   │  │  │  ├─ companyId: 1                                 
+│   │  │  │  ├─ accessLevel: "Admin"                         
+│   │  │  │  ├─ lastModified: 1733100000000                  
+│   │  │  │  └─ isDeleted: false                             
+│   │  │  └─ {userId2}/...                                   
+│   │  │                                                      
+│   │  ├─ data/                                               
+│   │  │  ├─ customers/                                       
+│   │  │  │  ├─ {customerId}/                                 
+│   │  │  │  │  ├─ name: "Acme Corp"                          
+│   │  │  │  │  ├─ email: "billing@acme.com"                  
+│   │  │  │  │  ├─ companyId: 1                               
+│   │  │  │  │  ├─ lastModified: 1733100000000               
+│   │  │  │  │  └─ isDeleted: false                          
+│   │  │  │  └─ {customerId2}/...                            
+│   │  │  │                                                   
+│   │  │  ├─ invoices/                                        
+│   │  │  │  ├─ {invoiceId}/                                  
+│   │  │  │  │  ├─ invoiceNumber: "INV-001"                   
+│   │  │  │  │  ├─ customerId: 123                            
+│   │  │  │  │  ├─ amount: 2500.00                            
+│   │  │  │  │  ├─ companyId: 1                               
+│   │  │  │  │  ├─ lastModified: 1733100000000               
+│   │  │  │  │  └─ isDeleted: false                          
+│   │  │  │  └─ {invoiceId2}/...                             
+│   │  │  │                                                   
+│   │  │  └─ receipts/                                        
+│   │  │     ├─ {receiptId}/                                  
+│   │  │     │  ├─ receiptNumber: "AUTO_REC_001"              
+│   │  │     │  ├─ invoiceId: "INV-001"                       
+│   │  │     │  ├─ receiptDate: 1733100000000                
+│   │  │     │  ├─ companyId: 1                              
+│   │  │     │  ├─ lastModified: 1733100000000               
+│   │  │     │  └─ isDeleted: false                          
+│   │  │     └─ {receiptId2}/...                             
+│   │  └─ {companyData}/...                                  
+│   └─ {companyId2}/...                                      
+└─────────────────────────────────────────
 
 
 ## 📁 Project Structure
