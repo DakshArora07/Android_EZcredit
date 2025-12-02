@@ -63,8 +63,6 @@ class MainActivity : ComponentActivity() {
                         userViewModel = userViewModel
                     )
                 )
-
-                val companyViewModel: CompanyProfileScreenViewModel = viewModel()
                 when {
                     isLoggedIn -> {
                         NavigationDrawerScreen()
@@ -88,26 +86,19 @@ class MainActivity : ComponentActivity() {
                             onCancel = { showCompanyProfile = false },
                             onSave = {
                                 showCompanyProfile = false
-                            onSave = { showCompanyProfile = false
-                                isLoggedIn = true
-                            },
+                                     isLoggedIn = true},
                             onAddUser = { showUserProfile = true }
                         )
                     }
                     else -> {
                         LoginScreen(
-                            onLoginSuccess = { isLoggedIn = true },
-                            onCreateCompany = { showCompanyProfile = true },
-                            application = application
-                            onLoginSuccess = {
-                                isLoggedIn = true
-
+                            onLoginSuccess = { isLoggedIn = true
                                 BackgroundTaskSchedular.scheduleOverdueInvoiceWorker(this)
                                 BackgroundTaskSchedular.schedulePaidInvoiceWorker(this)
                                 BackgroundTaskSchedular.scheduleCreditScoreUpdate(this)
-                                BackgroundTaskSchedular.rescheduleAllEnabledTasks(this)
-                            },
-                            onCreateCompany = { showCompanyProfile = true }
+                                BackgroundTaskSchedular.rescheduleAllEnabledTasks(this)},
+                            onCreateCompany = { showCompanyProfile = true },
+                            application = application,
                         )
                     }
                 }
