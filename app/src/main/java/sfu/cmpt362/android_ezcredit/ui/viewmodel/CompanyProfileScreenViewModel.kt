@@ -32,7 +32,7 @@ class CompanyProfileScreenViewModel(
     private val _state = MutableStateFlow(CompanyProfileScreenState())
     val state: StateFlow<CompanyProfileScreenState> = _state.asStateFlow()
 
-    private var companyId: Long = -1L
+    private var companyId: Long = 0L
 
     fun updateCompanyName(name: String) {
         _state.update { it.copy(companyName = name, showError = false) }
@@ -114,7 +114,7 @@ class CompanyProfileScreenViewModel(
         viewModelScope.launch {
             try {
                 companyViewModel.updateCompany(
-                    companyId = if (companyId == -1L) -1L else companyId,
+                    companyId = companyId,
                     name = currentState.companyName,
                     address = currentState.address,
                     phone = currentState.phone
@@ -167,7 +167,7 @@ class CompanyProfileScreenViewModel(
                     }
 
                     userViewModel.updateUser(
-                        userId = -1L,
+                        userId = 0L,
                         name = user.name,
                         email = user.email,
                         companyId = companyId,

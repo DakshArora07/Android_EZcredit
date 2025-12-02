@@ -1,5 +1,6 @@
 package sfu.cmpt362.android_ezcredit.data
 
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.tasks.await
@@ -14,6 +15,7 @@ class FirebaseAuthManager {
             val result = auth.createUserWithEmailAndPassword(email, password).await()
             result.user
         } catch (e: Exception) {
+            Log.e("FirebaseAuthManager", "createUser failed", e)
             null
         }
     }

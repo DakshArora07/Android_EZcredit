@@ -19,7 +19,6 @@ import sfu.cmpt362.android_ezcredit.ui.theme.Android_EZCreditTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import sfu.cmpt362.android_ezcredit.data.AppDatabase
-import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.repository.CompanyRepository
 import sfu.cmpt362.android_ezcredit.data.repository.UserRepository
 import sfu.cmpt362.android_ezcredit.data.viewmodel.CompanyViewModel
@@ -33,9 +32,6 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Initialize CompanyContext
-        CompanyContext.init(this)
 
         setContent {
             Android_EZCreditTheme {
