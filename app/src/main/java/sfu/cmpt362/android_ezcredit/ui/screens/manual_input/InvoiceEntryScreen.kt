@@ -1,6 +1,7 @@
 package sfu.cmpt362.android_ezcredit.ui.screens.manual_input
 
 import android.content.Context
+import android.content.Intent
 import android.icu.text.SimpleDateFormat
 import android.icu.util.Calendar
 import android.os.Build
@@ -41,6 +42,10 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.Locale
 import android.database.sqlite.SQLiteConstraintException
+import android.util.Log
+import kotlinx.coroutines.launch
+import sfu.cmpt362.android_ezcredit.utils.GeminiHelper
+import sfu.cmpt362.android_ezcredit.utils.MailgunEmailService
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -50,7 +55,6 @@ fun InvoiceEntryScreen(
     invoiceId: Long,
     ocrResult: InvoiceScreenViewModel.OcrInvoiceResult? = null,
     onBack: () -> Unit) {
-    val context = LocalContext.current
 
     // Check for the modes:
     // Add mode: id == -1
@@ -94,6 +98,8 @@ fun AddInvoiceScreen(
 
     SetupUIViews(
         isEditMode = false,
+        invoiceUrl = "",
+        invoiceStatus = InvoiceStatus.Unpaid,
         context = context,
         title = "Add New Invoice",
         subtitle = "Fill in the invoice details below",
@@ -189,6 +195,9 @@ fun ViewEditInvoiceScreen(
     var localIssueDate by rememberSaveable { mutableStateOf(Calendar.getInstance()) }
     var localDueDate by rememberSaveable { mutableStateOf(Calendar.getInstance()) }
     var customerSearchQuery by rememberSaveable { mutableStateOf("") }
+    var invoiceUrl by rememberSaveable { mutableStateOf("") }
+    var invoiceStatus by rememberSaveable { mutableStateOf(InvoiceStatus.Unpaid) }
+
 
     val customers by customerViewModel.customersLiveData.observeAsState(emptyList())
     var hasLoadedFromDb by rememberSaveable { mutableStateOf(false) }
@@ -201,6 +210,8 @@ fun ViewEditInvoiceScreen(
             amountText = fetchedInvoice.amount.toString()
             localIssueDate = fetchedInvoice.invDate
             localDueDate = fetchedInvoice.dueDate
+            invoiceUrl = fetchedInvoice.url
+            invoiceStatus = fetchedInvoice.status
 
             val fetchedCustomer = customerViewModel.getCustomerById(fetchedInvoice.customerId)
             customerViewModel.customerFromDB = fetchedCustomer
@@ -223,6 +234,8 @@ fun ViewEditInvoiceScreen(
             customerViewModel.customerFromDB = null
         },
         selectedCustomer = customerViewModel.customerFromDB,
+        invoiceUrl = invoiceUrl,
+        invoiceStatus = invoiceStatus,
         onCustomerSelect = { customerViewModel.customerFromDB = it },
         onCustomerClear = {
             customerViewModel.customerFromDB = null
@@ -303,6 +316,7 @@ fun ViewEditInvoiceScreen(
 @Composable
 private fun SetupUIViews(
     isEditMode: Boolean,
+    invoiceUrl : String,
     context: Context,
     title: String,
     subtitle: String,
@@ -326,7 +340,8 @@ private fun SetupUIViews(
     showDeleteButton: Boolean,
     onSave: () -> Unit,
     onCancel: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    invoiceStatus: InvoiceStatus,
 ) {
     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     var showCustomerDropdown by rememberSaveable { mutableStateOf(false) }
@@ -351,6 +366,10 @@ private fun SetupUIViews(
     ) {
         // Header
         if (showEditButton) {
+
+            var emailBody by remember { mutableStateOf("") }
+            var isGenerating by remember { mutableStateOf(false) }
+            val scope = rememberCoroutineScope()
 
             val companyRepository = remember {
                 val db = AppDatabase.getInstance(context)
@@ -380,7 +399,7 @@ private fun SetupUIViews(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Button(
+                    FilledIconButton(
                         onClick = {
                             val today = Calendar.getInstance().apply {
                                 set(Calendar.HOUR_OF_DAY, 0)
@@ -404,19 +423,113 @@ private fun SetupUIViews(
                                 status = displayStatus.name,
                                 companyName = companyName
                             )
-                        },
-                        shape = MaterialTheme.shapes.medium
+                        }
                     ) {
-                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Generate PDF")
+                        Icon(Icons.Default.PictureAsPdf, contentDescription = "PDF")
                     }
 
-                    Button(
-                        onClick = onEditToggle,
-                        shape = MaterialTheme.shapes.medium
+                    // Replace the email button section in your InvoiceEntryScreen with this:
+
+                    FilledIconButton(
+                        onClick = {
+                            scope.launch {
+                                isGenerating = true
+
+                                try {
+                                    // Validate customer email exists
+                                    if (selectedCustomer?.email.isNullOrBlank()) {
+                                        Toast.makeText(
+                                            context,
+                                            "Customer email is missing",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        isGenerating = false
+                                        return@launch
+                                    }
+
+                                    // Generate email body using Gemini
+                                    val generatedBody = GeminiHelper.generateReminderMessage(
+                                        customerName = selectedCustomer?.name ?: "Customer",
+                                        invoiceNumber = invoiceNumber,
+                                        invoiceURL = invoiceUrl,
+                                        companyName = companyName,
+                                        amount = amountText.toDoubleOrNull() ?: 0.0,
+                                        dueDate = localDueDate.time.toString(),
+                                        status = invoiceStatus,
+                                        daysOffset = 0
+                                    )
+
+                                    // Check if email body was generated
+                                    if (generatedBody.isBlank()) {
+                                        Toast.makeText(
+                                            context,
+                                            "Failed to generate email content",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        isGenerating = false
+                                        return@launch
+                                    }
+
+                                    Log.d("InvoiceEntry", "Generated email body: $generatedBody")
+                                    Log.d("InvoiceEntry", "Sending to: ${selectedCustomer?.email}")
+
+                                    // Send the email
+                                    val result = MailgunEmailService().sendEmail(
+                                        toEmail = selectedCustomer?.email ?: "",
+                                        subject = "Invoice #${invoiceNumber} Payment Reminder",
+                                        body = generatedBody
+                                    )
+
+                                    isGenerating = false
+
+                                    // Handle the result
+                                    result.onSuccess { message ->
+                                        Log.d("InvoiceEntry", "Email success: $message")
+                                        Toast.makeText(
+                                            context,
+                                            "Email sent successfully!",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }.onFailure { error ->
+                                        Log.e("InvoiceEntry", "Email error: ${error.message}", error)
+                                        Toast.makeText(
+                                            context,
+                                            "Failed to send email: ${error.message}",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+
+                                } catch (e: Exception) {
+                                    isGenerating = false
+                                    Log.e("InvoiceEntry", "Exception sending email", e)
+                                    Toast.makeText(
+                                        context,
+                                        "Error: ${e.message}",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                        },
+                        enabled = !isGenerating  // Disable button while sending
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = null)
+                        if (isGenerating) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Icon(Icons.Default.Email, contentDescription = "Generate & Send Email")
+                        }
+                    }
+
+                    FilledIconButton(
+                        onClick = onEditToggle
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit")
                     }
                 }
+
             }
 
         } else {

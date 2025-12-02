@@ -101,7 +101,8 @@ class InvoiceReminderWorker(
                         dueDate = dueDateStr,
                         status = invoice.status,
                         daysOffset = daysDifference,
-                        companyName = companyName
+                        companyName = companyName,
+                        invoiceURL =  invoice.url
                     )
 
                     val result = emailService.sendEmail(
