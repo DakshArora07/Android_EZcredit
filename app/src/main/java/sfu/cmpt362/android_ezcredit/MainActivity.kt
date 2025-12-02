@@ -3,14 +3,20 @@ package sfu.cmpt362.android_ezcredit
 import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import sfu.cmpt362.android_ezcredit.ui.NavigationDrawerScreen
 import sfu.cmpt362.android_ezcredit.ui.screens.CompanyProfileScreen
@@ -31,6 +37,7 @@ import sfu.cmpt362.android_ezcredit.ui.viewmodel.CompanyProfileScreenViewModelFa
 import sfu.cmpt362.android_ezcredit.utils.AccessMode
 import sfu.cmpt362.android_ezcredit.utils.BackgroundTaskSchedular
 import sfu.cmpt362.android_ezcredit.ui.screens.UserRole
+import sfu.cmpt362.android_ezcredit.utils.NetworkUtils
 
 class MainActivity : ComponentActivity() {
 
@@ -47,6 +54,8 @@ class MainActivity : ComponentActivity() {
                 var showUserProfileFromSettings by rememberSaveable { mutableStateOf(false) }
                 var showCompanyProfileFromSettings by rememberSaveable { mutableStateOf(false) }
                 var showAddUserFromCompanyProfile by rememberSaveable { mutableStateOf(false) }
+                var isCheckingNetwork by rememberSaveable { mutableStateOf(true) }
+                var hasInternet by rememberSaveable { mutableStateOf(false) }
 
                 val context = LocalContext.current
                 val application = context.applicationContext as EZCreditApplication
@@ -58,12 +67,38 @@ class MainActivity : ComponentActivity() {
                 val companyViewModel = CompanyViewModel(companyRepository)
                 val userViewModel = UserViewModel(userRepository)
 
+                // Observe network connectivity
+                val networkState by NetworkUtils.observeNetworkConnectivity(context).collectAsState(initial = false)
+
+                LaunchedEffect(networkState) {
+                    hasInternet = networkState
+
+                    if (!networkState && isCheckingNetwork) {
+                        Toast.makeText(
+                            context,
+                            "No internet connection. Please connect to the internet.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+
+                    isCheckingNetwork = false
+                }
+
+                // Check if user is already logged in
                 LaunchedEffect(Unit) {
                     if (CompanyContext.isCompanySelected()) {
-                        // User is already logged in, trigger sync check
-                        isLoggedIn = true
-                        application.checkAndSyncOnStartup()
+                        if (NetworkUtils.isNetworkAvailable(context)) {
+                            isLoggedIn = true
+                            application.checkAndSyncOnStartup()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "No internet connection. Please connect to continue.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
+                    isCheckingNetwork = false
                 }
 
                 val companyProfileViewModel: CompanyProfileScreenViewModel = viewModel(
@@ -72,6 +107,37 @@ class MainActivity : ComponentActivity() {
                         userViewModel = userViewModel
                     )
                 )
+
+                if (isCheckingNetwork) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                    return@Android_EZCreditTheme
+                }
+
+                if (!hasInternet && !isLoggedIn) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+
+                    LaunchedEffect(Unit) {
+                        kotlinx.coroutines.delay(5000)
+                        if (!hasInternet) {
+                            Toast.makeText(
+                                context,
+                                "Still waiting for internet connection...",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                    return@Android_EZCreditTheme
+                }
 
                 when {
                     showAddUserFromCompanyProfile -> {
@@ -85,6 +151,14 @@ class MainActivity : ComponentActivity() {
                                 showCompanyProfileFromSettings = true
                             },
                             onSave = { newUser ->
+                                if (!hasInternet) {
+                                    Toast.makeText(
+                                        context,
+                                        "No internet connection. Cannot save user.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    return@UserProfileScreen
+                                }
                                 companyProfileViewModel.addUserToFirebase(newUser)
                                 showAddUserFromCompanyProfile = false
                                 showCompanyProfileFromSettings = true
@@ -102,6 +176,15 @@ class MainActivity : ComponentActivity() {
                                 showUserProfileFromSettings = false
                             },
                             onSave = { updatedUser ->
+                                if (!hasInternet) {
+                                    Toast.makeText(
+                                        context,
+                                        "No internet connection. Cannot save changes.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    return@UserProfileScreen
+                                }
+
                                 // Get current company ID
                                 val currentCompanyId = CompanyContext.currentCompanyId
 
@@ -140,6 +223,14 @@ class MainActivity : ComponentActivity() {
                                 showCompanyProfileFromSettings = false
                             },
                             onSave = {
+                                if (!hasInternet) {
+                                    Toast.makeText(
+                                        context,
+                                        "No internet connection. Cannot save changes.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    return@CompanyProfileScreen
+                                }
                                 showCompanyProfileFromSettings = false
                             },
                             onAddUser = {
@@ -173,6 +264,14 @@ class MainActivity : ComponentActivity() {
                             existingUsers = existingUsers,
                             onCancel = { showUserProfile = false },
                             onSave = { newUser ->
+                                if (!hasInternet) {
+                                    Toast.makeText(
+                                        context,
+                                        "No internet connection. Cannot create user.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    return@UserProfileScreen
+                                }
                                 companyProfileViewModel.addUser(newUser)
                                 showUserProfile = false
                             }
@@ -182,20 +281,48 @@ class MainActivity : ComponentActivity() {
                         CompanyProfileScreen(
                             viewModel = companyProfileViewModel,
                             onCancel = { showCompanyProfile = false },
-                            onSave = { showCompanyProfile = false },
+                            onSave = {
+                                if (!hasInternet) {
+                                    Toast.makeText(
+                                        context,
+                                        "No internet connection. Cannot create company.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    return@CompanyProfileScreen
+                                }
+                                showCompanyProfile = false
+                            },
                             onAddUser = { showUserProfile = true }
                         )
                     }
                     else -> {
                         LoginScreen(
                             onLoginSuccess = {
+                                if (!hasInternet) {
+                                    Toast.makeText(
+                                        context,
+                                        "No internet connection. Cannot login.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    return@LoginScreen
+                                }
                                 isLoggedIn = true
-                                BackgroundTaskSchedular.scheduleOverdueInvoiceWorker(this)
-                                BackgroundTaskSchedular.schedulePaidInvoiceWorker(this)
-                                BackgroundTaskSchedular.scheduleCreditScoreUpdate(this)
-                                BackgroundTaskSchedular.rescheduleAllEnabledTasks(this)
+                                BackgroundTaskSchedular.scheduleOverdueInvoiceWorker(this@MainActivity)
+                                BackgroundTaskSchedular.schedulePaidInvoiceWorker(this@MainActivity)
+                                BackgroundTaskSchedular.scheduleCreditScoreUpdate(this@MainActivity)
+                                BackgroundTaskSchedular.rescheduleAllEnabledTasks(this@MainActivity)
                             },
-                            onCreateCompany = { showCompanyProfile = true },
+                            onCreateCompany = {
+                                if (!hasInternet) {
+                                    Toast.makeText(
+                                        context,
+                                        "No internet connection. Cannot create company.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    return@LoginScreen
+                                }
+                                showCompanyProfile = true
+                            },
                             application = application,
                         )
                     }
