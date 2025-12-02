@@ -557,7 +557,7 @@ private fun DashboardButton(
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "Go to Company Dashboard",
+            text = "Go to Login",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold
         )
