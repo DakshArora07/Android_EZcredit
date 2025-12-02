@@ -38,6 +38,9 @@ data class Invoice (
     @ColumnInfo(name = "invoice_status")
     var status: InvoiceStatus = InvoiceStatus.Unpaid,
 
+    @ColumnInfo(name = "invoice_url")
+    var url: String = "",
+
     var lastModified: Long = 0L,
 
     var isDeleted: Boolean = false

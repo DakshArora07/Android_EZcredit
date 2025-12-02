@@ -1,5 +1,6 @@
 package sfu.cmpt362.android_ezcredit.data.repository
 
+import com.google.firebase.Firebase
 import com.google.firebase.database.DatabaseReference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -9,6 +10,8 @@ import sfu.cmpt362.android_ezcredit.data.CompanyContext
 import sfu.cmpt362.android_ezcredit.data.FirebaseRefs
 import sfu.cmpt362.android_ezcredit.data.dao.InvoiceDao
 import sfu.cmpt362.android_ezcredit.data.entity.Invoice
+import com.google.firebase.functions.functions
+import kotlinx.coroutines.tasks.await
 
 class InvoiceRepository(private val invoiceDao: InvoiceDao) {
     private val companyId: Long get() = CompanyContext.currentCompanyId!!
@@ -20,7 +23,8 @@ class InvoiceRepository(private val invoiceDao: InvoiceDao) {
     fun insert(invoice: Invoice){
         CoroutineScope(IO).launch{
             val ts = System.currentTimeMillis()
-            val toInsert = invoice.copy(lastModified = ts, isDeleted = false)
+            val url = createPaymentLink(invoice.invoiceNumber, invoice.amount)
+            val toInsert = invoice.copy(url = url, lastModified = ts, isDeleted = false)
             val newId = invoiceDao.insertInvoice(toInsert)
             val finalInv = toInsert.copy(id = newId)
             pushToFirebase(finalInv)
@@ -59,6 +63,24 @@ class InvoiceRepository(private val invoiceDao: InvoiceDao) {
         }
     }
 
+    suspend fun createPaymentLink(invoiceNumber: String, amount: Double): String {
+        return try {
+            val data = hashMapOf(
+                "invoiceNumber" to invoiceNumber,
+                "amount" to (amount * 100).toLong()
+            )
+            val response = Firebase.functions
+                .getHttpsCallable("createStripePaymentLink")
+                .call(data)
+                .await()
+            response.data as String
+        } catch (e: Exception) {
+            println("Payment link creation failed: ${e.message}")
+            ""
+        }
+    }
+
+
     private fun pushToFirebase(inv: Invoice) {
         val map = mapOf(
             "id" to inv.id,
@@ -68,6 +90,7 @@ class InvoiceRepository(private val invoiceDao: InvoiceDao) {
             "dueDate" to inv.dueDate.timeInMillis,
             "amount" to inv.amount,
             "status" to inv.status,
+            "url" to inv.url,
             "lastModified" to inv.lastModified,
             "isDeleted" to inv.isDeleted
         )
