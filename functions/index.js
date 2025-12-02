@@ -17,7 +17,7 @@ exports.createStripePaymentLink = https.onCall(
       const paymentLink = await stripe.paymentLinks.create({
         line_items: [{
           price_data: {
-            currency: "usd",
+            currency: "cad",
             product_data: {name: `Invoice #${invoiceNumber}`},
             unit_amount: amount,
           },
