@@ -1,6 +1,8 @@
-# 🌟 EZCredit
-### Customer & Credit Management System  
-*Android • Kotlin • Firebase • WorkManager • Stripe • OCR*
+# EZCredit
+
+## Debt Recovery System
+
+**A comprehensive Android solution for small and mid-sized businesses to manage customers, invoices, payments, and credit operations.**
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-blue?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-UI-blueviolet?logo=android&logoColor=white)](https://developer.android.com/jetpack/compose)
@@ -11,309 +13,254 @@
 
 ---
 
-[**App APK**](https://1drv.ms/u/c/931d74c7905f6350/IQCX_EIrsBmaRox9XoGeLCiKAcH83JBc4J4O8bj23Aqzavo?e=7l6v94)
+## Quick Links
 
-[**Final Presentation**](https://youtu.be/Gh9-xq7VQoU)
-
-[**Source Code**](https://github.com/DakshArora07/Android_EZcredit)
-
----
-
-## 🚀 Overview
-
-[**Project pitch Link**](https://youtu.be/o5EsZg6VefA)
-
-[**Show_and_Tell_1**](https://youtu.be/CRAPZDmeTiM)
-
-[**Show_and_Tell_2**](https://youtu.be/5QegMo8JUec)
-
-EZCredit is an Android application designed for small and mid-sized businesses to efficiently manage their daily financial operations.
-
-The app provides a complete workflow that spans from:
-- Creating and managing companies
-- Adding multiple users with different access levels
-- Handling customers and invoices
-- Sending payment reminders
-- Accepting payments through Stripe
-- Automatically generating receipts
-- Running background tasks for real-time updates
-- Syncing data across multiple users and devices
-  
-The app supports multi-company and multi-user access, with all data synchronized live through Firebase and stored locally with Room for offline consistency.
-Most advanced features—such as invoice sync, user management, payments, and background automation—require internet access, and the app will not start without it.
+- [Download APK](https://1drv.ms/u/c/931d74c7905f6350/IQCX_EIrsBmaRox9XoGeLCiKAcH83JBc4J4O8bj23Aqzavo?e=7l6v94)
+- [View Source Code](https://github.com/DakshArora07/Android_EZcredit)
+- [Final Presentation](https://youtu.be/iZ0tL8lbQ88)
+- [Project Pitch](https://youtu.be/o5EsZg6VefA)
+- [Show and Tell 1](https://youtu.be/CRAPZDmeTiM)
+- [Show and Tell 2](https://youtu.be/5QegMo8JUec)
 
 ---
 
-## 🔮 OCR
-•⁠  ⁠Instant invoice data extraction with *OCR*  
-•⁠  ⁠Autofill invoice fields from images or camera  
+## Overview
 
-## 🤖 Automated
-•⁠  ⁠5 background workers handle:
-  - AI powered Email reminders  
-  - Credit score updates  
-  - Overdue invoices  
-  - Paid/Late payment tracking  
-  - Daily summaries  
+EZCredit is a modern Android application built to streamline financial operations for small and mid-sized businesses. The platform provides an end-to-end solution for managing customer relationships, processing invoices, accepting payments, and maintaining credit records across multiple companies and users.
 
-## 📊 Insightful
-•⁠  ⁠Dashboards & charts  
-•⁠  ⁠Calendar view for invoices & payments  
-•⁠  ⁠Customer credit history & analytics  
+### Core Capabilities
+
+The application delivers a complete business workflow including company creation, multi-user access control, customer management, invoice processing, automated payment reminders, integrated payment processing via Stripe, automatic receipt generation, intelligent background task automation, and real-time data synchronization across devices.
+
+Built on Firebase for cloud infrastructure and Room for local persistence, EZCredit ensures data consistency across multiple users and devices. While basic functionality is available offline, advanced features including invoice synchronization, user management, payment processing, and background automation require an active internet connection.
 
 ---
 
-✨ Key Features
+## Key Features
 
---- 
+### Multi-Company & Multi-User Architecture
 
-🏢 Multi-Company & Multi-User Support
+- Create and manage multiple companies from a single application
+- Role-based access control with three permission levels: Admin, Sales, and Receipts
+- Isolated data environments per company with real-time synchronization
+- Seamless company switching with instant dataset updates
 
-•⁠ Create new companies directly from the app.
+### User & Company Management
 
-•⁠ Add users with different access levels (Admin, Sales, Receipts).
+- Comprehensive admin controls for company settings, user management, and access permissions
+- Self-service profile management for all users
+- Context-aware UI that adapts to user permissions:
+  - **Sales Role:** Access to customer and invoice management
+  - **Receipts Role:** Limited to receipt processing
+  - **Admin Role:** Full system access and configuration
 
-•⁠ Each company keeps its own isolated, real-time synchronized data.
+### Intelligent Invoice Management
 
-•⁠ Switching companies updates the entire dataset instantly.
+- Manual invoice creation with comprehensive data entry
+- OCR-powered invoice extraction from images and camera input
+- Automated status tracking (Unpaid, Paid, Past Due, Late)
+- Advanced filtering and sorting capabilities
+- Full invoice lifecycle management including editing and deletion
+- Professional PDF invoice generation
+- Automated email reminders with integrated payment links
 
----
+### Optical Character Recognition (OCR)
 
-👤 User & Company Management
+- Precise text extraction from invoice images
+- Automated field population for invoice amounts, dates, and customer information
+- Support for both camera capture and image uploads
+- Pure text extraction without AI interpretation to ensure accuracy
 
-•⁠ Admins can update company details, add new users, or change access levels.
+### Payment Processing & Receipt Automation
 
-•⁠ Users can update their profile information (email, name, password).
+- Integrated Stripe payment gateway for secure online transactions
+- Email-based payment links for customer convenience
+- Automatic cloud-based receipt generation upon successful payment
+- Real-time receipt synchronization across all company users
+- Manual receipt creation for cash and in-person transactions
+- Comprehensive receipt search and filtering
 
-•⁠ Access-based UI:
-- Sales users: Customers & Invoices
-- Receipts users: Receipts only
-- Admin users: Full system access
+### Analytics Dashboard
 
----
+- Executive-level insights for admin users including:
+  - Total revenue collected
+  - Past-due payment trends
+  - Outstanding balance tracking
+  - Customer credit performance metrics
+- Flexible time-based filtering (weekly, monthly, quarterly views)
 
-📄 Smart Invoice Management
+### Calendar View
 
-•⁠ Create invoices manually or using OCR extraction from images or camera.
+- Visual invoice tracking on calendar interface
+- Multi-status filtering (Paid, Unpaid, Past Due, Late)
+- Quick navigation through payment history
+- At-a-glance financial overview
 
-•⁠ Auto-update statuses (Unpaid, Paid, PastDue, Late).
+### Background Automation System
 
-•⁠ Sort and filter invoices by status, due date, or customer.
+Five intelligent workers handle critical business operations automatically:
 
-•⁠ Edit and delete invoices anytime.
-
-•⁠ Generate professional PDF invoices.
-
-•⁠ Send email reminders with a payment link.
-
----
-
-🔍 OCR (Optical Character Recognition)
-
-•⁠ Extract invoice fields such as amount, dates, and customer info.
-
-•⁠ Auto-populate invoice forms for faster data entry.
-
-•⁠ Works with camera input and uploaded images.
-
-•⁠ OCR strictly extracts text — no AI rewriting or hallucinations.
-
----
-
-💰 Payments & Automated Receipts
-
-•⁠ Customers can pay online using Stripe via the emailed payment link.
-
-•⁠ Successful payments automatically generate receipts on the cloud.
-
-•⁠ Receipts sync instantly across all users in the company.
-
-•⁠ Manual receipt creation supported for in-person payments.
-
-•⁠ Search and filter receipts by date, amount, or customer.
-
----
-
-📊 Analytics Dashboard
-
-•⁠ Admin users get insights into:
-⁠- Amount collected
-- Past-due trends
-- Total outstanding amounts
-- Customer credit performance
-
-Filter analytics by week, month, or quarter.
+| Worker | Function |
+|--------|----------|
+| **Auto Email Reminder** | Sends daily payment reminders via Mailgun API |
+| **Credit Score Update** | Recalculates customer credit scores based on payment history |
+| **Overdue Invoice** | Automatically marks invoices as past due when deadlines pass |
+| **Paid/Late Payment** | Matches receipts with invoices and updates payment status |
+| **Daily Summary** | Generates notification summaries of updates across app |
 
 ---
 
-📅 Calendar View
+## Technology Stack
 
-•⁠ View invoices on a calendar based on status (Paid, Unpaid, PastDue, Late).
+### Frontend Technologies
 
-•⁠ Apply multiple status filters at once.
+- **Language:** Kotlin 2.0
+- **UI Framework:** Jetpack Compose with Material 3 Design
+- **Architecture:** MVVM with Clean Architecture principles
+- **State Management:** StateFlow and Kotlin Coroutines
+- **Background Processing:** WorkManager
+- **PDF Generation:** iText library with FileProvider
+- **OCR Engine:** Google Gemini 1.5 Flash
 
-•⁠ Quickly navigate invoice history at a glance.
+### Backend & Cloud Services
 
----
-
-# ⚙️ Background Automation (5 Workers)
-
-• Worker: Function 
- - Auto Email Reminder: Sends daily payment reminders via Mailgun
- - Credit Score Update: Recalculates customer credit scores
- - Overdue Invoice: Marks invoices as PastDue
- - Paid / Late Payment: Matches receipts & updates invoice status
- - Daily Summary: Sends notifications with summary of invoices & credit changes
-
----
-
-# 🧰 Tech Stack
-
-## Frontend
-
--Language: Kotlin
-
--UI Framework: Jetpack Compose (Material 3)
-
--Architecture: MVVM + Clean Architecture
-
--State Management: StateFlow & Coroutines
-
--Background Tasks: WorkManager
-
--PDF Generation: iText + FileProvider
-
--OCR Processing: Gemini Messages
+- **Authentication:** Firebase Authentication
+- **Cloud Database:** Cloud Firestore
+- **Local Storage:** Room Database
+- **File Storage:** Firebase Cloud Storage
+- **Email Service:** Mailgun API
+- **Payment Gateway:** Stripe API
+- **AI Processing:** Google Gemini Messages API
 
 ---
 
-## Backend & Cloud
+## Architecture
 
-- Authentication: Firebase Auth
-- Database: Firestore (NoSQL)
-- Local Storage: Room Database
-- File Storage: Firebase Storage
-- Email Service: Mailgun API
-- Payment Gateway: Stripe API
-- AI Processing: Google Gemini 1.5 Flash
+### Application Architecture
 
----
-
- 🏗 Architecture & Project Structure
-
-# EZCredit App Architecture
-
-```text
+```
 ┌─────────────────────────────────────┐
 │ UI Layer (Jetpack Compose)          │
-└──────────────┬──────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────┐
-│ StateFlow (State Management)        │
+│ • Material 3 Design System           │
+│ • Declarative UI Components          │
 └──────────────┬──────────────────────┘
                │
                ▼
 ┌─────────────────────────────────────┐
 │ ViewModel Layer                     │
+│ • Business Logic                     │
+│ • Lifecycle-Aware Components         │
 └──────────────┬──────────────────────┘
-               │ suspend functions
+               │
                ▼
 ┌─────────────────────────────────────┐
 │ Repository Layer                     │
+│ • Data Source Abstraction            │
+│ • IO Dispatcher Operations           │
 └──────────────┬──────────────────────┘
-               │ IO Dispatcher
+               │
                ▼
 ┌─────────────────────────────────────┐
 │ External Services                    │
-│ Firebase • Stripe • Mailgun          │
+│ Firebase • Stripe • Mailgun • Room   │
 └─────────────────────────────────────┘
 ```
 
-## 📁 MVVM Architecture
-![MVVM Architecture](./docs/MVVM1.png)
-![MVVM Architecture](./docs/MVVM2.png)
+### MVVM Architecture
 
-## 📁 Threaded Architecture
-![Threads Diagram](./docs/Threads.png) 
+![MVVM Architecture Diagram 1](./docs/MVVM1.png)
+![MVVM Architecture Diagram 2](./docs/MVVM2.png)
 
-## 📁 Cloud Database Structure
+### Threading Model
+
+![Threading Architecture](./docs/Threads.png)
+
+### Cloud Database Structure
+
+```
 Firebase Realtime Database Structure (EZCredit)
 
-┌─────────────────────────────────────────
-│ ROOT                                                        
-├─────────────────────────────────────────
-│ companies/                                                  
-│   ├─ {companyId}/                                          
-│   │  ├─ users/                                             
-│   │  │  ├─ {userId}/                                       
-│   │  │  │  ├─ name: "John Doe"                             
-│   │  │  │  ├─ email: "john@company.com"                    
-│   │  │  │  ├─ companyId: 1                                 
-│   │  │  │  ├─ accessLevel: "Admin"                         
-│   │  │  │  ├─ lastModified: 1733100000000                  
-│   │  │  │  └─ isDeleted: false                             
-│   │  │  └─ {userId2}/...                                   
-│   │  │                                                      
-│   │  ├─ data/                                               
-│   │  │  ├─ customers/                                       
-│   │  │  │  ├─ {customerId}/                                 
-│   │  │  │  │  ├─ name: "Acme Corp"                          
-│   │  │  │  │  ├─ email: "billing@acme.com"                  
-│   │  │  │  │  ├─ companyId: 1                               
-│   │  │  │  │  ├─ lastModified: 1733100000000               
-│   │  │  │  │  └─ isDeleted: false                          
-│   │  │  │  └─ {customerId2}/...                            
-│   │  │  │                                                   
-│   │  │  ├─ invoices/                                        
-│   │  │  │  ├─ {invoiceId}/                                  
-│   │  │  │  │  ├─ invoiceNumber: "INV-001"                   
-│   │  │  │  │  ├─ customerId: 123                            
-│   │  │  │  │  ├─ amount: 2500.00                            
-│   │  │  │  │  ├─ companyId: 1                               
-│   │  │  │  │  ├─ lastModified: 1733100000000               
-│   │  │  │  │  └─ isDeleted: false                          
-│   │  │  │  └─ {invoiceId2}/...                             
-│   │  │  │                                                   
-│   │  │  └─ receipts/                                        
-│   │  │     ├─ {receiptId}/                                  
-│   │  │     │  ├─ receiptNumber: "AUTO_REC_001"              
-│   │  │     │  ├─ invoiceId: "INV-001"                       
-│   │  │     │  ├─ receiptDate: 1733100000000                
-│   │  │     │  ├─ companyId: 1                              
-│   │  │     │  ├─ lastModified: 1733100000000               
-│   │  │     │  └─ isDeleted: false                          
-│   │  │     └─ {receiptId2}/...                             
-│   │  └─ {companyData}/...                                  
-│   └─ {companyId2}/...                                      
-└─────────────────────────────────────────
+ROOT
+└── companies/
+    └── {companyId}/
+        ├── users/
+        │   └── {userId}/
+        │       ├── name: "John Doe"
+        │       ├── email: "john@company.com"
+        │       ├── companyId: 1
+        │       ├── accessLevel: "Admin"
+        │       ├── lastModified: 1733100000000
+        │       └── isDeleted: false
+        │
+        └── data/
+            ├── customers/
+            │   └── {customerId}/
+            │       ├── name: "Acme Corp"
+            │       ├── email: "billing@acme.com"
+            │       ├── companyId: 1
+            │       ├── lastModified: 1733100000000
+            │       └── isDeleted: false
+            │
+            ├── invoices/
+            │   └── {invoiceId}/
+            │       ├── invoiceNumber: "INV-001"
+            │       ├── customerId: 123
+            │       ├── amount: 2500.00
+            │       ├── companyId: 1
+            │       ├── lastModified: 1733100000000
+            │       └── isDeleted: false
+            │
+            └── receipts/
+                └── {receiptId}/
+                    ├── receiptNumber: "AUTO_REC_001"
+                    ├── invoiceId: "INV-001"
+                    ├── receiptDate: 1733100000000
+                    ├── companyId: 1
+                    ├── lastModified: 1733100000000
+                    └── isDeleted: false
+```
 
-
-## 📁 Project Structure
+### Project Structure
 
 ```
 EZCredit/
 ├── data/
-│   ├── dao/           # 5 classes (data access objects)
-│   ├── entity/        # Entity classes
-│   ├── repository/    # 5 classes (repositories)
-│   └── api/           # External API integrations (Mailgun, Stripe)
+│   ├── dao/                # Data Access Objects (5 classes)
+│   ├── entity/             # Data Models
+│   ├── repository/         # Repository Implementations (5 classes)
+│   └── viewmodel/          # database view models and factories (10 classes)
+│
 ├── ui/
-│   ├── screens/       # Compose screens
-│   ├── viewmodel/     # 12 ViewModel classes
-│   ├── components/    # Reusable UI components
-│   └── theme/         # 3 theme classes (Material 3)
-├── workers/           # 5 WorkManager workers
-└── utils/             # Helpers (OCR, date utils, etc.)
+│   ├── screens/            # Jetpack Compose Screens
+│   ├── viewmodel/          # ViewModels (12 classes)
+│   └── theme/              # Material 3 Theme (3 classes)
+│
+├── workers/                # WorkManager Background Workers (5 classes)
+│
+└── utils/                  # Utility Classes (OCR, Date Helpers, etc.)
 ```
 
-# 👥 Team
+---
 
-• Developer: Role
+## Development Team
 
-- Ayush Arora:  UI, WorkManager logic, Credit Score algorithm, Email reminders 
-- Daksh Arora: Room Database, Firebase sync, Firebase auth, Firebase functions, Payment gateway 
-- Gurshan Singh Aulakh: Invoice & customer UI Screens, Automatic Email Background Worker, PDF Invoice Generation 
-- Hetmay Vora: Calendar, Analytics, Login Screen, Company and User profile screens 
-- Henry Nguyen: OCR engine, invoice formatting, receipt screen and project planning diagrams 
+| Team Member | Responsibilities |
+|-------------|-----------------|
+| **Ayush Arora** | UI Design, WorkManager Implementation, Credit Score Algorithm, Email Reminder System |
+| **Daksh Arora** | Room Database Architecture, Firebase Synchronization, Firebase Authentication, Cloud Functions, Payment Gateway Integration |
+| **Gurshan Singh Aulakh** | Invoice & Customer UI Development, Automated Email Worker, PDF Invoice Generation |
+| **Hetmay Vora** | Calendar Interface, Analytics Dashboard, Authentication UI, Company and User Profile Screens |
+| **Henry Nguyen** | OCR Engine Development, Invoice Formatting, Receipt Interface, Architecture Documentation |
 
+---
+
+## 📄 License
+
+This project is developed as part of an academic course assignment for educational purposes.
+
+
+---
+
+**Built with ❤️ for Android Development Course**
+
+*Last Updated: December 2025*
